@@ -6,7 +6,9 @@ import type { Categorized } from "@/lib/categorize";
 import { formatDate, formatDateTime } from "@/lib/dates";
 import { getCandidateDetails, type CandidateDetails } from "@/app/actions/details";
 import { eraseCandidate, renewLink } from "@/app/actions/privacy";
-import { addRemark, setEmployeeDetails, setOnboardingStatus } from "@/app/actions/candidates";
+import { addRemark, changeBranch, completePayroll, setEmployeeDetails, setOnboardingStatus } from "@/app/actions/candidates";
+import { dismissReapply, releaseReapply, sendToReapply } from "@/app/actions/workflow";
+import { isAdminRole } from "@/lib/types";
 import { DOC_LABELS, MANDATORY_DOCS, docLabel } from "@/lib/onboarding";
 import { StageForm } from "./stage-form";
 import { WaComposer } from "./wa-composer";
@@ -41,9 +43,12 @@ export function CandidatePanel({ me, c, cat, branches, appUrl, onClose }: {
   const onboardUrl = token ? `${base}/onboard/${token}` : "";
   const formData = details?.formData ?? {};
   const selected = ["selected_joined", "online_joined_list", "walkin_joined_list"].includes(cat.category) || c.pipeline_status === "Joined";
+  const admin = isAdminRole(me.role);
+  const store = me.role === "branch";
 
   const tabs: [Tab, string][] = [["profile", "Profile"], ["update", "Update status"], ["interview", `Interview${details?.scores.length ? ` (${details.scores.length})` : ""}`], ["history", "History"]];
-  if (selected) tabs.push(["documents", "Onboarding & letters"]);
+  // Onboarding documents and letters are for HR and admins only.
+  if (selected && !store) tabs.push(["documents", "Onboarding & letters"]);
 
   return (
     <Modal open onClose={onClose} title={`${c.name} · ${c.mobile}`} wide>
@@ -58,7 +63,9 @@ export function CandidatePanel({ me, c, cat, branches, appUrl, onClose }: {
             links={{ offer: offerUrl, onboarding: onboardUrl, appointment: c.pipeline_status === "Joined" ? apptUrl : "" }} />
         ) : <a className="btn-outline !py-1 text-xs" target="_blank" rel="noreferrer" href={`https://wa.me/91${c.mobile}`}>WhatsApp</a>}
       </div>
-      <div className="mb-4 flex gap-1 border-b border-slate-200">
+      {cat.category === "reapply" && admin && <ReapplyBox c={c} branch={branch?.name} onDone={refresh} />}
+      {c.pipeline_status === "Joined" && <JoiningBox c={c} canComplete={!store} onSaved={refresh} />}
+      <div className="mb-4 flex flex-wrap gap-1 border-b border-slate-200">
         {tabs.map(([k, label]) => (
           <button key={k} onClick={() => setTab(k)} className={`-mb-px border-b-2 px-3 py-1.5 text-sm font-semibold ${tab === k ? "border-sky-600 text-sky-700" : "border-transparent text-slate-500 hover:text-slate-800"}`}>{label}</button>
         ))}
@@ -113,10 +120,12 @@ export function CandidatePanel({ me, c, cat, branches, appUrl, onClose }: {
           )}
         </dl>
       )}
+      {tab === "profile" && !store && c.branch_id && selected && <BranchBox c={c} branches={branches} onSaved={refresh} />}
+      {tab === "profile" && admin && !cat.active && cat.category !== "reapply" && !cat.category.endsWith("joined_list") && <SendToReapply c={c} onDone={refresh} />}
       {tab === "profile" && <TalentBox c={c} onSaved={refresh} />}
       {tab === "profile" && me.role === "superadmin" && <EraseBox c={c} onErased={() => { onClose(); router.refresh(); }} />}
 
-      {tab === "update" && <StageForm key={c.updated_at} c={c} branches={branches} onSaved={refresh} />}
+      {tab === "update" && <StageForm key={c.updated_at} c={c} branches={branches} admin={admin} onSaved={refresh} />}
 
       {tab === "interview" && <Scorecard candidateId={c.id} me={me.username} scores={details?.scores} onSaved={refresh} />}
 
@@ -126,6 +135,88 @@ export function CandidatePanel({ me, c, cat, branches, appUrl, onClose }: {
         <Documents c={c} details={details} offerUrl={offerUrl} apptUrl={apptUrl} onboardUrl={onboardUrl} onChanged={refresh} />
       )}
     </Modal>
+  );
+}
+
+/** Joined: the store's employee code + shift, then HR's final payroll step. */
+function JoiningBox({ c, canComplete, onSaved }: { c: Candidate; canComplete: boolean; onSaved: () => void }) {
+  const [code, setCode] = useState(c.employee_code ?? "");
+  const [shift, setShift] = useState(c.shift_time ?? "");
+  const [pending, start] = useTransition();
+  const [msg, setMsg] = useState<{ ok: boolean; message: string } | null>(null);
+  const done = !!c.payroll_completed_at;
+  return (
+    <div className={`mb-3 space-y-2 rounded border p-3 text-sm ${done ? "border-green-200 bg-green-50" : "border-indigo-200 bg-indigo-50"}`}>
+      <div className="flex flex-wrap items-center gap-2">
+        <b>Joining &amp; payroll</b>
+        {done ? <Badge tone="green">Payroll completed {formatDate(c.payroll_completed_at)}{c.payroll_completed_by ? ` · ${c.payroll_completed_by}` : ""}</Badge>
+          : c.store_details_at ? <Badge tone="indigo">Payroll completion pending</Badge> : <Badge tone="amber">Waiting for store: employee code &amp; shift</Badge>}
+      </div>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <input className="input" placeholder="Employee code (biometric)" aria-label="Employee code" value={code} onChange={(e) => setCode(e.target.value)} disabled={done} />
+        <input className="input" placeholder="Shift timing" aria-label="Shift timing" value={shift} onChange={(e) => setShift(e.target.value)} disabled={done} />
+        {!done && <button className="btn-outline" disabled={pending} onClick={() => start(async () => { const r = await setEmployeeDetails(c.id, code, shift); setMsg(r); if (r.ok) onSaved(); })}>Save code &amp; shift</button>}
+      </div>
+      {canComplete && !done && c.store_details_at && (
+        <button className="btn-success" disabled={pending} onClick={() => start(async () => { const r = await completePayroll(c.id); setMsg(r); if (r.ok) onSaved(); })}>Final payroll &amp; mark as completed</button>
+      )}
+      <Flash msg={msg} />
+    </div>
+  );
+}
+
+/** After selection: move the candidate to another branch (and that branch's HR). */
+function BranchBox({ c, branches, onSaved }: { c: Candidate; branches: Branch[]; onSaved: () => void }) {
+  const [id, setId] = useState(c.branch_id ?? "");
+  const [pending, start] = useTransition();
+  const [msg, setMsg] = useState<{ ok: boolean; message: string } | null>(null);
+  const hr = branches.find((b) => b.id === id)?.hr_username;
+  return (
+    <div className="mt-4 space-y-2 rounded border border-slate-200 p-3 text-sm">
+      <b>Change allocated branch</b>
+      <div className="flex flex-wrap gap-2">
+        <select className="input !w-auto flex-1" value={id} onChange={(e) => setId(e.target.value)} aria-label="Allocated branch">
+          {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+        </select>
+        <button className="btn-outline" disabled={pending || id === c.branch_id} onClick={() => start(async () => { const r = await changeBranch(c.id, id); setMsg(r); if (r.ok) onSaved(); })}>Change branch</button>
+      </div>
+      {id !== c.branch_id && hr && hr !== c.assigned_hr && <p className="text-xs text-amber-700">The candidate will move to <b>{hr}</b>.</p>}
+      <Flash msg={msg} />
+    </div>
+  );
+}
+
+/** Re-Apply folder (admin): previous record at a glance, then enable for HR calling or keep closed. */
+function ReapplyBox({ c, branch, onDone }: { c: Candidate; branch?: string; onDone: () => void }) {
+  const [pending, start] = useTransition();
+  const [msg, setMsg] = useState<{ ok: boolean; message: string } | null>(null);
+  const absconded = c.pipeline_status.startsWith("Left");
+  return (
+    <div className="mb-3 space-y-2 rounded border border-fuchsia-300 bg-fuchsia-50 p-3 text-sm">
+      <b>Re-Apply folder · applied again {formatDateTime(c.reapply_at)}</b>
+      <p>Previous: <b>{c.pipeline_status}</b>{c.rejection_reason ? ` (${c.rejection_reason})` : ""}.</p>
+      {absconded && (
+        <p>Previous employment: {c.designation ?? "-"} at {branch ?? "-"}, joined {formatDate(c.actual_joining_date)}, left {formatDate(c.relieving_date)}{c.employee_code ? `, employee code ${c.employee_code}` : ""}.</p>
+      )}
+      <p className="text-xs text-slate-600">The full history is in the History tab. Enabling starts them over as a new follow-up with the HR of the store they last applied to; the old record stays in History.</p>
+      <div className="flex flex-wrap gap-2">
+        <button className="btn-success" disabled={pending} onClick={() => start(async () => { const r = await releaseReapply(c.id); setMsg(r); if (r.ok) onDone(); })}>Enable for HR calling</button>
+        <button className="btn-outline" disabled={pending} onClick={() => start(async () => { const r = await dismissReapply(c.id); setMsg(r); if (r.ok) onDone(); })}>Keep closed</button>
+      </div>
+      <Flash msg={msg} />
+    </div>
+  );
+}
+
+function SendToReapply({ c, onDone }: { c: Candidate; onDone: () => void }) {
+  const [pending, start] = useTransition();
+  const [msg, setMsg] = useState<{ ok: boolean; message: string } | null>(null);
+  return (
+    <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-slate-600">
+      <span>Rejected in error, or now eligible?</span>
+      <button className="btn-outline !py-1 text-xs" disabled={pending} onClick={() => start(async () => { const r = await sendToReapply(c.id); setMsg(r); if (r.ok) onDone(); })}>Move to Re-Apply folder</button>
+      <Flash msg={msg} />
+    </div>
   );
 }
 
@@ -206,10 +297,8 @@ function Documents({ c, details, offerUrl, apptUrl, onboardUrl, onChanged }: {
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<{ ok: boolean; message: string } | null>(null);
   const [missing, setMissing] = useState<string[]>([]);
-  const [code, setCode] = useState("");
-  const [shift, setShift] = useState("");
   const ob = details?.onboarding;
-  useEffect(() => { setCode(ob?.employee_code ?? ""); setShift(ob?.shift_time ?? ""); setMissing(ob?.missing_docs ?? []); }, [ob]);
+  useEffect(() => { setMissing(ob?.missing_docs ?? []); }, [ob]);
 
   const wa = (label: string, url: string) =>
     `https://wa.me/91${c.mobile}?text=${encodeURIComponent(`Balasanka Group of Companies - Dear ${c.name},\n\nPlease open your ${label} here:\n${url}\n\nBest regards,\nHR Team`)}`;
@@ -275,11 +364,6 @@ function Documents({ c, details, offerUrl, apptUrl, onboardUrl, onChanged }: {
               <button className="btn-success" disabled={pending} onClick={() => start(async () => { setMsg(await setOnboardingStatus(c.id, "completed")); onChanged(); })}>Mark completed</button>
               <button className="btn-outline" disabled={pending || missing.length === 0} onClick={() => start(async () => { setMsg(await setOnboardingStatus(c.id, "pending", missing)); onChanged(); })}>Mark pending ({missing.length})</button>
               {ob.status === "pending" && <a className="btn-success" href={wa("onboarding form (please re-upload the missing documents)", onboardUrl)} target="_blank" rel="noreferrer">Ask to re-submit on WhatsApp</a>}
-            </div>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-              <input className="input" placeholder="Employee code" value={code} onChange={(e) => setCode(e.target.value)} />
-              <input className="input" placeholder="Shift time" value={shift} onChange={(e) => setShift(e.target.value)} />
-              <button className="btn-outline" disabled={pending} onClick={() => start(async () => { setMsg(await setEmployeeDetails(c.id, code, shift)); onChanged(); })}>Save code & shift</button>
             </div>
           </>
         )}

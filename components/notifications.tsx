@@ -18,7 +18,7 @@ export function NotificationBell({ me, items }: { me: Profile; items: Notificati
         🔔{unread > 0 && <span className="absolute -right-1.5 -top-1.5 rounded-full bg-red-600 px-1.5 text-xs text-white">{unread}</span>}
       </button>
       {open && (
-        <div className="absolute right-0 z-40 mt-1 max-h-96 w-80 overflow-y-auto rounded-lg border border-slate-200 bg-white p-2 shadow-xl">
+        <div className="absolute right-0 z-40 mt-1 max-h-96 w-80 max-w-[calc(100vw-1.5rem)] overflow-y-auto rounded-lg border border-slate-200 bg-white p-2 shadow-xl">
           <div className="mb-1 border-b pb-1 text-xs font-bold">Notifications{isAdminRole(me.role) && " (all, admin view)"}</div>
           {items.length === 0 && <p className="py-3 text-center text-xs text-slate-500">No notifications.</p>}
           {items.map((n) => (

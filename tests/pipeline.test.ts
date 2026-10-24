@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyStage, isBlacklisted, reactivate, stageFor } from "../lib/pipeline";
+import { applyStage, isBlacklisted, needsReapplyReview, reactivate, stageFor, walkinBlocked } from "../lib/pipeline";
 import { categorize, countAll } from "../lib/categorize";
 import { calculateSalary } from "../lib/salary";
 import { probationEnd, localInputToIso } from "../lib/dates";
@@ -16,7 +16,8 @@ const base: Candidate = {
   joining_status: null, not_joined_reason: null, revised_joining_date: null, revised_joining_status: null, actual_joining_date: null,
   employment_status: null, left_type: null, relieving_date: null, rejection_reason: null, interview_needed: null,
   source_channel: null, referred_by: null, talent_pool: false, talent_tags: [], offer_response: null, offer_responded_at: null,
-  offer_decline_reason: null, confirmation_date: null,
+  offer_decline_reason: null, confirmation_date: null, last_sms_key: null, last_sms_at: null, employee_code: null, shift_time: null,
+  store_details_at: null, payroll_completed_at: null, payroll_completed_by: null, reapply_review: false, reapply_at: null,
   created_at: "", updated_at: "",
 };
 const now = new Date("2026-10-24T06:00:00Z");
@@ -41,17 +42,29 @@ describe("screening calls", () => {
     expect(stageFor(c)).toBe("closed");
   });
 
-  it("schedules an interview and notifies the branch", () => {
-    const r = applyStage(base, "initial", { callOutcome: "Contacted", callAction: "Interview Scheduled", interviewAt: "2026-10-25T10:30" }, now);
+  it("schedules an interview at a chosen store and notifies the branch", () => {
+    expect(applyStage(base, "initial", { callOutcome: "Contacted", callAction: "Interview Scheduled", interviewAt: "2026-10-25T10:30" }, now).error).toMatch(/location/);
+    const r = applyStage(base, "initial", { callOutcome: "Contacted", callAction: "Interview Scheduled", interviewAt: "2026-10-25T10:30", interviewBranchId: "b2" }, now);
     expect(r.patch.pipeline_status).toBe("Interview Scheduled");
     expect(r.patch.interview_at).toBe("2026-10-25T05:00:00.000Z");
+    expect(r.patch.branch_id).toBe("b2");
     expect(r.notify).toHaveLength(1);
   });
 
-  it("blacklists Not Suitable / Age Criteria rejections", () => {
-    const c = run(base, { callOutcome: "Contacted", callAction: "Rejected", rejectionReason: "Age Criteria" });
-    expect(isBlacklisted(c)).toBe(true);
-    expect(reactivate(c).error).toBeDefined();
+  it("blacklists Not Suitable / over-age (and old Age Criteria) for good", () => {
+    for (const reason of ["Age Criteria", "Age - Over Age Limit", "Not Suitable"]) {
+      const c = run(base, { callOutcome: "Contacted", callAction: "Rejected", rejectionReason: reason });
+      expect(isBlacklisted(c)).toBe(true);
+      expect(needsReapplyReview(c)).toBe(false);
+      expect(reactivate(c).error).toBeDefined();
+    }
+  });
+
+  it("sends underage rejections to the Re-Apply folder, not the blacklist", () => {
+    const c = run(base, { callOutcome: "Contacted", callAction: "Rejected", rejectionReason: "Age - Underage" });
+    expect(isBlacklisted(c)).toBe(false);
+    expect(needsReapplyReview(c)).toBe(true);
+    expect(walkinBlocked(c)).toBe(true);
   });
 });
 
@@ -64,11 +77,15 @@ describe("interview to joining", () => {
     expect(stageFor(c)).toBe("joining");
     const joined = run(c, { joiningStatus: "Joined", actualJoiningDate: "2026-11-01" });
     expect(joined.pipeline_status).toBe("Joined");
-    expect(categorize(joined).category).toBe("online_joined_list");
+    expect(categorize(joined).category).toBe("store_details_pending");
+    expect(categorize({ ...joined, store_details_at: "2026-11-01T10:00:00Z" }).category).toBe("payroll_pending");
+    expect(categorize({ ...joined, store_details_at: "2026-11-01T10:00:00Z", payroll_completed_at: "2026-11-02T10:00:00Z" }).category).toBe("online_joined_list");
     const left = run(joined, { employmentStatus: "Left", leftType: "Without Information", relievingDate: "2027-01-10" });
     expect(left.pipeline_status).toBe("Left (Without Information)");
     expect(left.relieving_date).toBe("2027-01-10");
-    expect(isBlacklisted(left)).toBe(true);
+    expect(isBlacklisted(left)).toBe(false);
+    expect(needsReapplyReview(left)).toBe(true);
+    expect(walkinBlocked(left)).toBe(true);
   });
 
   it("reschedules and drops on second no-show", () => {
@@ -89,7 +106,7 @@ describe("interview to joining", () => {
 
 describe("counts", () => {
   it("splits into followup / completed / rejected", () => {
-    const counts = countAll([base, { ...base, pipeline_status: "Wrong Number" }, { ...base, pipeline_status: "Joined", actual_joining_date: "2026-10-01", source: "walkin" }].map((c) => categorize(c as Candidate)));
+    const counts = countAll([base, { ...base, pipeline_status: "Wrong Number" }, { ...base, pipeline_status: "Joined", actual_joining_date: "2026-10-01", source: "walkin", payroll_completed_at: "2026-10-02T00:00:00Z" }].map((c) => categorize(c as Candidate)));
     expect(counts.in_followup).toBe(1);
     expect(counts.rejected).toBe(1);
     expect(counts.completed).toBe(1);

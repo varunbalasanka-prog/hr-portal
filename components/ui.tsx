@@ -19,7 +19,8 @@ export function Badge({ tone = "slate", children }: { tone?: Tone; children: Rea
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
 
-export function Modal({ open, onClose, title, children, wide }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode; wide?: boolean }) {
+/** `locked`: no close button, Escape or outside click (for steps that must be finished, like the store's joining details). */
+export function Modal({ open, onClose, title, children, wide, locked }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode; wide?: boolean; locked?: boolean }) {
   const box = useRef<HTMLDivElement>(null);
   const close = useRef(onClose);
   close.current = onClose;
@@ -29,7 +30,7 @@ export function Modal({ open, onClose, title, children, wide }: { open: boolean;
     const opener = document.activeElement as HTMLElement | null;
     box.current?.querySelector<HTMLElement>(FOCUSABLE)?.focus();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") return close.current();
+      if (e.key === "Escape") return locked ? undefined : close.current();
       if (e.key !== "Tab" || !box.current) return;
       const items = [...box.current.querySelectorAll<HTMLElement>(FOCUSABLE)];
       if (items.length === 0) return;
@@ -39,14 +40,14 @@ export function Modal({ open, onClose, title, children, wide }: { open: boolean;
     };
     window.addEventListener("keydown", onKey);
     return () => { window.removeEventListener("keydown", onKey); opener?.focus?.(); };
-  }, [open]);
+  }, [open, locked]);
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-2 sm:p-6" onMouseDown={onClose}>
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-2 sm:p-6" onMouseDown={locked ? undefined : onClose}>
       <div ref={box} role="dialog" aria-modal="true" aria-label={title} className={`card w-full ${wide ? "max-w-4xl" : "max-w-xl"} my-4`} onMouseDown={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between rounded-t-lg bg-brand px-4 py-2.5 text-white">
           <h2 className="text-sm font-bold">{title}</h2>
-          <button onClick={onClose} className="text-xl leading-none text-white/80 hover:text-white" aria-label="Close">×</button>
+          {!locked && <button onClick={onClose} className="text-xl leading-none text-white/80 hover:text-white" aria-label="Close">×</button>}
         </div>
         <div className="p-4">{children}</div>
       </div>
