@@ -1,16 +1,21 @@
 "use client";
 import { useState, useTransition } from "react";
+import { fieldName, groupBySection, isVisible, MAX_ANSWER, type ApplyQuestion } from "@/lib/apply-questions";
 import { submitApplication } from "./actions";
-import { POSTS } from "./fields";
+import type { ApplyConfig } from "./config";
 
-export type BranchOption = { id: string; name: string; town: string; business_type: string };
-
-export function ApplyForm({ branches }: { branches: BranchOption[] }) {
-  const [experienced, setExperienced] = useState("");
+/** Fixed fields (branch, post, name, mobile, father's name, marital status, email, address) feed the candidate record and
+ *  letters, so they can't be removed. Everything else comes from the questions the admin manages. */
+export function ApplyForm({ branches, posts, questions }: ApplyConfig) {
+  const [choices, setChoices] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
   const [pending, start] = useTransition();
   const towns = [...new Set(branches.map((b) => b.town))];
+  const visible = questions.filter((q) => isVisible(q, choices, questions));
+  const sections = groupBySection(visible);
+  const aboutYou = sections.find(([s]) => s === "About you")?.[1] ?? [];
+  const others = sections.filter(([s]) => s !== "About you");
 
   if (done) {
     return (
@@ -21,6 +26,10 @@ export function ApplyForm({ branches }: { branches: BranchOption[] }) {
       </div>
     );
   }
+
+  const question = (q: ApplyQuestion) => (
+    <Question key={q.id} q={q} value={choices[q.id] ?? ""} onChoose={(v) => setChoices((s) => ({ ...s, [q.id]: v }))} />
+  );
 
   return (
     <form
@@ -47,7 +56,7 @@ export function ApplyForm({ branches }: { branches: BranchOption[] }) {
         <label className="block sm:col-span-2">
           <span className="label">Post applying for / பதவி *</span>
           <input name="post" className="input" list="posts" required maxLength={120} placeholder="Choose or type" />
-          <datalist id="posts">{POSTS.map((p) => <option key={p} value={p} />)}</datalist>
+          <datalist id="posts">{posts.map((p) => <option key={p} value={p} />)}</datalist>
         </label>
       </Section>
 
@@ -55,39 +64,64 @@ export function ApplyForm({ branches }: { branches: BranchOption[] }) {
         <Input name="name" label="Full name / பெயர் *" required maxLength={120} />
         <Input name="mobile" label="Mobile number *" inputMode="tel" pattern="[0-9+ ]{10,14}" required />
         <Input name="father_name" label="Father's / husband's name *" required maxLength={120} />
-        <Choice name="gender" label="Gender *" options={["Male", "Female", "Other"]} required />
-        <Input name="dob" label="Date of birth *" type="date" required />
-        <Choice name="marital_status" label="Marital status *" options={["Single", "Married"]} required />
+        <label className="block">
+          <span className="label">Marital status *</span>
+          <select name="marital_status" className="input" required defaultValue="">
+            <option value="">-- Select --</option>
+            <option>Single</option><option>Married</option>
+          </select>
+        </label>
         <Input name="email" label="Email" type="email" maxLength={120} />
-        <Input name="qualification" label="Educational qualification *" required maxLength={200} />
+        {aboutYou.map(question)}
         <label className="block sm:col-span-2">
           <span className="label">Address *</span>
           <textarea name="address" className="input" rows={2} required maxLength={500} />
         </label>
       </Section>
 
-      <Section n={3} title="Experience">
-        <Choice name="experience_level" label="Fresher or experienced? *" options={["Fresher", "Experienced"]} value={experienced} onChange={setExperienced} required />
-        <Input name="expected_salary" label="Expected salary (per month)" inputMode="numeric" maxLength={40} />
-        {experienced === "Experienced" && (
-          <>
-            <Input name="last_company" label="Last company & total experience *" required maxLength={300} />
-            <Input name="last_salary" label="Last drawn salary *" inputMode="numeric" required maxLength={40} />
-            <FileIn name="experience_certificate" label="Experience certificate" />
-            <FileIn name="salary_proof" label="Salary proof (payslip / bank statement)" />
-          </>
-        )}
-      </Section>
-
-      <Section n={4} title="Documents">
-        <FileIn name="photo" label="Passport size photo * (take a photo or upload)" required />
-        <FileIn name="resume" label="Resume / biodata" />
-      </Section>
+      {others.map(([title, qs], i) => <Section key={title} n={i + 3} title={title}>{qs.map(question)}</Section>)}
 
       <p className="text-xs text-slate-500">Photos or PDFs only, up to 8 MB each. Your details are stored privately and only our HR team can see them.</p>
       <button className="btn-primary h-11 w-full" disabled={pending}>{pending ? "Submitting… please wait" : "Submit application"}</button>
     </form>
   );
+}
+
+function Question({ q, value, onChoose }: { q: ApplyQuestion; value: string; onChoose: (v: string) => void }) {
+  const label = q.label + (q.required ? " *" : "");
+  const name = fieldName(q);
+  switch (q.type) {
+    case "choice":
+      return (
+        <label className="block">
+          <span className="label">{label}</span>
+          <select name={name} className="input" required={q.required} value={value} onChange={(e) => onChoose(e.target.value)}>
+            <option value="">-- Select --</option>
+            {q.options.map((o) => <option key={o} value={o}>{o}</option>)}
+          </select>
+        </label>
+      );
+    case "long_text":
+      return (
+        <label className="block sm:col-span-2">
+          <span className="label">{label}</span>
+          <textarea name={name} className="input" rows={3} required={q.required} maxLength={MAX_ANSWER.long_text} />
+        </label>
+      );
+    case "file":
+      return (
+        <label className="block">
+          <span className="label">{label}</span>
+          <input type="file" name={name} className="input" accept="image/*,application/pdf" required={q.required} />
+        </label>
+      );
+    case "date":
+      return <Input name={name} label={label} type="date" required={q.required} />;
+    case "number":
+      return <Input name={name} label={label} inputMode="numeric" required={q.required} maxLength={MAX_ANSWER.number} />;
+    default:
+      return <Input name={name} label={label} required={q.required} maxLength={MAX_ANSWER.text} />;
+  }
 }
 
 function Section({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
@@ -101,25 +135,4 @@ function Section({ n, title, children }: { n: number; title: string; children: R
 
 function Input({ label, ...props }: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
   return <label className="block"><span className="label">{label}</span><input className="input" {...props} /></label>;
-}
-
-function Choice({ name, label, options, value, onChange, required }: { name: string; label: string; options: string[]; value?: string; onChange?: (v: string) => void; required?: boolean }) {
-  return (
-    <label className="block">
-      <span className="label">{label}</span>
-      <select name={name} className="input" required={required} {...(onChange ? { value: value ?? "", onChange: (e: React.ChangeEvent<HTMLSelectElement>) => onChange(e.target.value) } : {})}>
-        <option value="">-- Select --</option>
-        {options.map((o) => <option key={o} value={o}>{o}</option>)}
-      </select>
-    </label>
-  );
-}
-
-function FileIn({ name, label, required }: { name: string; label: string; required?: boolean }) {
-  return (
-    <label className="block">
-      <span className="label">{label}</span>
-      <input type="file" name={name} className="input" accept="image/*,application/pdf" required={required} />
-    </label>
-  );
 }
