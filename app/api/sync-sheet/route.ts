@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createSyncClient } from "@/lib/supabase/sync";
 import { syncNewApplications } from "@/lib/sheet-sync";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   try {
-    const result = await syncNewApplications(createAdminClient());
+    const result = await syncNewApplications(await createSyncClient());
     return NextResponse.json({ ok: true, ...result });
   } catch (e) {
     return NextResponse.json({ ok: false, error: (e as Error).message }, { status: 500 });

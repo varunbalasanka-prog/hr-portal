@@ -5,6 +5,7 @@
  */
 import { google } from "googleapis";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { fetchAll } from "./fetch-all";
 import { dateToIso, localInputToIso } from "./dates";
 import type { Branch } from "./types";
 
@@ -68,11 +69,36 @@ const APP_MANAGED = new Set([
   "Actual Joining Date", "Remarks", "Salary", "S.No",
 ]);
 
-function branchMatcher(branches: Branch[]) {
+// The group name appears in several brands, so it says nothing about which branch is meant.
+const GENERIC = new Set(["balasanka", "balsanka"]);
+const words = (s: string) => s.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w && !GENERIC.has(w));
+const commonPrefix = (a: string, b: string) => { let i = 0; while (i < a.length && a[i] === b[i]) i++; return i; };
+
+/**
+ * Finds the branch for a location. Branches are named "Brand - Town" ("Tanishq - Theni"), but the
+ * Google Form says "Town - Brand (type)" ("Theni - Tanishq (Jewellery)"), with brand spellings that
+ * differ a little ("Fastrack" / "Fast track", "Balasanka Cycle Bazar" / "Balsanka Cycle").
+ * So: exact name first, then the best brand-word match among branches in the same town.
+ */
+export function branchMatcher(branches: Branch[]) {
   return (loc: string): Branch | undefined => {
     const l = clean(loc).toLowerCase();
     if (!l) return undefined;
-    return branches.find((b) => b.name.toLowerCase() === l) ?? branches.find((b) => l.includes(b.name.toLowerCase()) || b.name.toLowerCase().includes(l));
+    const exact = branches.find((b) => b.name.toLowerCase() === l);
+    if (exact) return exact;
+    const locWords = words(l);
+    let best: Branch | undefined;
+    let bestScore = 0;
+    for (const b of branches) {
+      const town = b.town.toLowerCase();
+      if (!locWords.includes(town)) continue;
+      const brand = words(b.name).filter((w) => w !== town);
+      const asked = locWords.filter((w) => w !== town);
+      let score = brand.filter((w) => asked.includes(w)).length;
+      if (!score && commonPrefix(brand.join(""), asked.join("")) >= 4) score = 0.5;
+      if (score > bestScore) { best = b; bestScore = score; }
+    }
+    return best;
   };
 }
 
@@ -176,17 +202,17 @@ export async function syncNewApplications(db: SupabaseClient) {
   const tabs = await readSheetTabs(["Master Sheet"]);
   const match = await loadBranches(db);
   const incoming = mergeByMobile(tabs["Master Sheet"].map((r) => toCandidate(r, "online", match, false)));
-  const { data: existing } = await db.from("candidates").select("id, mobile, posts, applied_locations");
-  const known = new Map((existing ?? []).map((c) => [c.mobile as string, c]));
+  const existing = await fetchAll<{ id: string; mobile: string; posts: string[]; applied_locations: string[] }>((f, t) => db.from("candidates").select("id, mobile, posts, applied_locations").order("id").range(f, t));
+  const known = new Map(existing.map((c) => [c.mobile, c]));
 
   const fresh = incoming.filter((c) => !known.has(c.mobile)).map((c) => ({ ...c, next_action: "Follow-up start immediately", next_action_at: c.received_at }));
   let merged = 0;
   for (const c of incoming) {
     const k = known.get(c.mobile);
     if (!k) continue;
-    const posts = [...new Set([...(k.posts as string[]), ...c.posts])];
-    const locs = [...new Set([...(k.applied_locations as string[]), ...c.applied_locations])];
-    if (posts.length !== (k.posts as string[]).length || locs.length !== (k.applied_locations as string[]).length) {
+    const posts = [...new Set([...k.posts, ...c.posts])];
+    const locs = [...new Set([...k.applied_locations, ...c.applied_locations])];
+    if (posts.length !== k.posts.length || locs.length !== k.applied_locations.length) {
       await db.from("candidates").update({ posts, applied_locations: locs }).eq("id", k.id);
       merged++;
     }
@@ -203,9 +229,9 @@ export async function syncNewApplications(db: SupabaseClient) {
   return { added: fresh.length, merged };
 }
 
-/** One-time migration of everything in the Sheet. Safe to re-run: existing mobiles are updated, not duplicated. */
-export async function importAll(db: SupabaseClient, log: (s: string) => void = console.log) {
-  const tabs = await readSheetTabs(["Master Sheet", "Walkin_Sheet", "Documents_Sheet"]);
+/** One-time migration of everything in the Sheet. Re-running updates existing mobiles instead of duplicating them, but adds the imported remarks to their history again. */
+export async function importAll(db: SupabaseClient, log: (s: string) => void = console.log, read = readSheetTabs) {
+  const tabs = await read(["Master Sheet", "Walkin_Sheet", "Documents_Sheet"]);
   const match = await loadBranches(db);
   const online = tabs["Master Sheet"].map((r) => toCandidate(r, "online", match, true) as CandRow);
   const walkin = tabs["Walkin_Sheet"].map((r) => toCandidate(r, "walkin", match, true) as CandRow);
@@ -218,8 +244,8 @@ export async function importAll(db: SupabaseClient, log: (s: string) => void = c
     const { error } = await db.from("candidates").upsert(chunk, { onConflict: "mobile" });
     if (error) throw error;
   }
-  const { data: ids } = await db.from("candidates").select("id, mobile");
-  const idBy = new Map((ids ?? []).map((c) => [c.mobile as string, c.id as string]));
+  const ids = await fetchAll<{ id: string; mobile: string }>((f, t) => db.from("candidates").select("id, mobile").order("id").range(f, t));
+  const idBy = new Map(ids.map((c) => [c.mobile, c.id]));
 
   const events = all.filter((c) => c._remarks).map((c) => ({ candidate_id: idBy.get(c.mobile), actor: "import", stage: "import", remark: c._remarks }));
   for (let i = 0; i < events.length; i += 500) await db.from("candidate_events").insert(events.slice(i, i + 500));

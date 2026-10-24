@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { categorize } from "@/lib/categorize";
+import { fetchAll } from "@/lib/fetch-all";
 import type { Branch, Candidate } from "@/lib/types";
 import { Reports, type ReportRow } from "./reports";
 
@@ -8,14 +9,14 @@ export const dynamic = "force-dynamic";
 
 export default async function ReportsPage() {
   const { supabase } = await requireAdmin();
-  const [{ data: cands }, { data: branches }, { data: hrs }] = await Promise.all([
-    supabase.from("candidates").select("id, source, name, mobile, assigned_hr, branch_id, applied_locations, received_at, pipeline_status, rejection_reason, actual_joining_date").limit(20000),
+  const [cands, { data: branches }, { data: hrs }] = await Promise.all([
+    fetchAll<Candidate>((f, t) => supabase.from("candidates").select("*").order("id").range(f, t)),
     supabase.from("branches").select("*").order("name"),
     supabase.from("profiles").select("username").in("role", ["hr", "admin"]),
   ]);
   const bName = new Map((branches as Branch[] ?? []).map((b) => [b.id, b.name]));
-  const rows = (cands as Candidate[] ?? []).map((c) => {
-    const cat = categorize(c as Candidate);
+  const rows = cands.map((c) => {
+    const cat = categorize(c);
     const bucket: ReportRow["bucket"] = cat.active ? "in_followup" : cat.category.endsWith("joined_list") ? "completed" : "dropped";
     return {
       name: c.name, mobile: c.mobile, hr: c.assigned_hr, source: c.source, received: c.received_at.slice(0, 10),

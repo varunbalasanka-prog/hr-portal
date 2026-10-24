@@ -17,7 +17,7 @@ New online applications still come in through the existing **Google Form**. Ever
 | In-app notifications with read tracking | `components/notifications.tsx` |
 | Reports (admin) and password reset / notification log (admin) | `app/reports`, `app/admin` |
 | Google Sheet one-time import and 15-minute sync | `lib/sheet-sync.ts`, `app/api/sync-sheet` |
-| Database schema and access rules | `supabase/migrations/0001_init.sql` |
+| Database schema and access rules | `supabase/migrations/` |
 
 ## Who sees what
 
@@ -31,13 +31,25 @@ Candidate links (offer letter, appointment letter, onboarding form) use a random
 
 ## Setup
 
-1. **Supabase.** Create a project. In the SQL editor, run `supabase/migrations/0001_init.sql`.
+The app only ever uses the public (anon) key. Anything that needs more rights is a small database function with its own checks (see `0002_no_service_role.sql`), and the Sheet sync signs in as its own admin account. There is no service-role key to leak.
+
+1. **Supabase.** Create a project. In the SQL editor, run the files in `supabase/migrations/` in order.
 2. **Environment.** Copy `.env.example` to `.env.local` and fill it in. Never commit `.env.local` or any Google key file.
 3. **Install:** `npm install`
-4. **Create branches and logins:** `npm run seed:users`. Every account gets a random password, printed once. Share each one privately.
-5. **Import the Sheet (one time):** share the Google Sheet with the service account email (read-only is enough), put the service account JSON in `GOOGLE_SERVICE_ACCOUNT_JSON`, then run `npm run import:sheet`. It's safe to run again.
+4. **Create branches and logins:** `npm run seed:users` writes `seed-users.local.sql` and `passwords.local.txt`. Paste the SQL into the Supabase SQL editor and run it. Share each password privately, then delete both files. Put the `sheet-sync` password in `SYNC_PASSWORD`.
+5. **Import the Sheet (one time):** share the Google Sheet with the service account email (read-only is enough), put the service account JSON in `GOOGLE_SERVICE_ACCOUNT_JSON`, then run `npm run import:sheet`.
 6. **Run locally:** `npm run dev` and open http://localhost:3000
-7. **Deploy:** import the GitHub repo in Vercel, add the same environment variables, and deploy. `vercel.json` schedules the Sheet sync every 15 minutes. Set `CRON_SECRET` so only Vercel can call it.
+7. **Deploy:** import the GitHub repo in Vercel, add the same environment variables, and deploy. `vercel.json` schedules the Sheet sync every 15 minutes. Set `CRON_SECRET` so only Vercel can call it. The live site is https://hr.balasanka.in.
+
+### Adding a staff login later
+
+In the Supabase SQL editor:
+
+```sql
+select create_staff_user('newname', 'Full Name', 'hr', null, 'newname@staff.balasanka-hr.local', 'a-long-random-password');
+```
+
+Admins can reset anyone's password from the Admin page.
 
 ### Before going live
 

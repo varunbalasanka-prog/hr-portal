@@ -1,9 +1,8 @@
 "use server";
 import { requireProfile } from "@/lib/auth";
-import { createAdminClient } from "@/lib/supabase/admin";
 import type { CandidateEvent, OnboardingSubmission } from "@/lib/types";
 
-/** History + onboarding documents (as 10-minute signed links) for one candidate. */
+/** History + onboarding documents (as 10-minute signed links) for one candidate. Storage rules only sign files the user may see. */
 export async function getCandidateDetails(candidateId: string) {
   const { supabase } = await requireProfile();
   // RLS check: if the user can't see the candidate, stop here.
@@ -17,10 +16,9 @@ export async function getCandidateDetails(candidateId: string) {
 
   const fileLinks: Record<string, string> = {};
   if (onboarding?.files) {
-    const admin = createAdminClient();
     await Promise.all(Object.entries(onboarding.files).map(async ([key, path]) => {
       if (!path || path.startsWith("http")) { if (path) fileLinks[key] = path; return; }
-      const { data } = await admin.storage.from("onboarding-docs").createSignedUrl(path, 600);
+      const { data } = await supabase.storage.from("onboarding-docs").createSignedUrl(path, 600);
       if (data) fileLinks[key] = data.signedUrl;
     }));
   }

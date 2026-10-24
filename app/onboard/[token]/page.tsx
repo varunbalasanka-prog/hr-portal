@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { createAdminClient } from "@/lib/supabase/admin";
-import type { Candidate, OnboardingSubmission } from "@/lib/types";
+import { lookupToken } from "@/lib/candidate-token";
 import { DOC_LABELS } from "@/lib/onboarding";
 import { OnboardingForm } from "./form";
 
@@ -10,13 +9,9 @@ export const metadata: Metadata = { title: "Candidate onboarding · Balasanka Gr
 
 export default async function OnboardPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
-  if (!/^[0-9a-f-]{36}$/i.test(token)) notFound();
-  const admin = createAdminClient();
-  const { data: c } = await admin.from("candidates").select("*").eq("access_token", token).maybeSingle<Candidate>();
-  if (!c) notFound();
-  const { data: sub } = await admin.from("onboarding_submissions").select("status, missing_docs").eq("candidate_id", c.id).maybeSingle<Pick<OnboardingSubmission, "status" | "missing_docs">>();
-  const { data: branch } = c.branch_id ? await admin.from("branches").select("name").eq("id", c.branch_id).maybeSingle() : { data: null };
-
+  const found = await lookupToken(token);
+  if (!found) notFound();
+  const { candidate: c, branch, onboarding: sub } = found;
   if (sub && sub.status !== "pending") {
     return (
       <Shell>

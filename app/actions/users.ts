@@ -1,7 +1,6 @@
 "use server";
 import { revalidatePath } from "next/cache";
 import { requireAdmin, requireProfile } from "@/lib/auth";
-import { createAdminClient } from "@/lib/supabase/admin";
 
 const MIN_PASSWORD = 8;
 
@@ -32,10 +31,10 @@ export async function updateMyProfile(formData: FormData) {
 }
 
 export async function adminResetPassword(userId: string, newPassword: string) {
-  await requireAdmin();
+  const { supabase } = await requireAdmin();
   if (newPassword.length < MIN_PASSWORD) return { ok: false, message: `Password must be at least ${MIN_PASSWORD} characters.` };
-  const admin = createAdminClient();
-  const { error } = await admin.auth.admin.updateUserById(userId, { password: newPassword });
+  // The database function checks again that the caller is an admin.
+  const { error } = await supabase.rpc("admin_set_password", { p_user: userId, p_password: newPassword });
   if (error) return { ok: false, message: error.message };
   return { ok: true, message: "Password reset." };
 }

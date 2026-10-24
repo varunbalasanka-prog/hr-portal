@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
-import { createAdminClient } from "@/lib/supabase/admin";
 import type { Profile } from "@/lib/types";
 import { AdminPanel } from "./panel";
 
@@ -11,7 +10,7 @@ export default async function AdminPage() {
   const [{ data: people }, { data: notifs }, { data: receipts }] = await Promise.all([
     supabase.from("profiles").select("*").order("role").order("username"),
     supabase.from("notifications").select("*").order("created_at", { ascending: false }).limit(200),
-    createAdminClient().from("notification_receipts").select("*"),
+    supabase.from("notification_receipts").select("*").not("viewed_at", "is", null),
   ]);
   const viewed = new Map((receipts ?? []).filter((r) => r.viewed_at).map((r) => [`${r.notification_id}:${r.username}`, r.viewed_at as string]));
   const log = (notifs ?? []).map((n) => ({ ...n, viewed_at: viewed.get(`${n.id}:${n.recipient}`) ?? null }));
