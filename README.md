@@ -39,7 +39,7 @@ The app only ever uses the public (anon) key. Anything that needs more rights is
 4. **Create branches and logins:** `npm run seed:users` writes `seed-users.local.sql` and `passwords.local.txt`. Paste the SQL into the Supabase SQL editor and run it. Share each password privately, then delete both files. Put the `sheet-sync` password in `SYNC_PASSWORD`.
 5. **Import the Sheet (one time):** share the Google Sheet with the service account email (read-only is enough), put the service account JSON in `GOOGLE_SERVICE_ACCOUNT_JSON`, then run `npm run import:sheet`.
 6. **Run locally:** `npm run dev` and open http://localhost:3000
-7. **Deploy:** import the GitHub repo in Vercel, add the same environment variables, and deploy. `vercel.json` schedules the Sheet sync every 15 minutes. Set `CRON_SECRET` so only Vercel can call it. The live site is https://hr.balasanka.in.
+7. **Deploy:** import the GitHub repo in Vercel, add the same environment variables, and deploy. The 15-minute Sheet sync is scheduled inside Supabase (`0004_sheet_sync_schedule.sql`), because Vercel's free plan only allows daily cron jobs. Set the same `CRON_SECRET` in Vercel and in the Supabase vault so only the database can call it. The live site is https://hr.balasanka.in.
 
 ### Adding a staff login later
 
