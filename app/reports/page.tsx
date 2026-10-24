@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { categorize } from "@/lib/categorize";
 import { fetchAll } from "@/lib/fetch-all";
-import type { Branch, Candidate } from "@/lib/types";
+import { CANDIDATE_COLUMNS, type Branch, type Candidate } from "@/lib/types";
 import { Reports, type ReportRow } from "./reports";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export default async function ReportsPage() {
   const { supabase } = await requireAdmin();
   const [cands, { data: branches }, { data: hrs }] = await Promise.all([
-    fetchAll<Candidate>((f, t) => supabase.from("candidates").select("*").order("id").range(f, t)),
+    fetchAll<Candidate>((f, t) => supabase.from("candidates").select(CANDIDATE_COLUMNS).order("id").range(f, t).returns<Candidate[]>()),
     supabase.from("branches").select("*").order("name"),
     supabase.from("profiles").select("username").in("role", ["hr", "admin", "superadmin"]),
   ]);

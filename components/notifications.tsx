@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { isAdminRole, type NotificationRow, type Profile } from "@/lib/types";
 import { formatDateTime } from "@/lib/dates";
 import { clearNotification, markNotificationViewed, notificationFileUrl, sendNotification } from "@/app/actions/notifications";
-import { Field, Flash, Modal, Select } from "./ui";
+import { Field, Flash, Modal, Select, tooBig } from "./ui";
 
 export function NotificationBell({ me, items }: { me: Profile; items: NotificationRow[] }) {
   const [open, setOpen] = useState(false);
@@ -15,7 +15,7 @@ export function NotificationBell({ me, items }: { me: Profile; items: Notificati
   return (
     <div className="relative">
       <button className="btn-outline relative !px-2.5" onClick={() => setOpen((o) => !o)} aria-label="Notifications">
-        🔔{unread > 0 && <span className="absolute -right-1.5 -top-1.5 rounded-full bg-red-600 px-1.5 text-[10px] text-white">{unread}</span>}
+        🔔{unread > 0 && <span className="absolute -right-1.5 -top-1.5 rounded-full bg-red-600 px-1.5 text-xs text-white">{unread}</span>}
       </button>
       {open && (
         <div className="absolute right-0 z-40 mt-1 max-h-96 w-80 overflow-y-auto rounded-lg border border-slate-200 bg-white p-2 shadow-xl">
@@ -28,7 +28,7 @@ export function NotificationBell({ me, items }: { me: Profile; items: Notificati
                 <button className="text-slate-400 hover:text-red-600" title="Dismiss" onClick={() => start(async () => { await clearNotification(n.id); router.refresh(); })}>✕</button>
               </div>
               <p className="my-1 text-slate-800">{n.message}</p>
-              <div className="flex items-center justify-between text-[10px] text-slate-500">
+              <div className="flex items-center justify-between text-xs text-slate-500">
                 <span>{formatDateTime(n.created_at)}</span>
                 <span className="flex gap-2">
                   {n.file_path && <button className="text-sky-700 underline" onClick={async () => { const u = await notificationFileUrl(n.file_path!); if (u) window.open(u, "_blank"); }}>file</button>}
@@ -54,7 +54,7 @@ export function SendNotification({ me, people, onClose }: { me: Profile; people:
       <form action={(fd) => start(async () => { const r = await sendNotification(fd); setMsg(r); if (r.ok) { router.refresh(); setTimeout(onClose, 700); } })} className="space-y-3">
         <Field label="To *"><Select name="recipient" value={recipient} onChange={setRecipient} options={options} /></Field>
         <Field label="Message *"><textarea name="message" className="input" rows={3} required /></Field>
-        <Field label="Attach file (optional, max 10 MB)"><input name="file" type="file" className="input" /></Field>
+        <Field label="Attach file (optional, max 4 MB)"><input name="file" type="file" className="input" onChange={tooBig} /></Field>
         <Flash msg={msg} />
         <button className="btn-primary" disabled={pending}>{pending ? "Sending…" : "Send"}</button>
       </form>

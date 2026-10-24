@@ -71,12 +71,22 @@ export interface Candidate {
   relieving_date: string | null;
   rejection_reason: string | null;
   interview_needed: boolean | null;
-  form_data: Record<string, string>;
-  application_folder: string | null;
-  access_token: string;
   created_at: string;
   updated_at: string;
 }
+
+/** Columns the dashboard, reports and pipeline need. Application answers and the link token stay out of the list and
+ *  are loaded only when a candidate is opened (see getCandidateDetails). */
+export const CANDIDATE_COLUMNS = [
+  "id", "source", "name", "mobile", "marital_status", "father_name", "email", "address", "posts", "applied_locations",
+  "branch_id", "assigned_hr", "entry_by", "received_at", "pipeline_status", "next_action", "next_action_at",
+  "calling_status", "calling_action", "first_call_at", "first_retry_status", "first_retry_at", "second_retry_status",
+  "second_retry_at", "third_retry_status", "third_retry_at", "interview_at", "interview_attendance", "interview_status",
+  "not_attended_reason", "reschedule_at", "reschedule_attendance", "reminder_status", "reminder_at", "designation",
+  "basic_salary", "allowances", "expected_joining_date", "joining_status", "not_joined_reason", "revised_joining_date",
+  "revised_joining_status", "actual_joining_date", "employment_status", "left_type", "relieving_date", "rejection_reason",
+  "interview_needed", "created_at", "updated_at",
+].join(", ");
 
 export interface OnboardingSubmission {
   id: string;

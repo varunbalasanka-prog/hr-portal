@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { Tone } from "@/lib/categorize";
 
 const TONES: Record<Tone, string> = {
@@ -17,17 +17,33 @@ export function Badge({ tone = "slate", children }: { tone?: Tone; children: Rea
   return <span className={`inline-block rounded border px-1.5 py-0.5 text-[11px] font-semibold ${TONES[tone]}`}>{children}</span>;
 }
 
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
+
 export function Modal({ open, onClose, title, children, wide }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode; wide?: boolean }) {
+  const box = useRef<HTMLDivElement>(null);
+  const close = useRef(onClose);
+  close.current = onClose;
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    // Keep keyboard focus inside the dialog, and give it back to whatever opened it.
+    const opener = document.activeElement as HTMLElement | null;
+    box.current?.querySelector<HTMLElement>(FOCUSABLE)?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") return close.current();
+      if (e.key !== "Tab" || !box.current) return;
+      const items = [...box.current.querySelectorAll<HTMLElement>(FOCUSABLE)];
+      if (items.length === 0) return;
+      const first = items[0], last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+    return () => { window.removeEventListener("keydown", onKey); opener?.focus?.(); };
+  }, [open]);
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-2 sm:p-6" onMouseDown={onClose}>
-      <div role="dialog" aria-label={title} className={`card w-full ${wide ? "max-w-4xl" : "max-w-xl"} my-4`} onMouseDown={(e) => e.stopPropagation()}>
+      <div ref={box} role="dialog" aria-modal="true" aria-label={title} className={`card w-full ${wide ? "max-w-4xl" : "max-w-xl"} my-4`} onMouseDown={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between rounded-t-lg bg-brand px-4 py-2.5 text-white">
           <h2 className="text-sm font-bold">{title}</h2>
           <button onClick={onClose} className="text-xl leading-none text-white/80 hover:text-white" aria-label="Close">×</button>
@@ -36,6 +52,13 @@ export function Modal({ open, onClose, title, children, wide }: { open: boolean;
       </div>
     </div>
   );
+}
+
+/** Server actions run on Vercel, which refuses request bodies over 4.5 MB; stop bigger files in the browser. */
+export const MAX_ACTION_FILE = 4 * 1024 * 1024;
+export function tooBig(e: React.ChangeEvent<HTMLInputElement>) {
+  const f = e.target.files?.[0];
+  if (f && f.size > MAX_ACTION_FILE) { alert("File must be under 4 MB."); e.target.value = ""; }
 }
 
 export function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -53,5 +76,5 @@ export function Select({ value, onChange, options, placeholder = "-- Select --",
 
 export function Flash({ msg }: { msg: { ok: boolean; message: string } | null }) {
   if (!msg) return null;
-  return <div className={`mb-3 rounded px-3 py-2 text-sm ${msg.ok ? "bg-green-50 text-green-800" : "bg-red-50 text-red-700"}`}>{msg.message}</div>;
+  return <div role={msg.ok ? "status" : "alert"} className={`mb-3 rounded px-3 py-2 text-sm ${msg.ok ? "bg-green-50 text-green-800" : "bg-red-50 text-red-700"}`}>{msg.message}</div>;
 }

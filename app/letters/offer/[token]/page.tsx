@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { loadLetter } from "@/lib/letters";
 import { addDays, formatDate, todayIst } from "@/lib/dates";
 import { calculateSalary, rupees } from "@/lib/salary";
-import { Addresses, Letterhead, Tamil } from "@/components/letterhead";
+import { Addresses, ExpiredLink, Letterhead, Tamil } from "@/components/letterhead";
 
 type Props = { params: Promise<{ token: string }> };
 export const dynamic = "force-dynamic";
@@ -10,7 +10,9 @@ export const metadata: Metadata = { title: "Offer letter · Balasanka Group", ro
 
 export default async function OfferLetter({ params }: Props) {
   const { token } = await params;
-  const { c, branch, address, companyName } = await loadLetter(token);
+  const letter = await loadLetter(token);
+  if (letter.expired) return <ExpiredLink />;
+  const { c, branch, address, companyName } = letter;
   const doj = c.revised_joining_date ?? c.expected_joining_date ?? todayIst();
   const dojStr = formatDate(doj);
   const validity = formatDate(addDays(doj, 3));

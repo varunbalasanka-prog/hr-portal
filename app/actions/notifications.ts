@@ -12,7 +12,7 @@ export async function sendNotification(formData: FormData) {
   let file_path: string | null = null;
   const file = formData.get("file");
   if (file instanceof File && file.size > 0) {
-    if (file.size > 10 * 1024 * 1024) return { ok: false, message: "File must be under 10 MB." };
+    if (file.size > 4 * 1024 * 1024) return { ok: false, message: "File must be under 4 MB." };
     const path = `${profile.username}/${Date.now()}_${file.name.replace(/[^\w.\-]+/g, "_")}`;
     const { error } = await supabase.storage.from("notification-files").upload(path, file, { contentType: file.type });
     if (error) return { ok: false, message: `Upload failed: ${error.message}` };
