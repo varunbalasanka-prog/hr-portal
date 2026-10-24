@@ -9,6 +9,7 @@ const MESSAGES: Record<string, string> = {
   bad_mobile: "Please enter a valid 10-digit mobile number. / சரியான 10 இலக்க கைபேசி எண்ணை உள்ளிடவும்.",
   missing: "Please fill all required fields marked *. / * குறியிட்ட அனைத்தையும் நிரப்பவும்.",
   bad_branch: "Please choose the branch you are applying to. / கிளையைத் தேர்வு செய்யவும்.",
+  bad_post: "That post isn't open at the chosen branch. Please choose again. / இந்தக் கிளையில் அந்தப் பதவி இல்லை, மீண்டும் தேர்வு செய்யவும்.",
   too_big: "Some answers are too long. Please shorten them. / சில பதில்கள் மிக நீளம், சுருக்கவும்.",
 };
 
@@ -30,6 +31,9 @@ export async function submitApplication(fd: FormData): Promise<{ ok: boolean; me
   const config = await loadApplyConfig();
   if (!config) return { ok: false, message: "Could not submit. Please try again. / சமர்ப்பிக்க முடியவில்லை, மீண்டும் முயற்சிக்கவும்." };
   const { questions } = config;
+  const branch = config.branches.find((b) => b.id === branchId);
+  if (!branch) return { ok: false, message: MESSAGES.bad_branch };
+  if (!branch.posts.includes(post)) return { ok: false, message: MESSAGES.bad_post };
 
   const answers: Record<string, string> = {};
   for (const q of questions) if (q.type !== "file") answers[q.id] = text(fd, fieldName(q), 1000);

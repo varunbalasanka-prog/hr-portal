@@ -1,6 +1,6 @@
 "use client";
 import { useState, useTransition } from "react";
-import { fieldName, groupBySection, isVisible, MAX_ANSWER, splitBilingual, type ApplyQuestion } from "@/lib/apply-questions";
+import { fieldName, groupBySection, isVisible, latestDate, MAX_ANSWER, splitBilingual, todayInIndia, type ApplyQuestion } from "@/lib/apply-questions";
 import { submitApplication } from "./actions";
 import type { ApplyConfig } from "./config";
 
@@ -13,8 +13,11 @@ const wide = (q: ApplyQuestion) =>
 
 /** Fixed fields (branch, post, name, mobile, father's name, marital status, email, address) feed the candidate record and
  *  letters, so they can't be removed. Everything else comes from the questions the admin manages. */
-export function ApplyForm({ branches, posts, questions }: ApplyConfig) {
+export function ApplyForm({ branches, questions }: ApplyConfig) {
   const [choices, setChoices] = useState<Record<string, string>>({});
+  const [branchId, setBranchId] = useState("");
+  const [post, setPost] = useState("");
+  const posts = branches.find((b) => b.id === branchId)?.posts ?? [];
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
   const [pending, start] = useTransition();
@@ -23,6 +26,15 @@ export function ApplyForm({ branches, posts, questions }: ApplyConfig) {
   const sections = groupBySection(visible);
   const aboutYou = sections.find(([s]) => isAboutYou(s))?.[1] ?? [];
   const others = sections.filter(([s]) => !isAboutYou(s));
+
+  if (!branches.length) {
+    return (
+      <div className="py-10 text-center text-sm text-slate-600">
+        <p>There are no openings right now. Please check again later.</p>
+        <p>தற்போது காலியிடங்கள் இல்லை. பின்னர் மீண்டும் பார்க்கவும்.</p>
+      </div>
+    );
+  }
 
   if (done) {
     return (
@@ -53,7 +65,8 @@ export function ApplyForm({ branches, posts, questions }: ApplyConfig) {
 
       <Section n={1} title="Job you are applying for / நீங்கள் விண்ணப்பிக்கும் வேலை">
         <Field label="Branch / கிளை" required wide>
-          <select name="branch_id" className="input h-10" required defaultValue="">
+          <select name="branch_id" className="input h-10" required value={branchId}
+            onChange={(e) => { setBranchId(e.target.value); setPost(""); }}>
             <option value="">{SELECT}</option>
             {towns.map((t) => (
               <optgroup key={t} label={t}>
@@ -63,8 +76,10 @@ export function ApplyForm({ branches, posts, questions }: ApplyConfig) {
           </select>
         </Field>
         <Field label="Post applying for / விண்ணப்பிக்கும் பதவி" required wide>
-          <input name="post" className="input h-10" list="posts" required maxLength={120} placeholder="Choose or type / தேர்வு செய்க" />
-          <datalist id="posts">{posts.map((p) => <option key={p} value={p} />)}</datalist>
+          <select name="post" className="input h-10 disabled:bg-slate-50 disabled:text-slate-400" required disabled={!branchId} value={post} onChange={(e) => setPost(e.target.value)}>
+            <option value="">{branchId ? SELECT : "Choose a branch first / முதலில் கிளையைத் தேர்வு செய்க"}</option>
+            {posts.map((p) => <option key={p} value={p}>{p}</option>)}
+          </select>
         </Field>
       </Section>
 
@@ -118,7 +133,7 @@ function Question({ q, value, onChoose }: { q: ApplyQuestion; value: string; onC
           className="block h-10 w-full overflow-hidden rounded-md border border-slate-300 bg-white text-sm text-slate-600 file:mr-3 file:h-full file:cursor-pointer file:border-0 file:border-r file:border-slate-300 file:bg-slate-100 file:px-3 file:text-sm file:font-semibold file:text-slate-800 hover:file:bg-slate-200" />,
       );
     case "date":
-      return field(<input name={name} className="input h-10" type="date" required={q.required} />);
+      return field(<input name={name} className="input h-10" type="date" required={q.required} max={q.min_age ? latestDate(q.min_age, todayInIndia()) : undefined} />);
     case "number":
       return field(<input name={name} className="input h-10" inputMode="numeric" required={q.required} maxLength={MAX_ANSWER.number} />);
     default:

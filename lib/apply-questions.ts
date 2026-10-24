@@ -20,6 +20,8 @@ export type ApplyQuestion = {
   options: string[];
   required: boolean;
   show_when: ShowWhen;
+  /** date questions only: the answer must be at least this many years ago (e.g. 18 for date of birth) */
+  min_age: number | null;
 };
 
 /** Admin view of a question, including deleted ones. */
@@ -47,13 +49,16 @@ export function groupBySection<T extends { section: string }>(qs: T[]): [string,
 }
 
 /** Checks one typed answer. Returns an error message or null. */
-export function checkAnswer(q: ApplyQuestion, value: string): string | null {
+export function checkAnswer(q: ApplyQuestion, value: string, today = todayInIndia()): string | null {
   if (!value) return q.required ? `Please answer / பதிலளிக்கவும்: ${q.label}` : null;
   if (q.type === "file") return null;
   if (value.length > MAX_ANSWER[q.type]) return `Answer is too long / பதில் மிக நீளம்: ${q.label}`;
   if (q.type === "choice" && !q.options.includes(value)) return `Please choose an option / ஒன்றைத் தேர்வு செய்யவும்: ${q.label}`;
   if (q.type === "number" && !/^\d[\d,.]*$/.test(value)) return `Please enter a number / எண்ணை உள்ளிடவும்: ${q.label}`;
   if (q.type === "date" && !/^\d{4}-\d{2}-\d{2}$/.test(value)) return `Please enter a date / தேதியை உள்ளிடவும்: ${q.label}`;
+  if (q.type === "date" && q.min_age && value > latestDate(q.min_age, today)) {
+    return `You must be at least ${q.min_age} years old / குறைந்தது ${q.min_age} வயது இருக்க வேண்டும்: ${q.label}`;
+  }
   return null;
 }
 
@@ -64,6 +69,7 @@ export type QuestionInput = {
   options: string[];
   required: boolean;
   show_when: ShowWhen;
+  min_age: number | null;
 };
 
 /** Cleans what the admin typed. Returns the clean question or an error message. */
@@ -95,7 +101,12 @@ export function cleanQuestion(input: QuestionInput, others: AdminQuestion[], sel
     }
     show_when = { question_id: parent.id, equals: input.show_when.equals };
   }
-  return { ok: true, value: { section, label, type: input.type, options, required: input.required, show_when } };
+  let min_age: number | null = null;
+  if (input.type === "date" && input.min_age) {
+    if (!Number.isInteger(input.min_age) || input.min_age < 1 || input.min_age > 100) return { ok: false, message: "Minimum age must be a whole number from 1 to 100." };
+    min_age = input.min_age;
+  }
+  return { ok: true, value: { section, label, type: input.type, options, required: input.required, show_when, min_age } };
 }
 
 /** Admin-entered post list: one per line, trimmed, no blanks or repeats. */
@@ -110,4 +121,24 @@ export function splitBilingual(text: string): [string, string] {
   const cut = text.lastIndexOf(" / ", i);
   if (cut < 0) return [text.trim(), ""];
   return [text.slice(0, cut).trim(), text.slice(cut + 3).trim()];
+}
+
+/** Today's date in India as YYYY-MM-DD. */
+export function todayInIndia(now = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(now);
+}
+
+/** The latest date that is at least `years` years before `today` (YYYY-MM-DD). 29 Feb rolls back to 28 Feb. */
+export function latestDate(years: number, today: string): string {
+  const [y, m, d] = today.split("-").map(Number);
+  const year = y - years;
+  const lastDay = new Date(Date.UTC(year, m, 0)).getUTCDate();
+  return `${year}-${String(m).padStart(2, "0")}-${String(Math.min(d, lastDay)).padStart(2, "0")}`;
+}
+
+/** Keeps each branch's open posts in the master list's order, dropping any post no longer in it. */
+export function cleanBranchPosts(map: Record<string, string[]>, master: string[], branchIds: string[]): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  for (const id of branchIds) out[id] = master.filter((p) => (map[id] ?? []).includes(p));
+  return out;
 }

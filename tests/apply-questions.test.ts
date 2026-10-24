@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { checkAnswer, cleanPosts, cleanQuestion, groupBySection, isVisible, splitBilingual, type AdminQuestion } from "../lib/apply-questions";
+import { checkAnswer, cleanPosts, cleanQuestion, groupBySection, isVisible, splitBilingual, latestDate, cleanBranchPosts, type AdminQuestion } from "../lib/apply-questions";
 
 const q = (id: string, extra: Partial<AdminQuestion> = {}): AdminQuestion => ({
-  id, section: "Experience", label: id, type: "text", options: [], required: false, show_when: null, sort_order: 0, active: true, ...extra,
+  id, section: "Experience", label: id, type: "text", options: [], required: false, show_when: null, min_age: null, sort_order: 0, active: true, ...extra,
 });
 const exp = q("exp", { type: "choice", options: ["Fresher", "Experienced"], required: true });
 const company = q("company", { required: true, show_when: { question_id: "exp", equals: "Experienced" } });
@@ -32,7 +32,7 @@ describe("checkAnswer", () => {
 });
 
 describe("cleanQuestion", () => {
-  const base = { section: " Experience ", label: "  Notice   period ", type: "text", options: [], required: false, show_when: null };
+  const base = { section: " Experience ", label: "  Notice   period ", type: "text", options: [], required: false, show_when: null, min_age: null };
   it("tidies spacing", () => {
     const r = cleanQuestion(base, all);
     expect(r.ok && r.value).toMatchObject({ label: "Notice period", section: "Experience" });
@@ -73,4 +73,26 @@ it("splitBilingual separates English and Tamil", () => {
   expect(splitBilingual("Father's / husband's name / தந்தை / கணவர் பெயர்")).toEqual(["Father's / husband's name", "தந்தை / கணவர் பெயர்"]);
   expect(splitBilingual("Fresher or experienced? / புதியவரா அல்லது Fresher-ஆ?")).toEqual(["Fresher or experienced?", "புதியவரா அல்லது Fresher-ஆ?"]);
   expect(splitBilingual("Notice period")).toEqual(["Notice period", ""]);
+});
+
+describe("minimum age", () => {
+  const dob = q("dob", { type: "date", required: true, min_age: 18 });
+  it("finds the latest allowed birth date", () => {
+    expect(latestDate(18, "2026-10-24")).toBe("2008-10-24");
+    expect(latestDate(18, "2028-02-29")).toBe("2010-02-28");
+  });
+  it("accepts an 18th birthday today and rejects one tomorrow", () => {
+    expect(checkAnswer(dob, "2008-10-24", "2026-10-24")).toBeNull();
+    expect(checkAnswer(dob, "2008-10-25", "2026-10-24")).toMatch(/at least 18/);
+  });
+  it("only applies to date questions", () => {
+    const base = { section: "x", label: "When", type: "text", options: [], required: false, show_when: null, min_age: 18 };
+    const r = cleanQuestion(base, all);
+    expect(r.ok && r.value.min_age).toBeNull();
+    expect(cleanQuestion({ ...base, type: "date", min_age: 0.5 }, all).ok).toBe(false);
+  });
+});
+
+it("cleanBranchPosts keeps master order and drops removed posts", () => {
+  expect(cleanBranchPosts({ a: ["Helper", "Gone", "Cashier"] }, ["Cashier", "Helper"], ["a", "b"])).toEqual({ a: ["Cashier", "Helper"], b: [] });
 });

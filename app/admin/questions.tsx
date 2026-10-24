@@ -5,7 +5,7 @@ import { moveQuestion, savePosts, saveQuestion, setQuestionActive } from "@/app/
 import { Badge, Field, Flash, Modal, Select } from "@/components/ui";
 
 type Msg = { ok: boolean; message: string } | null;
-const EMPTY: QuestionInput = { section: "More details / கூடுதல் விவரங்கள்", label: "", type: "text", options: [], required: false, show_when: null };
+const EMPTY: QuestionInput = { section: "More details / கூடுதல் விவரங்கள்", label: "", type: "text", options: [], required: false, show_when: null, min_age: null };
 
 export function QuestionsAdmin({ questions, posts }: { questions: AdminQuestion[]; posts: string[] }) {
   const [msg, setMsg] = useState<Msg>(null);
@@ -44,6 +44,7 @@ export function QuestionsAdmin({ questions, posts }: { questions: AdminQuestion[
             <td className="py-1.5 pr-2">
               <b>{q.label}</b> {q.required && <Badge tone="red">required</Badge>}
               {q.type === "choice" && <div className="text-xs text-slate-500">Options: {q.options.join(", ")}</div>}
+              {q.min_age && <div className="text-xs text-slate-500">Must be at least {q.min_age} years ago</div>}
               {q.show_when && <div className="text-xs text-amber-700">Only asked when &quot;{labelOf(q.show_when.question_id)}&quot; is {q.show_when.equals}</div>}
             </td>
             <td className="pr-2 text-xs">{q.section}</td>
@@ -126,6 +127,12 @@ function QuestionEditor({ initial, isNew, parents, sections, pending, error, onC
           <Field label="Options (one per line, e.g. Male / ஆண்)"><textarea className="input" rows={4} value={optionText} onChange={(e) => setOptionText(e.target.value)} /></Field>
         )}
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={q.required} onChange={(e) => set({ required: e.target.checked })} /> Required</label>
+        {q.type === "date" && (
+          <Field label="Minimum age in years (optional, e.g. 18 for date of birth)">
+            <input className="input w-32" type="number" min={1} max={100} value={q.min_age ?? ""}
+              onChange={(e) => set({ min_age: e.target.value ? Number(e.target.value) : null })} />
+          </Field>
+        )}
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Only ask when (optional)">
             <Select value={q.show_when?.question_id ?? ""} placeholder="Always ask"

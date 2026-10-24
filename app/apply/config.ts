@@ -2,8 +2,9 @@ import "server-only";
 import { createPublicClient } from "@/lib/supabase/public";
 import type { ApplyQuestion } from "@/lib/apply-questions";
 
-export type BranchOption = { id: string; name: string; town: string; business_type: string };
-export type ApplyConfig = { branches: BranchOption[]; posts: string[]; questions: ApplyQuestion[] };
+/** Only branches with at least one open post, each with its open posts. */
+export type BranchOption = { id: string; name: string; town: string; business_type: string; posts: string[] };
+export type ApplyConfig = { branches: BranchOption[]; questions: ApplyQuestion[] };
 
 /** The live branches, posts and questions, read with the public key. */
 export async function loadApplyConfig(): Promise<ApplyConfig | null> {

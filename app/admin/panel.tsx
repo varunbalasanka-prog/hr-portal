@@ -6,13 +6,18 @@ import { adminResetPassword } from "@/app/actions/users";
 import { Badge, Flash } from "@/components/ui";
 import type { AdminQuestion } from "@/lib/apply-questions";
 import { QuestionsAdmin } from "./questions";
+import { BranchPostsAdmin } from "./branch-posts";
+import type { Branch } from "@/lib/types";
 
-export function AdminPanel({ people, log, questions, posts }: { people: Profile[]; log: NotificationRow[]; questions: AdminQuestion[]; posts: string[] }) {
+export function AdminPanel({ people, log, questions, posts, branches, branchPosts }: {
+  people: Profile[]; log: NotificationRow[]; questions: AdminQuestion[]; posts: string[]; branches: Branch[]; branchPosts: Record<string, string[]>;
+}) {
   const [pw, setPw] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState<{ ok: boolean; message: string } | null>(null);
   const [pending, start] = useTransition();
   return (
     <div className="grid gap-4 p-4 lg:grid-cols-2">
+      <BranchPostsAdmin branches={branches} posts={posts} open={branchPosts} />
       <QuestionsAdmin questions={questions} posts={posts} />
       <section className="card p-3">
         <h2 className="mb-2 text-sm font-bold">Reset passwords</h2>
