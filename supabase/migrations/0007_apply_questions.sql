@@ -57,9 +57,9 @@ with q (n, section, label, type, options, required) as (values
   (2, 'About you', 'Date Of Birth', 'date', '{}'::text[], true),
   (3, 'About you', 'Educational Qualification', 'text', '{}', true),
   (4, 'Experience', 'Are you a Fresher or Experienced? / நீங்கள் Fresher-ஆ அல்லது முன் அனுபவம் உள்ளவரா?', 'choice', array['Fresher', 'Experienced'], true),
-  (5, 'Experience', 'Expected Salary', 'number', '{}', false),
+  (5, 'Experience', 'Expected Salary', 'text', '{}', false),
   (6, 'Experience', 'Name of the Last Worked Company & Total Experience', 'text', '{}', true),
-  (7, 'Experience', 'Last Drawn Salary', 'number', '{}', true),
+  (7, 'Experience', 'Last Drawn Salary', 'text', '{}', true),
   (8, 'Experience', 'Experience Certificate', 'file', '{}', false),
   (9, 'Experience', 'Salary Proof', 'file', '{}', false),
   (10, 'Documents', 'Passport Size Photo', 'file', '{}', true),
@@ -71,3 +71,6 @@ select section, label, type, options, required, n * 10 from q;
 update application_questions set show_when = jsonb_build_object('question_id',
     (select id from application_questions where label like 'Are you a Fresher or Experienced?%'), 'equals', 'Experienced')
 where label in ('Name of the Last Worked Company & Total Experience', 'Last Drawn Salary', 'Experience Certificate', 'Salary Proof');
+
+-- the apply page now reads branches through public_apply_config()
+revoke execute on function public_branches() from anon, authenticated;
