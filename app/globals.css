@@ -3,7 +3,7 @@
 @theme {
   --color-brand: #0f172a;
   --color-brand-accent: #b91c1c;
-  --font-sans: var(--font-inter), var(--font-tamil), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", "Noto Sans Tamil", ui-sans-serif, system-ui, sans-serif;
 }
 
 body { background: #f8fafc; color: #0f172a; }

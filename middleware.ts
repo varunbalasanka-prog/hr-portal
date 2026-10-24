@@ -1,9 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PREFIXES = ["/login", "/onboard", "/letters", "/api/sync-sheet", "/api/cleanup", "/apply", "/privacy"];
+const PUBLIC_PREFIXES = ["/login", "/onboard", "/letters", "/api/sync-sheet", "/api/cleanup", "/api/digilocker", "/apply", "/privacy", "/careers"];
 // Candidate pages and crons never need a staff session, so skip the Supabase round trip there.
-const NO_SESSION = ["/onboard", "/letters", "/api/", "/apply", "/privacy"];
+const NO_SESSION = ["/onboard", "/letters", "/api/cron", "/api/cleanup", "/api/sync-sheet", "/api/digilocker", "/apply", "/privacy", "/careers"];
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
@@ -30,5 +30,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|balasanka_logo.png).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|balasanka_logo.png|icon-192.png|icon-512.png|sw.js|manifest.webmanifest).*)"],
 };

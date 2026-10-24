@@ -15,6 +15,8 @@ const base: Candidate = {
   reminder_status: null, reminder_at: null, designation: null, basic_salary: 0, allowances: 0, expected_joining_date: null,
   joining_status: null, not_joined_reason: null, revised_joining_date: null, revised_joining_status: null, actual_joining_date: null,
   employment_status: null, left_type: null, relieving_date: null, rejection_reason: null, interview_needed: null,
+  source_channel: null, referred_by: null, talent_pool: false, talent_tags: [], offer_response: null, offer_responded_at: null,
+  offer_decline_reason: null, confirmation_date: null,
   created_at: "", updated_at: "",
 };
 const now = new Date("2026-10-24T06:00:00Z");

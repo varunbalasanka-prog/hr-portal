@@ -9,9 +9,13 @@ import { eraseCandidate, renewLink } from "@/app/actions/privacy";
 import { addRemark, setEmployeeDetails, setOnboardingStatus } from "@/app/actions/candidates";
 import { DOC_LABELS, MANDATORY_DOCS, docLabel } from "@/lib/onboarding";
 import { StageForm } from "./stage-form";
+import { WaComposer } from "./wa-composer";
+import { Scorecard } from "./scorecard";
+import { setTalentPool } from "@/app/actions/talent";
+import { sourceLabel } from "@/lib/sources";
 import { Badge, Flash, Modal } from "./ui";
 
-type Tab = "profile" | "update" | "history" | "documents";
+type Tab = "profile" | "update" | "interview" | "history" | "documents";
 
 export function CandidatePanel({ me, c, cat, branches, appUrl, onClose }: {
   me: Profile; c: Candidate; cat: Categorized; branches: Branch[]; appUrl: string; onClose: () => void;
@@ -38,7 +42,7 @@ export function CandidatePanel({ me, c, cat, branches, appUrl, onClose }: {
   const formData = details?.formData ?? {};
   const selected = ["selected_joined", "online_joined_list", "walkin_joined_list"].includes(cat.category) || c.pipeline_status === "Joined";
 
-  const tabs: [Tab, string][] = [["profile", "Profile"], ["update", "Update status"], ["history", "History"]];
+  const tabs: [Tab, string][] = [["profile", "Profile"], ["update", "Update status"], ["interview", `Interview${details?.scores.length ? ` (${details.scores.length})` : ""}`], ["history", "History"]];
   if (selected) tabs.push(["documents", "Onboarding & letters"]);
 
   return (
@@ -48,7 +52,11 @@ export function CandidatePanel({ me, c, cat, branches, appUrl, onClose }: {
         <Badge tone={c.source === "walkin" ? "purple" : "sky"}>{c.source === "walkin" ? "Walk-in" : "Online"}</Badge>
         <span className="text-xs text-slate-500">HR: {c.assigned_hr}</span>
         <a className="btn-outline ml-auto !py-1 text-xs" href={`tel:+91${c.mobile}`}>Call</a>
-        <a className="btn-outline !py-1 text-xs" target="_blank" rel="noreferrer" href={`https://wa.me/91${c.mobile}`}>WhatsApp</a>
+        {details ? (
+          <WaComposer candidateId={c.id} mobile={c.mobile} apiEnabled={details.whatsappApi} onSent={refresh}
+            ctx={{ name: c.name, post: c.designation ?? c.posts[0] ?? "", branch: branch?.name ?? c.applied_locations[0] ?? "Balasanka Group", address: branch?.address ?? branch?.name ?? "", hr: me.full_name }}
+            links={{ offer: offerUrl, onboarding: onboardUrl, appointment: c.pipeline_status === "Joined" ? apptUrl : "" }} />
+        ) : <a className="btn-outline !py-1 text-xs" target="_blank" rel="noreferrer" href={`https://wa.me/91${c.mobile}`}>WhatsApp</a>}
       </div>
       <div className="mb-4 flex gap-1 border-b border-slate-200">
         {tabs.map(([k, label]) => (
@@ -59,6 +67,9 @@ export function CandidatePanel({ me, c, cat, branches, appUrl, onClose }: {
       {tab === "profile" && (
         <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
           <Row k="Received" v={formatDateTime(c.received_at)} />
+          <Row k="Heard about us" v={c.source === "walkin" ? "Walk-in" : sourceLabel(c.source_channel)} />
+          {c.referred_by && <Row k="Referred by" v={c.referred_by} />}
+          {c.offer_response && <Row k="Offer reply" v={`${c.offer_response === "accepted" ? "Accepted" : "Declined"} online, ${formatDateTime(c.offer_responded_at)}${c.offer_decline_reason ? ` (${c.offer_decline_reason})` : ""}`} />}
           <Row k="Applied for" v={c.posts.join(", ") || "-"} />
           <Row k="Applied locations" v={c.applied_locations.join(", ") || "-"} />
           <Row k="Branch allocated" v={branch?.name ?? "-"} />
@@ -102,9 +113,12 @@ export function CandidatePanel({ me, c, cat, branches, appUrl, onClose }: {
           )}
         </dl>
       )}
+      {tab === "profile" && <TalentBox c={c} onSaved={refresh} />}
       {tab === "profile" && me.role === "superadmin" && <EraseBox c={c} onErased={() => { onClose(); router.refresh(); }} />}
 
       {tab === "update" && <StageForm key={c.updated_at} c={c} branches={branches} onSaved={refresh} />}
+
+      {tab === "interview" && <Scorecard candidateId={c.id} me={me.username} scores={details?.scores} onSaved={refresh} />}
 
       {tab === "history" && <History events={details?.events} candidateId={c.id} onAdded={refresh} />}
 
@@ -139,6 +153,28 @@ function History({ events, candidateId, onAdded }: { events?: CandidateEvent[]; 
           </li>
         ))}
       </ol>
+    </div>
+  );
+}
+
+/** Keep a promising candidate for future openings, findable from the dashboard's Talent pool list. */
+function TalentBox({ c, onSaved }: { c: Candidate; onSaved: () => void }) {
+  const [tags, setTags] = useState(c.talent_tags.join(", "));
+  const [pending, start] = useTransition();
+  const [msg, setMsg] = useState<{ ok: boolean; message: string } | null>(null);
+  const save = (on: boolean) => start(async () => { setMsg(await setTalentPool(c.id, on, tags.split(","))); onSaved(); });
+  return (
+    <div className="mt-4 space-y-2 rounded border border-slate-200 p-3 text-sm">
+      <div className="flex flex-wrap items-center gap-2">
+        <b>Talent pool</b>
+        {c.talent_pool ? <Badge tone="purple">In talent pool</Badge> : <span className="text-slate-500">Keep this person for future openings</span>}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <input className="input !w-auto flex-1" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="Tags, comma separated: sales, english, theni" aria-label="Talent pool tags" />
+        <button className="btn-outline" disabled={pending} onClick={() => save(true)}>{c.talent_pool ? "Save tags" : "Add to talent pool"}</button>
+        {c.talent_pool && <button className="btn-outline" disabled={pending} onClick={() => save(false)}>Remove</button>}
+      </div>
+      <Flash msg={msg} />
     </div>
   );
 }
@@ -198,8 +234,12 @@ function Documents({ c, details, offerUrl, apptUrl, onboardUrl, onChanged }: {
           {c.pipeline_status === "Joined" && <>
             <a className="btn-outline" href={apptUrl} target="_blank" rel="noreferrer">Appointment letter</a>
             <a className="btn-success" href={wa("appointment letter", apptUrl)} target="_blank" rel="noreferrer">Send appointment on WhatsApp</a>
+            <a className="btn-outline" href={apptUrl.replace("/appointment/", "/confirmation/")} target="_blank" rel="noreferrer">Confirmation letter</a>
           </>}
+          {c.employment_status === "Left" && c.left_type === "With Information" && c.relieving_date &&
+            <a className="btn-outline" href={apptUrl.replace("/appointment/", "/relieving/")} target="_blank" rel="noreferrer">Relieving &amp; experience letter</a>}
         </div>
+        <p className="text-xs text-slate-600">Offer reply: {c.offer_response ? <b>{c.offer_response === "accepted" ? "Accepted" : "Declined"} on {formatDate(c.offer_responded_at)}</b> : "not yet answered (the candidate can accept or decline at the bottom of the offer letter)"}</p>
       </section>
 
       <section className="space-y-2">

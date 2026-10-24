@@ -71,6 +71,14 @@ export interface Candidate {
   relieving_date: string | null;
   rejection_reason: string | null;
   interview_needed: boolean | null;
+  source_channel: string | null;
+  referred_by: string | null;
+  talent_pool: boolean;
+  talent_tags: string[];
+  offer_response: "accepted" | "declined" | null;
+  offer_responded_at: string | null;
+  offer_decline_reason: string | null;
+  confirmation_date: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -85,7 +93,8 @@ export const CANDIDATE_COLUMNS = [
   "not_attended_reason", "reschedule_at", "reschedule_attendance", "reminder_status", "reminder_at", "designation",
   "basic_salary", "allowances", "expected_joining_date", "joining_status", "not_joined_reason", "revised_joining_date",
   "revised_joining_status", "actual_joining_date", "employment_status", "left_type", "relieving_date", "rejection_reason",
-  "interview_needed", "created_at", "updated_at",
+  "interview_needed", "source_channel", "referred_by", "talent_pool", "talent_tags", "offer_response", "offer_responded_at",
+  "offer_decline_reason", "confirmation_date", "created_at", "updated_at",
 ].join(", ");
 
 export interface OnboardingSubmission {

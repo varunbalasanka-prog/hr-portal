@@ -1,4 +1,5 @@
 "use server";
+import { pushTo } from "@/lib/push";
 import { revalidatePath } from "next/cache";
 import { isAdminRole } from "@/lib/types";
 import { requireProfile } from "@/lib/auth";
@@ -20,6 +21,7 @@ export async function sendNotification(formData: FormData) {
   }
   const { error } = await supabase.from("notifications").insert({ sender: profile.username, recipient, message, file_path });
   if (error) return { ok: false, message: error.message };
+  await pushTo(recipient, { title: `Message from ${profile.full_name || profile.username}`, body: message.slice(0, 140), url: "/dashboard" });
   revalidatePath("/dashboard");
   return { ok: true, message: "Notification sent." };
 }

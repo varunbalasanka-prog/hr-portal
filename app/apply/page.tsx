@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { loadApplyConfig } from "./config";
 import { ApplyForm } from "./form";
+import { cleanSource } from "@/lib/sources";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -13,8 +14,11 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function ApplyPage() {
-  const config = await loadApplyConfig();
+type Props = { searchParams: Promise<{ branch?: string; src?: string }> };
+
+export default async function ApplyPage({ searchParams }: Props) {
+  const [config, sp] = await Promise.all([loadApplyConfig(), searchParams]);
+  const branch = config?.branches.some((b) => b.id === sp.branch) ? sp.branch : undefined;
   return (
     <main className="mx-auto max-w-2xl p-3 sm:p-6">
       <div className="card overflow-hidden">
@@ -23,7 +27,7 @@ export default async function ApplyPage() {
           <div className="text-xs text-slate-300">Job application / வேலை விண்ணப்பம்</div>
         </div>
         <div className="p-4">
-          {config ? <ApplyForm {...config} /> : <p className="py-6 text-center text-sm text-red-700">The form could not load. Please refresh the page.</p>}
+          {config ? <ApplyForm {...config} initialBranch={branch} source={cleanSource(sp.src)} /> : <p className="py-6 text-center text-sm text-red-700">The form could not load. Please refresh the page.</p>}
         </div>
       </div>
     </main>

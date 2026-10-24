@@ -5,6 +5,8 @@ import { CONSENT_VERSION } from "@/lib/privacy";
 import { clientIp } from "@/lib/client-ip";
 import { verifyTurnstile } from "@/lib/turnstile";
 import { loadApplyConfig } from "./config";
+import { cleanSource } from "@/lib/sources";
+import { pushTo } from "@/lib/push";
 
 export type SubmitResult = { ok: boolean; message: string; ref?: string; field?: string };
 
@@ -86,11 +88,16 @@ export async function submitApplication(fd: FormData): Promise<SubmitResult> {
     p: {
       name, mobile, post, branch_id: branchId, folder: folder || null, form_data, consent_version: CONSENT_VERSION,
       father_name: fatherName, email: text(fd, "email", 120), address, marital_status: marital,
+      source_channel: cleanSource(text(fd, "source_channel", 40)) ?? (text(fd, "referred_by", 120) ? "referral" : null),
+      referred_by: text(fd, "referred_by", 120) || null,
     },
     p_secret: process.env.APPLY_SECRET ?? "",
   });
   if (error || !data) return { ok: false, message: TRY_AGAIN };
-  const r = data as { status: string; ref?: string };
-  if (r.status === "ok" || r.status === "updated") return { ok: true, message: "Submitted", ref: r.ref };
+  const r = data as { status: string; ref?: string; notify?: string };
+  if (r.status === "ok" || r.status === "updated") {
+    if (r.notify) await pushTo(r.notify, { title: r.status === "ok" ? "New application" : "Applied again", body: `${name} · ${post} · ${branch.name}`, url: "/dashboard" });
+    return { ok: true, message: "Submitted", ref: r.ref };
+  }
   return { ok: false, message: MESSAGES[r.status] ?? TRY_AGAIN, field: FIELD_FOR[r.status] };
 }
