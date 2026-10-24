@@ -6,7 +6,7 @@ import type { CandidateEvent, OnboardingSubmission } from "@/lib/types";
 export async function getCandidateDetails(candidateId: string) {
   const { supabase } = await requireProfile();
   // RLS check: if the user can't see the candidate, stop here.
-  const { data: c } = await supabase.from("candidates").select("id").eq("id", candidateId).maybeSingle();
+  const { data: c } = await supabase.from("candidates").select("id, form_data").eq("id", candidateId).maybeSingle<{ id: string; form_data: Record<string, string> }>();
   if (!c) return null;
 
   const [{ data: events }, { data: onboarding }] = await Promise.all([
@@ -22,5 +22,10 @@ export async function getCandidateDetails(candidateId: string) {
       if (data) fileLinks[key] = data.signedUrl;
     }));
   }
+  // Files from the /apply page are stored as "app-file:<path>" in form_data.
+  await Promise.all(Object.entries(c.form_data ?? {}).filter(([, v]) => v?.startsWith("app-file:")).map(async ([label, v]) => {
+    const { data } = await supabase.storage.from("applications").createSignedUrl(v.slice("app-file:".length), 600);
+    if (data) fileLinks[`form:${label}`] = data.signedUrl;
+  }));
   return { events: (events ?? []) as CandidateEvent[], onboarding: onboarding ?? null, fileLinks };
 }

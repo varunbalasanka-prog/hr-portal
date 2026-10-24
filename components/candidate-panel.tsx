@@ -68,9 +68,16 @@ export function CandidatePanel({ c, cat, branches, appUrl, onClose }: {
           <Row k="Expected joining" v={formatDate(c.expected_joining_date)} />
           <Row k="Actual joining" v={formatDate(c.actual_joining_date)} />
           <Row k="Next action" v={`${c.next_action ?? "-"}${c.next_action_at ? ` (${formatDateTime(c.next_action_at)})` : ""}`} />
-          {Object.entries(c.form_data ?? {}).filter(([, v]) => v && !/^https?:/.test(v)).map(([k, v]) => <Row key={k} k={k} v={v} />)}
+          {Object.entries(c.form_data ?? {}).filter(([, v]) => v && !/^(https?|app-file):/.test(v)).map(([k, v]) => <Row key={k} k={k} v={v} />)}
           {Object.entries(c.form_data ?? {}).filter(([, v]) => /^https?:/.test(v)).map(([k, v]) => (
             <div key={k} className="text-sm"><dt className="text-xs font-semibold text-slate-500">{k}</dt><dd><a className="text-sky-700 underline" href={v} target="_blank" rel="noreferrer">Open file</a></dd></div>
+          ))}
+          {Object.entries(c.form_data ?? {}).filter(([, v]) => v?.startsWith("app-file:")).map(([k]) => (
+            <div key={k} className="text-sm"><dt className="text-xs font-semibold text-slate-500">{k}</dt><dd>
+              {details?.fileLinks[`form:${k}`]
+                ? <a className="text-sky-700 underline" href={details.fileLinks[`form:${k}`]} target="_blank" rel="noreferrer">Open file</a>
+                : <span className="text-slate-400">Loading…</span>}
+            </dd></div>
           ))}
         </dl>
       )}
