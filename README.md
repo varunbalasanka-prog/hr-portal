@@ -2,7 +2,7 @@
 
 Recruitment and onboarding portal for Balasanka Group of Companies. It replaces the old Flask + Google Sheets app with **Next.js 15**, **Supabase** (Postgres database, logins, private file storage) and **Vercel** hosting.
 
-New online applications still come in through the existing **Google Form**. Every 15 minutes the app copies new rows from the Sheet's *Master Sheet* tab into the database. From then on, all pipeline work happens in the app, not in the Sheet.
+New online applications come in through the portal's own page, **https://hr.balasanka.in/apply** (it replaced the Google Form). The new candidate goes straight to the branch's HR with a notification. Admins edit the form's questions and the post list on the **Admin** page. Each application saves its answers under the question wording used at the time, so editing, reordering or deleting a question never changes past applications.
 
 ## What's in it
 
@@ -16,7 +16,8 @@ New online applications still come in through the existing **Google Form**. Ever
 | Candidate onboarding form (documents go to a private bucket) | `app/onboard/[token]` |
 | In-app notifications with read tracking | `components/notifications.tsx` |
 | Reports (admin) and password reset / notification log (admin) | `app/reports`, `app/admin` |
-| Google Sheet one-time import and 15-minute sync | `lib/sheet-sync.ts`, `app/api/sync-sheet` |
+| Public apply page and admin-managed questions | `app/apply`, `app/admin/questions.tsx`, `lib/apply-questions.ts`, `0006`/`0007` migrations |
+| Google Sheet one-time import (the 15-minute sync is off since `0008`) | `lib/sheet-sync.ts`, `app/api/sync-sheet` |
 | Database schema and access rules | `supabase/migrations/` |
 
 ## Who sees what
@@ -39,7 +40,7 @@ The app only ever uses the public (anon) key. Anything that needs more rights is
 4. **Create branches and logins:** `npm run seed:users` writes `seed-users.local.sql` and `passwords.local.txt`. Paste the SQL into the Supabase SQL editor and run it. Share each password privately, then delete both files. Put the `sheet-sync` password in `SYNC_PASSWORD`.
 5. **Import the Sheet (one time):** share the Google Sheet with the service account email (read-only is enough), put the service account JSON in `GOOGLE_SERVICE_ACCOUNT_JSON`, then run `npm run import:sheet`.
 6. **Run locally:** `npm run dev` and open http://localhost:3000
-7. **Deploy:** import the GitHub repo in Vercel, add the same environment variables, and deploy. The 15-minute Sheet sync is scheduled inside Supabase (`0004_sheet_sync_schedule.sql`), because Vercel's free plan only allows daily cron jobs. Set the same `CRON_SECRET` in Vercel and in the Supabase vault so only the database can call it. The live site is https://hr.balasanka.in.
+7. **Deploy:** import the GitHub repo in Vercel, add the same environment variables, and deploy. The old 15-minute Sheet sync (`0004`) was switched off in `0008` once `/apply` went live. The live site is https://hr.balasanka.in.
 
 ### Adding a staff login later
 
