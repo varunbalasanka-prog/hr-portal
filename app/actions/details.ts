@@ -1,6 +1,8 @@
 "use server";
 import { requireProfile } from "@/lib/auth";
 import type { CandidateEvent, OnboardingSubmission } from "@/lib/types";
+import type { ScoreRow } from "@/lib/scorecard";
+import { whatsappApiEnabled } from "@/lib/whatsapp-api";
 
 export type ApplicationRow = { id: string; ref: string; post: string; branch_id: string | null; form_data: Record<string, string>; submitted_at: string };
 
@@ -12,6 +14,8 @@ export type CandidateDetails = {
   applications: ApplicationRow[];
   accessToken: string;
   tokenExpiresAt: string;
+  scores: ScoreRow[];
+  whatsappApi: boolean;
 };
 
 /** History, answers, link token and documents (as 10-minute signed links) for one candidate.
@@ -23,10 +27,11 @@ export async function getCandidateDetails(candidateId: string): Promise<Candidat
     .maybeSingle<{ id: string; form_data: Record<string, string>; access_token: string; token_expires_at: string }>();
   if (!c) return null;
 
-  const [{ data: events }, { data: onboarding }, { data: apps }] = await Promise.all([
+  const [{ data: events }, { data: onboarding }, { data: apps }, { data: scores }] = await Promise.all([
     supabase.from("candidate_events").select("*").eq("candidate_id", candidateId).order("created_at", { ascending: false }),
     supabase.from("onboarding_submissions").select("*").eq("candidate_id", candidateId).maybeSingle<OnboardingSubmission>(),
     supabase.from("applications").select("id, ref, post, branch_id, form_data, submitted_at").eq("candidate_id", candidateId).order("submitted_at", { ascending: false }),
+    supabase.from("interview_scores").select("id, interviewer, ratings, overall, recommendation, notes, created_at").eq("candidate_id", candidateId).order("created_at", { ascending: false }),
   ]);
   const applications = (apps ?? []) as ApplicationRow[];
 
@@ -50,5 +55,6 @@ export async function getCandidateDetails(candidateId: string): Promise<Candidat
   return {
     events: (events ?? []) as CandidateEvent[], onboarding: onboarding ?? null, fileLinks,
     formData: c.form_data ?? {}, applications, accessToken: c.access_token, tokenExpiresAt: c.token_expires_at,
+    scores: (scores ?? []) as ScoreRow[], whatsappApi: whatsappApiEnabled(),
   };
 }

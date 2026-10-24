@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { loadLetter } from "@/lib/letters";
 import { addDays, formatDate, todayIst } from "@/lib/dates";
 import { calculateSalary, rupees } from "@/lib/salary";
+import { OfferReply } from "./reply";
 import { Addresses, ExpiredLink, Letterhead, Tamil } from "@/components/letterhead";
 
 type Props = { params: Promise<{ token: string }> };
@@ -45,6 +46,7 @@ export default async function OfferLetter({ params }: Props) {
         <td className="w-1/2"><b>For {companyName}</b><br /><br /><br /><br /><b>Authorized Signatory</b></td>
         <td className="w-1/2 border border-slate-400 p-2.5 text-[9.5pt]"><b>EMPLOYEE ACCEPTANCE:</b><br />I accept the terms and confirm to join on/before the date.<br /><br />Candidate signature: __________________<br /><br />Date: __________________</td>
       </tr></tbody></table>
+      {c.pipeline_status !== "Joined" && <OfferReply token={token} answered={c.offer_response} />}
     </Letterhead>
   );
 }

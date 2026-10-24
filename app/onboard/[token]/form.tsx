@@ -13,7 +13,9 @@ const en = (label: string) => splitBilingual(label)[0];
 
 /** Files upload from the browser into "<token>/" in private storage; the server only receives their paths.
  *  Only the three mandatory documents are required. Family documents are optional and asked only for ESI / PF nomination. */
-export function OnboardingForm({ token, cand, resubmit }: { token: string; cand: Cand; resubmit: boolean }) {
+export function OnboardingForm({ token, cand, resubmit, digilocker, fetched, fetchError }: {
+  token: string; cand: Cand; resubmit: boolean; digilocker: boolean; fetched: Record<string, string>; fetchError: boolean;
+}) {
   const [marital, setMarital] = useState(cand.marital_status === "Single" ? "Unmarried" : cand.marital_status);
   const [relation, setRelation] = useState("");
   const [esi, setEsi] = useState("");
@@ -89,20 +91,37 @@ export function OnboardingForm({ token, cand, resubmit }: { token: string; cand:
         <Input name="emergency_mobile" label="Contact mobile / தொடர்பு கைபேசி" inputMode="tel" pattern="[0-9+ ]{10,14}" required />
       </Section>
 
+      {Object.entries(fetched).map(([k, p]) => <input key={k} type="hidden" name={`path_${k}`} value={p} />)}
+      {(digilocker || fetchError || Object.keys(fetched).length > 0) && (
+        <div className="rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm">
+          {Object.keys(fetched).length > 0 ? (
+            <p role="status" className="font-semibold text-green-800">From DigiLocker / டிஜிலாக்கரிலிருந்து: {Object.keys(fetched).map((k) => DOC_LABELS[k]?.split(" / ")[0] ?? k).join(", ")} ✓</p>
+          ) : fetchError ? (
+            <p role="alert" className="text-red-700">Could not get documents from DigiLocker. Please upload photos instead. / டிஜிலாக்கரிலிருந்து பெற முடியவில்லை, புகைப்படங்களைப் பதிவேற்றவும்.</p>
+          ) : (
+            <>
+              <p>Have DigiLocker? Get your 10th/12th certificate, PAN and driving licence directly, with no photos needed.</p>
+              <p className="text-xs text-slate-600">டிஜிலாக்கர் உள்ளதா? சான்றிதழ்கள், PAN, ஓட்டுநர் உரிமத்தை நேரடியாகப் பெறலாம்.</p>
+              <a className="btn-primary mt-2 inline-block" href={`/api/digilocker/start?token=${token}`}>Get from DigiLocker / டிஜிலாக்கர்</a>
+            </>
+          )}
+        </div>
+      )}
+
       <Section n={3} title="Mandatory documents / கட்டாய ஆவணங்கள்">
         <p className="rounded bg-sky-50 p-2 text-xs text-sky-900 sm:col-span-2">
           Please upload a <b>masked Aadhaar</b> (only the last 4 digits visible). Download it free from myaadhaar.uidai.gov.in, or cover the first 8 digits before taking the photo.
           <br />மறைக்கப்பட்ட ஆதாரைப் பதிவேற்றவும் (கடைசி 4 இலக்கங்கள் மட்டும் தெரியும்). myaadhaar.uidai.gov.in-இல் இலவசமாகப் பதிவிறக்கலாம், அல்லது முதல் 8 இலக்கங்களை மறைத்து புகைப்படம் எடுக்கவும்.
         </p>
         <FileIn name="aadhar" label={DOC_LABELS.aadhar} required={req} />
-        <FileIn name="school_certificate" label={DOC_LABELS.school_certificate} required={req} />
+        <FileIn name="school_certificate" label={DOC_LABELS.school_certificate} required={req && !fetched.school_certificate} done={!!fetched.school_certificate} />
         <FileIn name="passport_photo" label={DOC_LABELS.passport_photo} required={req} />
       </Section>
 
       <Section n={4} title="Other documents (optional) / மற்ற ஆவணங்கள் (விருப்பம்)">
         <FileIn name="bank_passbook" label={DOC_LABELS.bank_passbook} />
-        <FileIn name="pan_card" label={DOC_LABELS.pan_card} />
-        <FileIn name="driving_license" label={DOC_LABELS.driving_license} />
+        <FileIn name="pan_card" label={DOC_LABELS.pan_card} done={!!fetched.pan_card} />
+        <FileIn name="driving_license" label={DOC_LABELS.driving_license} done={!!fetched.driving_license} />
       </Section>
 
       <Section n={5} title="PF & ESI">
@@ -205,10 +224,11 @@ function Choice({ name, label, options, value, onChange, required }: { name: str
   );
 }
 
-function FileIn({ name, label, required }: { name: string; label: string; required?: boolean }) {
+function FileIn({ name, label, required, done }: { name: string; label: string; required?: boolean; done?: boolean }) {
   return (
     <label className="block">
       <Label text={label} required={required} />
+      {done && <span className="mb-1 block text-xs font-semibold text-green-700">Received from DigiLocker. Upload only to replace it. / டிஜிலாக்கரிலிருந்து பெறப்பட்டது.</span>}
       <input type="file" name={name} className="input" accept="image/*,application/pdf" required={required} />
     </label>
   );

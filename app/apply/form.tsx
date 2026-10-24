@@ -6,6 +6,7 @@ import { browserStorage, checkFile, extFor, shrinkImage } from "@/lib/upload-cli
 import { startApplication, submitApplication } from "./actions";
 import type { ApplyConfig } from "./config";
 import { Turnstile } from "./turnstile";
+import { SOURCES } from "@/lib/sources";
 
 const SELECT = "-- Select / தேர்வு செய்க --";
 const ABOUT_YOU = "About you / உங்களைப் பற்றி";
@@ -19,9 +20,10 @@ type FieldError = { field?: string; message: string } | null;
 /** Fixed fields (branch, post, name, mobile, father's name, marital status, email, address) feed the candidate record and
  *  letters, so they can't be removed. Everything else comes from the questions the admin manages.
  *  Files upload from the browser straight to storage; the server only receives answers and file paths. */
-export function ApplyForm({ branches, questions }: ApplyConfig) {
+export function ApplyForm({ branches, questions, initialBranch, source }: ApplyConfig & { initialBranch?: string; source?: string | null }) {
   const [choices, setChoices] = useState<Record<string, string>>({});
-  const [branchId, setBranchId] = useState("");
+  const [branchId, setBranchId] = useState(initialBranch ?? "");
+  const [heard, setHeard] = useState(source ?? "");
   const [post, setPost] = useState("");
   const posts = branches.find((b) => b.id === branchId)?.posts ?? [];
   const [error, setError] = useState<FieldError>(null);
@@ -155,6 +157,17 @@ export function ApplyForm({ branches, questions }: ApplyConfig) {
         </Field>
         <Field label="Email / மின்னஞ்சல்"><input name="email" className="input h-10" type="email" maxLength={120} autoComplete="email" /></Field>
         <Field label="Address / முகவரி" required wide error={errFor("address")}><textarea name="address" className="input" rows={3} required maxLength={500} autoComplete="street-address" /></Field>
+        {source ? <input type="hidden" name="source_channel" value={source} /> : (
+          <Field label="How did you hear about this job? / இந்த வேலையைப் பற்றி எப்படி அறிந்தீர்கள்?">
+            <select name="source_channel" className="input h-10" value={heard} onChange={(e) => setHeard(e.target.value)}>
+              <option value="">{SELECT}</option>
+              {Object.entries(SOURCES).filter(([k]) => k !== "poster" && k !== "careers").map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+            </select>
+          </Field>
+        )}
+        <Field label="Referred by a Balasanka employee? Their name or employee code / பரிந்துரைத்த ஊழியர் பெயர் அல்லது குறியீடு">
+          <input name="referred_by" className="input h-10" maxLength={120} placeholder="Optional / விருப்பம்" />
+        </Field>
       </Section>
 
       {others.map(([title, qs], i) => <Section key={title} n={i + 3} title={title}>{qs.map(question)}</Section>)}

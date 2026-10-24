@@ -4,6 +4,7 @@ import { categorize } from "@/lib/categorize";
 import { fetchAll } from "@/lib/fetch-all";
 import { CANDIDATE_COLUMNS, type Branch, type Candidate } from "@/lib/types";
 import { Reports, type ReportRow } from "./reports";
+import { sourceLabel } from "@/lib/sources";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,9 @@ export default async function ReportsPage() {
       name: c.name, mobile: c.mobile, hr: c.assigned_hr, source: c.source, received: c.received_at.slice(0, 10),
       location: (c.branch_id && bName.get(c.branch_id)) || c.applied_locations[0] || "Unassigned",
       status: c.pipeline_status, reason: c.rejection_reason ?? "", bucket,
+      channel: c.source === "walkin" ? "Walk-in" : sourceLabel(c.source_channel), referred: !!c.referred_by,
+      contacted: !!c.first_call_at || c.calling_status === "Contacted", interviewed: !!c.interview_at,
+      offered: !!c.expected_joining_date || !!c.offer_response, joined: c.actual_joining_date?.slice(0, 10) ?? null, offer: c.offer_response,
     };
   });
   return (

@@ -66,6 +66,25 @@ Admins can reset anyone's password from the Admin page.
 - **Two-step login:** any staff member can turn it on in Profile settings (strongly suggested for admins). Once on, the database itself refuses admin access without the second step.
 - **Backups:** `.github/workflows/backup.yml` makes an encrypted nightly database dump (needs the `SUPABASE_DB_URL` and `BACKUP_PASSPHRASE` repository secrets). `npm run backup:files` copies uploaded files to `backups/` on your computer. `.github/workflows/uptime.yml` checks the site hourly.
 
+## Hiring features (migration `0014`)
+
+| Feature | Where | Needs |
+| --- | --- | --- |
+| Careers page with every open post, "urgently hiring" from approved manpower requests | `/careers` | nothing |
+| Printable A4 "We are hiring" posters with a QR code per branch | `/careers/poster` (staff) | nothing |
+| Source tracking (`?src=` on links, or "How did you hear about us") and staff referral field | `/apply`, Reports | nothing |
+| Ready-made Tamil + English WhatsApp messages (interview, reminder, offer, onboarding, not selected…) | candidate panel → WhatsApp ▾ | nothing |
+| Send through the WhatsApp Business API instead of opening WhatsApp | same button, "Send now" | `WHATSAPP_*` env vars and an approved template |
+| CSV download for Excel (Tamil-safe), logged in the change history | Reports → Download | nothing |
+| Hiring funnel, median days to hire, offer acceptance, source join rates | Reports | nothing |
+| Interview scorecards (1-5 per area, hire / hold / reject) | candidate panel → Interview | nothing |
+| Candidate accepts or declines the offer online; HR is notified | offer letter link | nothing |
+| Manpower requests from branches, approved by admins | `/manpower` | nothing |
+| Talent pool with tags | candidate panel → Profile; dashboard → Talent pool | nothing |
+| Install on phone + push notifications for new applications and messages | Profile settings | `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` |
+| Confirmation letter (after probation) and relieving & experience letter | candidate panel → Onboarding & letters | nothing |
+| Pull 10th/12th certificate, PAN and driving licence from DigiLocker | onboarding form | DigiLocker partner account + `DIGILOCKER_*` env vars |
+
 ## Checks
 
 ```bash

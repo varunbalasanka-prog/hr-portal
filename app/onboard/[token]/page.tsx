@@ -4,12 +4,27 @@ import { lookupToken } from "@/lib/candidate-token";
 import { DOC_LABELS } from "@/lib/onboarding";
 import { ExpiredLink } from "@/components/letterhead";
 import { OnboardingForm } from "./form";
+import { digilockerEnabled } from "@/lib/digilocker";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Candidate onboarding · Balasanka Group", robots: { index: false } };
 
-export default async function OnboardPage({ params }: { params: Promise<{ token: string }> }) {
-  const { token } = await params;
+type Props = { params: Promise<{ token: string }>; searchParams: Promise<{ dl?: string; dl_error?: string }> };
+
+/** Paths DigiLocker saved for this token, passed back in ?dl=. Anything outside the token's folder is ignored
+ *  (the database checks the same when the form is submitted). */
+function fetchedPaths(token: string, dl?: string): Record<string, string> {
+  if (!dl) return {};
+  try {
+    const raw = JSON.parse(Buffer.from(dl, "base64url").toString()) as Record<string, unknown>;
+    return Object.fromEntries(Object.entries(raw).filter(([k, v]) => k in DOC_LABELS && typeof v === "string" && v.startsWith(`${token}/`) && !v.includes("..")) as [string, string][]);
+  } catch {
+    return {};
+  }
+}
+
+export default async function OnboardPage({ params, searchParams }: Props) {
+  const [{ token }, sp] = await Promise.all([params, searchParams]);
   const found = await lookupToken(token);
   if (!found) notFound();
   if (found.expired) return <ExpiredLink />;
@@ -31,7 +46,7 @@ export default async function OnboardPage({ params }: { params: Promise<{ token:
           Your other documents are already saved. / மற்ற ஆவணங்கள் சேமிக்கப்பட்டுள்ளன.
         </div>
       )}
-      <OnboardingForm token={token} resubmit={sub?.status === "pending"} cand={{
+      <OnboardingForm token={token} resubmit={sub?.status === "pending"} digilocker={digilockerEnabled()} fetched={fetchedPaths(token, sp.dl)} fetchError={!!sp.dl_error} cand={{
         name: c.name, mobile: c.mobile, branch: branch?.name ?? c.applied_locations[0] ?? "", address: c.address ?? "",
         father_name: c.father_name ?? "", marital_status: c.marital_status ?? "", email: c.email ?? "",
       }} />

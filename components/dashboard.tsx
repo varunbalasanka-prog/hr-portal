@@ -7,6 +7,7 @@ import { formatDate, formatDateTime } from "@/lib/dates";
 import { logout } from "@/app/login/actions";
 import { updateMyProfile } from "@/app/actions/users";
 import { TwoStepLogin } from "./two-step";
+import { PushToggle } from "./push-toggle";
 import { CandidatePanel } from "./candidate-panel";
 import { WalkinForm } from "./walkin-form";
 import { NotificationBell, SendNotification } from "./notifications";
@@ -20,10 +21,11 @@ type Filter =
   | { kind: "rejected"; sub?: "screening_rejected" | "wrong_number" | "not_contactable" | "candidate_dropped" | "joined_left" }
   | { kind: "docs"; sub: string }
   | { kind: "today" }
-  | { kind: "reminders" };
+  | { kind: "reminders" }
+  | { kind: "talent" };
 
 const FILTER_TITLES: Record<string, string> = {
-  followup: "In follow-up", completed: "Completed", rejected: "Rejected / dropped", today: "Today's work", reminders: "Tomorrow's reminders",
+  followup: "In follow-up", completed: "Completed", rejected: "Rejected / dropped", today: "Today's work", reminders: "Tomorrow's reminders", talent: "Talent pool (search by tag, e.g. sales)",
   received: "New / not started", interview_scheduled: "Interview scheduled", selected_joined: "Expected joining", not_contacted: "Unreachable / retry",
   online_joined_list: "Online joined", walkin_joined_list: "Walk-in joined",
   screening_rejected: "Screening rejected", wrong_number: "Wrong number", not_contactable: "Not contactable", candidate_dropped: "Candidate dropped", joined_left: "Joined & left",
@@ -40,6 +42,7 @@ function matches(r: Row, f: Filter): boolean {
     case "docs": return r.cat.docCategory === f.sub;
     case "today": return isTodaysWork(r.c, r.cat);
     case "reminders": return needsTomorrowReminder(r.c, r.cat);
+    case "talent": return r.c.talent_pool;
   }
 }
 
@@ -57,14 +60,16 @@ export function Dashboard({ me, photoUrl, rows, branches, people, notifications,
   const visible = useMemo(() => {
     const needle = q.trim().toLowerCase();
     if (needle) {
-      return rows.filter((r) => [r.c.name, r.c.mobile, r.c.posts.join(" "), r.c.applied_locations.join(" "), r.cat.label].join(" ").toLowerCase().includes(needle));
+      return rows.filter((r) => (filter.kind !== "talent" || r.c.talent_pool)
+        && [r.c.name, r.c.mobile, r.c.posts.join(" "), r.c.applied_locations.join(" "), r.cat.label, r.c.talent_tags.join(" ")].join(" ").toLowerCase().includes(needle));
     }
     return rows.filter((r) => matches(r, filter));
   }, [rows, filter, q]);
 
   const open = rows.find((r) => r.c.id === openId);
   const branchName = (id: string | null) => branches.find((b) => b.id === id)?.name;
-  const title = q ? `Search: “${q}”` : FILTER_TITLES[("sub" in filter && filter.sub) || filter.kind];
+  const talentCount = useMemo(() => rows.filter((r) => r.c.talent_pool).length, [rows]);
+  const title = q ? `Search${filter.kind === "talent" ? " in talent pool" : ""}: “${q}”` : FILTER_TITLES[("sub" in filter && filter.sub) || filter.kind];
 
   return (
     <div className="pb-20 sm:pb-6">
@@ -96,12 +101,14 @@ export function Dashboard({ me, photoUrl, rows, branches, people, notifications,
         ]} />
         <button className="btn-outline" onClick={() => setFilter({ kind: "today" })}>Today ({todayCount})</button>
         <button className="btn-outline" onClick={() => setFilter({ kind: "reminders" })}>Reminders ({reminderCount})</button>
+        <button className="btn-outline text-purple-700" onClick={() => setFilter({ kind: "talent" })}>Talent pool ({talentCount})</button>
         <button className="btn-success" onClick={() => setModal("walkin")}>+ Walk-in</button>
 
         <div className="ml-auto flex items-center gap-2">
           <input className="input !w-36 sm:!w-48" placeholder="Search name, mobile…" value={q} onChange={(e) => setQ(e.target.value)} />
           <button className="btn-outline !px-2.5" title="Send notification" onClick={() => setModal("notify")}>✉</button>
           <NotificationBell me={me} items={notifications} />
+          <Link className="btn-outline" href="/manpower">Manpower</Link>
           {isAdminRole(me.role) && <>
             <Link className="btn-outline" href="/reports">Reports</Link>
             <Link className="btn-outline" href="/admin">Admin</Link>
@@ -185,6 +192,7 @@ function Settings({ me, onClose }: { me: Profile; onClose: () => void }) {
         <Flash msg={msg} />
         <button className="btn-primary" disabled={pending}>Save</button>
       </form>
+      <PushToggle />
       <TwoStepLogin admin={isAdminRole(me.role)} />
     </Modal>
   );
