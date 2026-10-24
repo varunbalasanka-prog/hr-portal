@@ -290,7 +290,7 @@ export function applyStage(c: Candidate, stage: Stage, input: StageInput, now: D
       const relieving = input.relievingDate || at.slice(0, 10);
       patch = {
         employment_status: "Left", left_type: leftType, relieving_date: relieving,
-        pipeline_status: `Left (${leftType} on ${relieving})`,
+        pipeline_status: `Left (${leftType})`,
         rejection_reason: `Joined & Left (${leftType})`,
         next_action: leftType === "Without Information" ? "Employment terminated (blacklisted)" : "Employment terminated (re-apply allowed)",
         next_action_at: null,

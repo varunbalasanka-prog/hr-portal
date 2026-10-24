@@ -1,6 +1,7 @@
 "use server";
 import { revalidatePath } from "next/cache";
 import { requireAdmin, requireProfile, requireSuperAdmin, usernameToEmail } from "@/lib/auth";
+import { createPublicClient } from "@/lib/supabase/public";
 
 const MIN_PASSWORD = 8;
 
@@ -8,11 +9,20 @@ export async function updateMyProfile(formData: FormData) {
   const { profile, supabase } = await requireProfile();
   const mobile = String(formData.get("mobile") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const current = String(formData.get("current_password") ?? "");
+  if (password) {
+    // Someone using a phone left logged in must not be able to change the password and lock the owner out.
+    if (password.length < MIN_PASSWORD) return { ok: false, message: `Password must be at least ${MIN_PASSWORD} characters.` };
+    if (!current) return { ok: false, message: "Enter your current password to set a new one." };
+    const { error: wrong } = await createPublicClient().auth.signInWithPassword({ email: usernameToEmail(profile.username), password: current });
+    if (wrong) return { ok: false, message: "Current password is wrong." };
+  }
   const updates: Record<string, string | null> = { mobile: mobile || null };
 
   const photo = formData.get("photo");
   if (photo instanceof File && photo.size > 0) {
     if (!photo.type.startsWith("image/")) return { ok: false, message: "Photo must be an image." };
+    if (photo.size > 4 * 1024 * 1024) return { ok: false, message: "Photo must be under 4 MB." };
     const path = `${profile.id}/${Date.now()}_${photo.name.replace(/[^\w.\-]+/g, "_")}`;
     const { error } = await supabase.storage.from("avatars").upload(path, photo, { contentType: photo.type, upsert: true });
     if (error) return { ok: false, message: error.message };
@@ -22,7 +32,6 @@ export async function updateMyProfile(formData: FormData) {
   if (error) return { ok: false, message: error.message };
 
   if (password) {
-    if (password.length < MIN_PASSWORD) return { ok: false, message: `Password must be at least ${MIN_PASSWORD} characters.` };
     const { error: pErr } = await supabase.auth.updateUser({ password });
     if (pErr) return { ok: false, message: pErr.message };
   }

@@ -4,6 +4,7 @@ import type { Branch, Profile } from "@/lib/types";
 import type { AdminQuestion } from "@/lib/apply-questions";
 import { AdminPanel } from "./panel";
 import type { AuditRow } from "./history";
+import { DEFAULT_CONTACT, cleanRetention, type PrivacyContact } from "@/lib/privacy";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,7 @@ export default async function AdminPage() {
     supabase.from("notifications").select("*").order("created_at", { ascending: false }).limit(200),
     supabase.from("notification_receipts").select("*").not("viewed_at", "is", null),
     supabase.from("application_questions").select("*").order("sort_order").order("created_at"),
-    supabase.from("app_settings").select("key, value").in("key", ["apply_posts", "branch_posts"]),
+    supabase.from("app_settings").select("key, value").in("key", ["apply_posts", "branch_posts", "privacy_contact", "retention_months"]),
     supabase.from("branches").select("*").order("town").order("name"),
     profile.role === "superadmin"
       ? supabase.from("audit_log").select("*").order("at", { ascending: false }).limit(300)
@@ -30,7 +31,8 @@ export default async function AdminPage() {
         <Link href="/dashboard" className="btn-outline !py-1">← Dashboard</Link>
       </header>
       <AdminPanel me={profile} history={(history as AuditRow[] | null) ?? null} people={(people as Profile[]) ?? []} log={log} questions={(questions as AdminQuestion[]) ?? []} posts={(setting("apply_posts") as string[]) ?? []}
-        branches={(branches as Branch[]) ?? []} branchPosts={(setting("branch_posts") as Record<string, string[]>) ?? {}} />
+        branches={(branches as Branch[]) ?? []} branchPosts={(setting("branch_posts") as Record<string, string[]>) ?? {}}
+        privacyContact={{ ...DEFAULT_CONTACT, ...((setting("privacy_contact") as Partial<PrivacyContact>) ?? {}) }} retentionMonths={cleanRetention(setting("retention_months"))} />
     </div>
   );
 }

@@ -14,8 +14,8 @@ const base: Candidate = {
   interview_attendance: null, interview_status: null, not_attended_reason: null, reschedule_at: null, reschedule_attendance: null,
   reminder_status: null, reminder_at: null, designation: null, basic_salary: 0, allowances: 0, expected_joining_date: null,
   joining_status: null, not_joined_reason: null, revised_joining_date: null, revised_joining_status: null, actual_joining_date: null,
-  employment_status: null, left_type: null, relieving_date: null, rejection_reason: null, interview_needed: null, form_data: {}, application_folder: null,
-  access_token: "t", created_at: "", updated_at: "",
+  employment_status: null, left_type: null, relieving_date: null, rejection_reason: null, interview_needed: null,
+  created_at: "", updated_at: "",
 };
 const now = new Date("2026-10-24T06:00:00Z");
 const run = (c: Candidate, input: Parameters<typeof applyStage>[2]) => {
@@ -64,7 +64,8 @@ describe("interview to joining", () => {
     expect(joined.pipeline_status).toBe("Joined");
     expect(categorize(joined).category).toBe("online_joined_list");
     const left = run(joined, { employmentStatus: "Left", leftType: "Without Information", relievingDate: "2027-01-10" });
-    expect(left.pipeline_status).toBe("Left (Without Information on 2027-01-10)");
+    expect(left.pipeline_status).toBe("Left (Without Information)");
+    expect(left.relieving_date).toBe("2027-01-10");
     expect(isBlacklisted(left)).toBe(true);
   });
 

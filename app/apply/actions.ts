@@ -1,23 +1,45 @@
 "use server";
-import { randomUUID } from "node:crypto";
 import { createPublicClient } from "@/lib/supabase/public";
-import { ALLOWED_TYPES, MAX_FILE_BYTES } from "@/lib/onboarding";
 import { checkAnswer, fieldName, isVisible } from "@/lib/apply-questions";
+import { CONSENT_VERSION } from "@/lib/privacy";
+import { clientIp } from "@/lib/client-ip";
+import { verifyTurnstile } from "@/lib/turnstile";
 import { loadApplyConfig } from "./config";
 
+export type SubmitResult = { ok: boolean; message: string; ref?: string; field?: string };
+
+const TRY_AGAIN = "Could not submit. Please try again. / சமர்ப்பிக்க முடியவில்லை, மீண்டும் முயற்சிக்கவும்.";
 const MESSAGES: Record<string, string> = {
   bad_mobile: "Please enter a valid 10-digit mobile number. / சரியான 10 இலக்க கைபேசி எண்ணை உள்ளிடவும்.",
   missing: "Please fill all required fields marked *. / * குறியிட்ட அனைத்தையும் நிரப்பவும்.",
   bad_branch: "Please choose the branch you are applying to. / கிளையைத் தேர்வு செய்யவும்.",
   bad_post: "That post isn't open at the chosen branch. Please choose again. / இந்தக் கிளையில் அந்தப் பதவி இல்லை, மீண்டும் தேர்வு செய்யவும்.",
   too_big: "Some answers are too long. Please shorten them. / சில பதில்கள் மிக நீளம், சுருக்கவும்.",
+  no_consent: "Please tick the box to agree to the privacy notice. / தனியுரிமை அறிவிப்பை ஏற்க பெட்டியில் டிக் செய்யவும்.",
+  too_many: "Too many applications from this number or device today. Please try again tomorrow. / இன்று அதிக விண்ணப்பங்கள் வந்துள்ளன, நாளை முயற்சிக்கவும்.",
+  busy: "We are receiving many applications right now. Please try again in an hour. / தற்போது அதிக விண்ணப்பங்கள், ஒரு மணி நேரம் கழித்து முயற்சிக்கவும்.",
+  bad_file: "File upload expired. Please submit again. / கோப்பு பதிவேற்றம் காலாவதியானது, மீண்டும் சமர்ப்பிக்கவும்.",
+  on_record: "We already have your earlier application on record. Please contact the branch HR. / உங்கள் முந்தைய விண்ணப்பம் எங்களிடம் உள்ளது. கிளை HR-ஐத் தொடர்பு கொள்ளவும்.",
+  bot: "Please complete the \"I am human\" check. / \"நான் மனிதர்\" சரிபார்ப்பை முடிக்கவும்.",
 };
+const FIELD_FOR: Record<string, string> = { bad_mobile: "mobile", bad_branch: "branch_id", bad_post: "post", no_consent: "consent" };
 
 const text = (fd: FormData, k: string, max = 500) => String(fd.get(k) ?? "").trim().slice(0, max);
 
-/** Runs with the public key. Answers are checked against the questions live right now and saved under their current
- *  labels, so later edits to the questions don't change this application. */
-export async function submitApplication(fd: FormData): Promise<{ ok: boolean; message: string }> {
+/** Step 1: the browser asks for an upload folder. Checks the human test and rate limits before any file is accepted. */
+export async function startApplication(turnstileToken: string): Promise<{ ok: true; folder: string } | { ok: false; message: string }> {
+  const { ip, hash } = await clientIp();
+  if (!(await verifyTurnstile(turnstileToken, ip))) return { ok: false, message: MESSAGES.bot };
+  const { data, error } = await createPublicClient().rpc("open_apply_folder", { p_secret: process.env.APPLY_SECRET ?? "", p_ip: hash });
+  if (error || !data) return { ok: false, message: TRY_AGAIN };
+  const r = data as { folder?: string; error?: string };
+  if (!r.folder) return { ok: false, message: MESSAGES[r.error ?? ""] ?? TRY_AGAIN };
+  return { ok: true, folder: r.folder };
+}
+
+/** Step 2, after the browser has uploaded the files into the folder: the answers and file paths, no file bodies.
+ *  Answers are checked against the questions live right now and saved under their current labels. */
+export async function submitApplication(fd: FormData): Promise<SubmitResult> {
   const name = text(fd, "name", 120);
   const mobile = text(fd, "mobile", 20).replace(/\D/g, "").slice(-10);
   const post = text(fd, "post", 120);
@@ -25,56 +47,50 @@ export async function submitApplication(fd: FormData): Promise<{ ok: boolean; me
   const fatherName = text(fd, "father_name", 120);
   const address = text(fd, "address");
   const marital = text(fd, "marital_status", 40);
-  if (!name || !post || !branchId || !fatherName || !address || !marital) return { ok: false, message: MESSAGES.missing };
-  if (!/^[6-9]\d{9}$/.test(mobile)) return { ok: false, message: MESSAGES.bad_mobile };
+  const folder = text(fd, "folder", 40);
+  for (const [k, v] of [["branch_id", branchId], ["post", post], ["name", name], ["mobile", mobile], ["father_name", fatherName], ["marital_status", marital], ["address", address]]) {
+    if (!v) return { ok: false, message: MESSAGES.missing, field: k };
+  }
+  if (!/^[6-9]\d{9}$/.test(mobile)) return { ok: false, message: MESSAGES.bad_mobile, field: "mobile" };
+  if (fd.get("consent") !== "yes") return { ok: false, message: MESSAGES.no_consent, field: "consent" };
 
   const config = await loadApplyConfig();
-  if (!config) return { ok: false, message: "Could not submit. Please try again. / சமர்ப்பிக்க முடியவில்லை, மீண்டும் முயற்சிக்கவும்." };
+  if (!config) return { ok: false, message: TRY_AGAIN };
   const { questions } = config;
   const branch = config.branches.find((b) => b.id === branchId);
-  if (!branch) return { ok: false, message: MESSAGES.bad_branch };
-  if (!branch.posts.includes(post)) return { ok: false, message: MESSAGES.bad_post };
+  if (!branch) return { ok: false, message: MESSAGES.bad_branch, field: "branch_id" };
+  if (!branch.posts.includes(post)) return { ok: false, message: MESSAGES.bad_post, field: "post" };
 
   const answers: Record<string, string> = {};
-  for (const q of questions) if (q.type !== "file") answers[q.id] = text(fd, fieldName(q), 1000);
+  for (const q of questions) answers[q.id] = text(fd, fieldName(q), 1000);
 
   const form_data: Record<string, string> = {};
-  const files: [string, string, File][] = [];
   for (const q of questions) {
     if (!isVisible(q, answers, questions)) continue;
     if (q.type === "file") {
-      const f = fd.get(fieldName(q));
-      if (!(f instanceof File) || f.size === 0) {
-        if (q.required) return { ok: false, message: `Please upload / பதிவேற்றவும்: ${q.label}` };
+      const path = answers[q.id];
+      if (!path) {
+        if (q.required) return { ok: false, message: `Please upload / பதிவேற்றவும்: ${q.label}`, field: fieldName(q) };
         continue;
       }
-      if (f.size > MAX_FILE_BYTES) return { ok: false, message: `${q.label}: larger than 8 MB / 8 MB-க்கு மேல் உள்ளது.` };
-      if (!ALLOWED_TYPES.includes(f.type)) return { ok: false, message: `${q.label}: photo or PDF only / புகைப்படம் அல்லது PDF மட்டும்.` };
-      files.push([q.id, q.label, f]);
+      if (!folder || !path.startsWith(`${folder}/`)) return { ok: false, message: MESSAGES.bad_file };
+      form_data[q.label] = `app-file:${path}`;
       continue;
     }
     const problem = checkAnswer(q, answers[q.id]);
-    if (problem) return { ok: false, message: problem };
+    if (problem) return { ok: false, message: problem, field: fieldName(q) };
     if (answers[q.id]) form_data[q.label] = answers[q.id];
   }
 
-  const db = createPublicClient();
-  const folder = randomUUID();
-  for (const [id, label, f] of files) {
-    const ext = f.type === "application/pdf" ? "pdf" : f.type.split("/")[1];
-    const path = `${folder}/${id}.${ext}`;
-    const { error } = await db.storage.from("applications").upload(path, f, { contentType: f.type });
-    if (error) return { ok: false, message: `Upload failed / பதிவேற்றம் தோல்வி: ${label}. Please try again.` };
-    form_data[label] = `app-file:${path}`;
-  }
-
-  const { data, error } = await db.rpc("submit_application", {
+  const { data, error } = await createPublicClient().rpc("submit_application", {
     p: {
-      name, mobile, post, branch_id: branchId, folder: files.length ? folder : null, form_data,
+      name, mobile, post, branch_id: branchId, folder: folder || null, form_data, consent_version: CONSENT_VERSION,
       father_name: fatherName, email: text(fd, "email", 120), address, marital_status: marital,
     },
+    p_secret: process.env.APPLY_SECRET ?? "",
   });
-  if (error) return { ok: false, message: "Could not submit. Please try again. / சமர்ப்பிக்க முடியவில்லை, மீண்டும் முயற்சிக்கவும்." };
-  if (data === "ok" || data === "updated") return { ok: true, message: "Submitted" };
-  return { ok: false, message: MESSAGES[data as string] ?? "Could not submit. Please try again. / சமர்ப்பிக்க முடியவில்லை, மீண்டும் முயற்சிக்கவும்." };
+  if (error || !data) return { ok: false, message: TRY_AGAIN };
+  const r = data as { status: string; ref?: string };
+  if (r.status === "ok" || r.status === "updated") return { ok: true, message: "Submitted", ref: r.ref };
+  return { ok: false, message: MESSAGES[r.status] ?? TRY_AGAIN, field: FIELD_FOR[r.status] };
 }

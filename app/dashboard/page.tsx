@@ -1,7 +1,7 @@
 import { requireProfile } from "@/lib/auth";
 import { categorize } from "@/lib/categorize";
 import { fetchAll } from "@/lib/fetch-all";
-import { isAdminRole, type Branch, type Candidate, type NotificationRow, type OnboardingSubmission, type Profile } from "@/lib/types";
+import { CANDIDATE_COLUMNS, isAdminRole, type Branch, type Candidate, type NotificationRow, type OnboardingSubmission, type Profile } from "@/lib/types";
 import { Dashboard } from "@/components/dashboard";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +10,7 @@ export default async function DashboardPage() {
   const { profile, supabase } = await requireProfile();
 
   const [cands, subs, branches, people, notifs, receipts] = await Promise.all([
-    fetchAll<Candidate>((f, t) => supabase.from("candidates").select("*").order("received_at", { ascending: false }).order("id").range(f, t)),
+    fetchAll<Candidate>((f, t) => supabase.from("candidates").select(CANDIDATE_COLUMNS).order("received_at", { ascending: false }).order("id").range(f, t).returns<Candidate[]>()),
     fetchAll<OnboardingSubmission>((f, t) => supabase.from("onboarding_submissions").select("*").order("id").range(f, t)),
     supabase.from("branches").select("*").order("name"),
     supabase.from("profiles").select("id, username, full_name, role, branch_id, mobile, photo_path").order("username"),

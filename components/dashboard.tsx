@@ -6,10 +6,11 @@ import { countAll, isTodaysWork, needsTomorrowReminder, type Categorized } from 
 import { formatDate, formatDateTime } from "@/lib/dates";
 import { logout } from "@/app/login/actions";
 import { updateMyProfile } from "@/app/actions/users";
+import { TwoStepLogin } from "./two-step";
 import { CandidatePanel } from "./candidate-panel";
 import { WalkinForm } from "./walkin-form";
 import { NotificationBell, SendNotification } from "./notifications";
-import { Badge, Field, Flash, Modal } from "./ui";
+import { Badge, Field, Flash, Modal, tooBig } from "./ui";
 
 type Row = { c: Candidate; cat: Categorized; onboarding: OnboardingSubmission | null };
 
@@ -70,7 +71,7 @@ export function Dashboard({ me, photoUrl, rows, branches, people, notifications,
       <header className="flex items-center justify-between border-b-2 border-brand-accent bg-white px-4 py-2">
         <div>
           <div className="font-serif text-base font-extrabold uppercase tracking-wide sm:text-lg">Balasanka Group of Companies</div>
-          <div className="hidden text-[10px] font-semibold text-slate-500 sm:block">Theni • Madurai • Virudhunagar • Sivakasi • Srivilliputhur • Rajapalayam • Tenkasi • Tirunelveli</div>
+          <div className="hidden text-xs font-semibold text-slate-500 sm:block">Theni • Madurai • Virudhunagar • Sivakasi • Srivilliputhur • Rajapalayam • Tenkasi • Tirunelveli</div>
         </div>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/balasanka_logo.png" alt="" className="h-9 w-auto" />
@@ -109,7 +110,7 @@ export function Dashboard({ me, photoUrl, rows, branches, people, notifications,
             {photoUrl
               // eslint-disable-next-line @next/next/no-img-element
               ? <img src={photoUrl} alt="" className="h-6 w-6 rounded-full object-cover" />
-              : <span className="flex h-6 w-6 items-center justify-center rounded-full bg-sky-600 text-[10px] text-white">{me.username[0]?.toUpperCase()}</span>}
+              : <span className="flex h-6 w-6 items-center justify-center rounded-full bg-sky-600 text-xs text-white">{me.username[0]?.toUpperCase()}</span>}
             {me.full_name}
           </button>
           <form action={logout}><button className="btn-danger !px-2.5" title="Log out">⏻</button></form>
@@ -129,7 +130,7 @@ export function Dashboard({ me, photoUrl, rows, branches, people, notifications,
               </div>
               <div className="text-xs text-slate-600">{c.mobile} · {c.posts.join(", ") || "-"}</div>
               <div className="text-xs text-slate-500">{branchName(c.branch_id) ?? c.applied_locations.join(", ")}</div>
-              <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px]">
+              <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs">
                 {c.next_action && <span className="text-slate-700">▸ {c.next_action}{c.next_action_at ? ` · ${formatDateTime(c.next_action_at)}` : ""}</span>}
                 {onboarding && <Badge tone={onboarding.status === "completed" ? "green" : "amber"}>docs {onboarding.status}</Badge>}
                 <span className="ml-auto text-slate-400">{formatDate(c.received_at)}</span>
@@ -146,7 +147,7 @@ export function Dashboard({ me, photoUrl, rows, branches, people, notifications,
         <button className="btn-outline !text-xs" onClick={() => setFilter({ kind: "today" })}>Today</button>
       </nav>
 
-      {open && <CandidatePanel key={open.c.id} c={open.c} cat={open.cat} branches={branches} appUrl={appUrl} onClose={() => setOpenId(null)} />}
+      {open && <CandidatePanel key={open.c.id} me={me} c={open.c} cat={open.cat} branches={branches} appUrl={appUrl} onClose={() => setOpenId(null)} />}
       {modal === "walkin" && <WalkinForm me={me} branches={branches} onClose={() => setModal(null)} />}
       {modal === "notify" && <SendNotification me={me} people={people} onClose={() => setModal(null)} />}
       {modal === "settings" && <Settings me={me} onClose={() => setModal(null)} />}
@@ -179,10 +180,12 @@ function Settings({ me, onClose }: { me: Profile; onClose: () => void }) {
         <p className="text-sm">Signed in as <b>{me.username}</b> ({me.role})</p>
         <Field label="Mobile"><input name="mobile" className="input" defaultValue={me.mobile ?? ""} /></Field>
         <Field label="New password (leave blank to keep, min 8 characters)"><input name="password" type="password" className="input" autoComplete="new-password" /></Field>
-        <Field label="Profile photo"><input name="photo" type="file" accept="image/*" className="input" /></Field>
+        <Field label="Current password (needed only to change the password)"><input name="current_password" type="password" className="input" autoComplete="current-password" /></Field>
+        <Field label="Profile photo"><input name="photo" type="file" accept="image/*" className="input" onChange={tooBig} /></Field>
         <Flash msg={msg} />
         <button className="btn-primary" disabled={pending}>Save</button>
       </form>
+      <TwoStepLogin admin={isAdminRole(me.role)} />
     </Modal>
   );
 }

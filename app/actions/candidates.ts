@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { requireProfile } from "@/lib/auth";
 import { applyStage, isBlacklisted, reactivate, stageFor, type StageInput } from "@/lib/pipeline";
 import { formatDateTime, localInputToIso, dateToIso, tomorrowIstIso } from "@/lib/dates";
-import type { Branch, Candidate } from "@/lib/types";
+import { CANDIDATE_COLUMNS, type Branch, type Candidate } from "@/lib/types";
 
 type Result = { ok: true; message: string } | { ok: false; message: string };
 
@@ -24,7 +24,7 @@ async function branchUsername(supabase: Awaited<ReturnType<typeof requireProfile
 
 export async function updateCandidateStage(candidateId: string, input: StageInput): Promise<Result> {
   const { profile, supabase } = await requireProfile();
-  const { data: c } = await supabase.from("candidates").select("*").eq("id", candidateId).single<Candidate>();
+  const { data: c } = await supabase.from("candidates").select(CANDIDATE_COLUMNS).eq("id", candidateId).single<Candidate>();
   if (!c) return { ok: false, message: "Candidate not found or not visible to you." };
 
   const stage = stageFor(c);
@@ -65,7 +65,7 @@ export async function addRemark(candidateId: string, remark: string): Promise<Re
 
 export async function reactivateCandidate(candidateId: string): Promise<Result> {
   const { profile, supabase } = await requireProfile();
-  const { data: c } = await supabase.from("candidates").select("*").eq("id", candidateId).single<Candidate>();
+  const { data: c } = await supabase.from("candidates").select(CANDIDATE_COLUMNS).eq("id", candidateId).single<Candidate>();
   if (!c) return { ok: false, message: "Candidate not found." };
   const r = reactivate(c);
   if (r.error) return { ok: false, message: r.error };

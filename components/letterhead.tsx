@@ -33,3 +33,16 @@ export function Addresses({ from, name, address, phone }: { from: string; name: 
     </tr></tbody></table>
   );
 }
+
+/** Shown instead of a letter or form when its link is older than 60 days and HR hasn't renewed it. */
+export function ExpiredLink() {
+  return (
+    <main className="mx-auto max-w-md p-6 text-center">
+      <div className="card p-6">
+        <h1 className="mb-2 text-lg font-bold text-brand">This link has expired</h1>
+        <p className="text-sm text-slate-700">For your privacy, links stop working after 60 days. Please ask the HR team to send you a new link.</p>
+        <p className="mt-2 text-sm text-slate-600">உங்கள் தனியுரிமைக்காக, இணைப்புகள் 60 நாட்களுக்குப் பிறகு செயல்படாது. புதிய இணைப்பை அனுப்ப HR குழுவிடம் கேட்கவும்.</p>
+      </div>
+    </main>
+  );
+}

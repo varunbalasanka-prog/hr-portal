@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { loadLetter } from "@/lib/letters";
 import { formatDate, probationEnd, todayIst } from "@/lib/dates";
 import { calculateSalary, rupees } from "@/lib/salary";
-import { Addresses, Letterhead, Tamil } from "@/components/letterhead";
+import { Addresses, ExpiredLink, Letterhead, Tamil } from "@/components/letterhead";
 
 type Props = { params: Promise<{ token: string }> };
 export const dynamic = "force-dynamic";
@@ -15,7 +15,7 @@ const CLAUSES: [string, (v: Record<string, string>) => string, (v: Record<string
   ["Designation and Reporting", (v) => `You are appointed as ${v.designation} and will report to the Store Manager / Branch Head or any other person designated by the Company.`,
     (v) => `நீங்கள் ${v.designation} ஆக நியமிக்கப்படுகிறீர்கள். ஸ்டோர் மேனேஜர் / கிளைப் பொறுப்பாளர் அல்லது நிறுவனத்தால் நியமிக்கப்படும் உயர் அதிகாரிக்குப் கீழ் நீங்கள் பணியாற்ற வேண்டும்.`],
   ["Probation Period & Training Rules", (v) => `You are placed on probation for a period extending up to 6 months (From: ${v.doj} To: ${v.probEnd}). During the probation period: If the employee wishes to resign, 15 days prior written notice or recovery of salary applies in accordance with Section 73 & 74 of the Indian Contract Act, 1872 and Section 7(2) of the Payment of Wages Act, 1936. Management reserves the right to terminate immediately if performance is unsatisfactory. Food, accommodation, and uniform costs are borne by the employee.`,
-    (v) => `நீங்கள் 6 மாத காலம் வரை பயிற்சி காலத்தில் வைக்கப்படுகிறீர்கள் (தேதி: ${v.doj} முதல் ${v.probEnd} வரை). பயிற்சி காலத்தில் 15 நாட்கள் நோட்டீஸ் அல்லது ஊதிய சட்ட விதிமுறைகள் பொருந்தும்.`],
+    (v) => `நீங்கள் 6 மாத காலம் வரை தகுதிகாண் காலத்தில் வைக்கப்படுகிறீர்கள் (தேதி: ${v.doj} முதல் ${v.probEnd} வரை). இக்காலத்தில்: நீங்கள் பணியிலிருந்து விலக விரும்பினால், இந்திய ஒப்பந்தச் சட்டம், 1872 பிரிவுகள் 73 & 74 மற்றும் ஊதியம் வழங்கல் சட்டம், 1936 பிரிவு 7(2)-இன்படி 15 நாட்கள் முன் எழுத்துப்பூர்வ அறிவிப்பு அல்லது அதற்கான சம்பளப் பிடித்தம் பொருந்தும். பணித்திறன் திருப்திகரமாக இல்லையெனில் உடனடியாகப் பணிநீக்கம் செய்ய நிர்வாகத்திற்கு உரிமை உண்டு. உணவு, தங்குமிடம் மற்றும் சீருடைச் செலவுகளை ஊழியரே ஏற்க வேண்டும்.`],
   ["Salary Compensation", (v) => `Consolidated Salary: Rs. ${v.gross} per month. Salary will be paid monthly subject to statutory deductions (PF, ESI) as per government regulations.`,
     (v) => `ஒருங்கிணைந்த சம்பளம்: மாதம் ரூ. ${v.gross}/-. மாதந்தோறும் சம்பளம் வழங்கப்படும். PF மற்றும் ESI பிடித்தங்கள் பொருந்தும்.`],
   ["Place of Posting and Transfer", (v) => `You are officially posted at ${v.address}. The Management reserves the full right to transfer you to any existing or future branch, location, or division.`,
@@ -30,8 +30,8 @@ const CLAUSES: [string, (v: Record<string, string>) => string, (v: Record<string
     () => "அனைத்து நடவடிக்கைகளிலும் நேர்மையைப் பேண வேண்டும். வாடிக்கையாளர்கள் அல்லது வெண்டர்களிடம் இருந்து பரிசுகளையோ பணப் பலன்களையோ பெறக்கூடாது."],
   ["Confidentiality and Non-Engagement", () => "Devote full time to the Company. Do not engage in any other business or employment. Maintain strict confidentiality of business data and customer information.",
     () => "நிறுவனத்தில் பணியாற்றும் காலத்தில் வேறு எந்தத் தொழிலிலோ பகுதிநேர வேலையிலோ ஈடுபடக்கூடாது. நிறுவனத்தின் ரகசியங்களைப் பாதுகாக்க வேண்டும்."],
-  ["Media Consent, Ownership & Brand Promotion", () => "As part of company branding, participation in promotional photographs, videos, and campaigns is routine without extra remuneration, under Section 17(c) of the Copyright Act, 1957. Consent is perpetual and irrevocable.",
-    () => "நிறுவனத்தின் பிராண்ட் விளம்பரங்கள் மற்றும் ரீல்ஸ் வீடியோக்களில் பங்கேற்பது வழக்கமான பணியின் ஒரு பகுதியாகும்; அதற்கு தனியாக ஊதியம் வழங்கப்படாது. பதிப்புரிமைச் சட்டம், 1957 இன் படி அனைத்து மீடியா சொத்துகளும் நிறுவனத்திற்குச் சொந்தமானவை."],
+  ["Media Consent, Ownership & Brand Promotion", () => "As part of company branding, participation in promotional photographs, videos, and campaigns is routine without extra remuneration, and the Company owns the resulting media under Section 17(c) of the Copyright Act, 1957. You may withdraw your consent for future use of your image by writing to HR; material already published may continue to be used.",
+    () => "நிறுவனத்தின் பிராண்ட் விளம்பரங்கள் மற்றும் ரீல்ஸ் வீடியோக்களில் பங்கேற்பது வழக்கமான பணியின் ஒரு பகுதியாகும்; அதற்கு தனியாக ஊதியம் வழங்கப்படாது. பதிப்புரிமைச் சட்டம், 1957 இன் படி அனைத்து மீடியா சொத்துகளும் நிறுவனத்திற்குச் சொந்தமானவை. HR-க்கு எழுத்துப்பூர்வமாகத் தெரிவித்து, இனி உங்கள் படத்தைப் பயன்படுத்துவதற்கான ஒப்புதலைத் திரும்பப் பெறலாம்; ஏற்கனவே வெளியிடப்பட்டவை தொடர்ந்து பயன்படுத்தப்படலாம்."],
   ["Notices & Policies", () => "The Company may frame, amend, or withdraw policies from time to time relating to employee benefits, working hours, and conduct.",
     () => "நிறுவனத்தின் சலுகைகள், வேலை நேரம் மற்றும் ஒழுக்க முறைகள் சார்ந்த கொள்கைகளில் மாற்றங்களைச் செய்ய நிறுவனத்திற்கு உரிமை உண்டு."],
   ["Governing Law and Jurisdiction", () => "This employment is governed by the laws of India. Any disputes are subject exclusively to the jurisdiction of Courts at Theni District, Tamil Nadu.",
@@ -42,7 +42,9 @@ const CLAUSES: [string, (v: Record<string, string>) => string, (v: Record<string
 
 export default async function AppointmentLetter({ params }: Props) {
   const { token } = await params;
-  const { c, address, companyName } = await loadLetter(token);
+  const letter = await loadLetter(token);
+  if (letter.expired) return <ExpiredLink />;
+  const { c, address, companyName } = letter;
   if (c.pipeline_status !== "Joined" || !c.actual_joining_date) notFound();
   const s = calculateSalary(c.basic_salary, c.allowances);
   const v = {

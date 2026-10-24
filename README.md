@@ -57,10 +57,19 @@ Admins can reset anyone's password from the Admin page.
 - **Rotate the old Google service account key.** The old app kept `credentials.json` in its folder, outside `.gitignore`. In Google Cloud Console, delete that key and create a new one for this app.
 - Old onboarding files that the import brings across are still public Google Drive links ("anyone with the link"). Turn off link sharing on that Drive folder after the import. HR can still open the files while signed in to Google.
 
+## Privacy, security and backups (migration `0013`)
+
+- **Uploads** go from the browser straight to Supabase Storage, so Vercel's 4.5 MB body limit no longer blocks phone photos. Photos are shrunk to 1600 px first. The `/apply` page first asks the server for a one-use upload folder (rate-limited per device and in total), and the database only accepts an application that carries `APPLY_SECRET`.
+- **Spam guard:** set `NEXT_PUBLIC_TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` (Cloudflare Turnstile, free) to add an "I am human" check. Without them the rate limits still apply.
+- **DPDP:** `/apply` and the onboarding form show a bilingual notice and need a tick; the version agreed to is stored. `/privacy` shows the contact set in Admin → Privacy & data retention. The super admin can erase a person from their profile tab. A nightly job (`/api/cleanup`, `vercel.json`) strips closed records older than the retention period and removes uploads from applications that were never submitted.
+- **Candidate links** expire after 60 days; staff can extend or replace a link from the candidate's "Onboarding & letters" tab.
+- **Two-step login:** any staff member can turn it on in Profile settings (strongly suggested for admins). Once on, the database itself refuses admin access without the second step.
+- **Backups:** `.github/workflows/backup.yml` makes an encrypted nightly database dump (needs the `SUPABASE_DB_URL` and `BACKUP_PASSPHRASE` repository secrets). `npm run backup:files` copies uploaded files to `backups/` on your computer. `.github/workflows/uptime.yml` checks the site hourly.
+
 ## Checks
 
 ```bash
-npm test      # pipeline, salary, probation, sheet-date rules
+npm test      # pipeline, salary, probation, sheet-date, privacy rules
 npm run lint  # TypeScript
 npm run build
 ```
