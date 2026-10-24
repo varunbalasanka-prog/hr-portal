@@ -1,7 +1,7 @@
 import { requireProfile } from "@/lib/auth";
 import { categorize } from "@/lib/categorize";
 import { fetchAll } from "@/lib/fetch-all";
-import type { Branch, Candidate, NotificationRow, OnboardingSubmission, Profile } from "@/lib/types";
+import { isAdminRole, type Branch, type Candidate, type NotificationRow, type OnboardingSubmission, type Profile } from "@/lib/types";
 import { Dashboard } from "@/components/dashboard";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +24,7 @@ export default async function DashboardPage() {
   const receiptBy = new Map((receipts.data ?? []).map((r) => [r.notification_id as number, r]));
   const notifications = (notifs.data as NotificationRow[] ?? [])
     .map((n) => ({ ...n, viewed_at: receiptBy.get(n.id)?.viewed_at ?? null, cleared_at: receiptBy.get(n.id)?.cleared_at ?? null }))
-    .filter((n) => !n.cleared_at && (profile.role === "admin" || n.recipient === profile.username));
+    .filter((n) => !n.cleared_at && (isAdminRole(profile.role) || n.recipient === profile.username));
 
   let photoUrl: string | null = null;
   if (profile.photo_path) {

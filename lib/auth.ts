@@ -1,7 +1,7 @@
 import "server-only";
 import { redirect } from "next/navigation";
 import { createClient } from "./supabase/server";
-import type { Profile } from "./types";
+import { isAdminRole, type Profile } from "./types";
 export { usernameToEmail } from "./usernames";
 
 /** The logged-in staff member, or a redirect to /login. */
@@ -16,6 +16,12 @@ export async function requireProfile(): Promise<{ profile: Profile; supabase: Aw
 
 export async function requireAdmin() {
   const ctx = await requireProfile();
-  if (ctx.profile.role !== "admin") redirect("/dashboard");
+  if (!isAdminRole(ctx.profile.role)) redirect("/dashboard");
+  return ctx;
+}
+
+export async function requireSuperAdmin() {
+  const ctx = await requireProfile();
+  if (ctx.profile.role !== "superadmin") redirect("/dashboard");
   return ctx;
 }

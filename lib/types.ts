@@ -1,4 +1,7 @@
-export type Role = "admin" | "hr" | "branch";
+export type Role = "superadmin" | "admin" | "hr" | "branch";
+
+/** Super admins can do everything admins can. */
+export const isAdminRole = (role: Role) => role === "admin" || role === "superadmin";
 
 export interface Profile {
   id: string;

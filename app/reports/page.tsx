@@ -12,7 +12,7 @@ export default async function ReportsPage() {
   const [cands, { data: branches }, { data: hrs }] = await Promise.all([
     fetchAll<Candidate>((f, t) => supabase.from("candidates").select("*").order("id").range(f, t)),
     supabase.from("branches").select("*").order("name"),
-    supabase.from("profiles").select("username").in("role", ["hr", "admin"]),
+    supabase.from("profiles").select("username").in("role", ["hr", "admin", "superadmin"]),
   ]);
   const bName = new Map((branches as Branch[] ?? []).map((b) => [b.id, b.name]));
   const rows = cands.map((c) => {

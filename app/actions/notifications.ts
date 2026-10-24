@@ -1,5 +1,6 @@
 "use server";
 import { revalidatePath } from "next/cache";
+import { isAdminRole } from "@/lib/types";
 import { requireProfile } from "@/lib/auth";
 
 export async function sendNotification(formData: FormData) {
@@ -39,7 +40,7 @@ export async function markNotificationViewed(id: number) {
 
 export async function clearNotification(id: number) {
   const { profile, supabase } = await upsertReceipt(id, "cleared_at");
-  if (profile.role === "admin") await supabase.from("notifications").delete().eq("id", id);
+  if (isAdminRole(profile.role)) await supabase.from("notifications").delete().eq("id", id);
   revalidatePath("/dashboard");
 }
 

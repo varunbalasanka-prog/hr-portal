@@ -1,7 +1,7 @@
 "use client";
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
-import type { Branch, Candidate, NotificationRow, OnboardingSubmission, Profile } from "@/lib/types";
+import { isAdminRole, type Branch, type Candidate, type NotificationRow, type OnboardingSubmission, type Profile } from "@/lib/types";
 import { countAll, isTodaysWork, needsTomorrowReminder, type Categorized } from "@/lib/categorize";
 import { formatDate, formatDateTime } from "@/lib/dates";
 import { logout } from "@/app/login/actions";
@@ -101,7 +101,7 @@ export function Dashboard({ me, photoUrl, rows, branches, people, notifications,
           <input className="input !w-36 sm:!w-48" placeholder="Search name, mobile…" value={q} onChange={(e) => setQ(e.target.value)} />
           <button className="btn-outline !px-2.5" title="Send notification" onClick={() => setModal("notify")}>✉</button>
           <NotificationBell me={me} items={notifications} />
-          {me.role === "admin" && <>
+          {isAdminRole(me.role) && <>
             <Link className="btn-outline" href="/reports">Reports</Link>
             <Link className="btn-outline" href="/admin">Admin</Link>
           </>}
