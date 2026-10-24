@@ -69,6 +69,7 @@ export interface Candidate {
   rejection_reason: string | null;
   interview_needed: boolean | null;
   form_data: Record<string, string>;
+  application_folder: string | null;
   access_token: string;
   created_at: string;
   updated_at: string;
