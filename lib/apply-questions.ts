@@ -48,12 +48,12 @@ export function groupBySection<T extends { section: string }>(qs: T[]): [string,
 
 /** Checks one typed answer. Returns an error message or null. */
 export function checkAnswer(q: ApplyQuestion, value: string): string | null {
-  if (!value) return q.required ? `Please answer: ${q.label}` : null;
+  if (!value) return q.required ? `Please answer / பதிலளிக்கவும்: ${q.label}` : null;
   if (q.type === "file") return null;
-  if (value.length > MAX_ANSWER[q.type]) return `Answer is too long: ${q.label}`;
-  if (q.type === "choice" && !q.options.includes(value)) return `Please choose an option for: ${q.label}`;
-  if (q.type === "number" && !/^\d[\d,.]*$/.test(value)) return `Please enter a number for: ${q.label}`;
-  if (q.type === "date" && !/^\d{4}-\d{2}-\d{2}$/.test(value)) return `Please enter a date for: ${q.label}`;
+  if (value.length > MAX_ANSWER[q.type]) return `Answer is too long / பதில் மிக நீளம்: ${q.label}`;
+  if (q.type === "choice" && !q.options.includes(value)) return `Please choose an option / ஒன்றைத் தேர்வு செய்யவும்: ${q.label}`;
+  if (q.type === "number" && !/^\d[\d,.]*$/.test(value)) return `Please enter a number / எண்ணை உள்ளிடவும்: ${q.label}`;
+  if (q.type === "date" && !/^\d{4}-\d{2}-\d{2}$/.test(value)) return `Please enter a date / தேதியை உள்ளிடவும்: ${q.label}`;
   return null;
 }
 
@@ -69,7 +69,7 @@ export type QuestionInput = {
 /** Cleans what the admin typed. Returns the clean question or an error message. */
 export function cleanQuestion(input: QuestionInput, others: AdminQuestion[], selfId?: string): { ok: true; value: QuestionInput } | { ok: false; message: string } {
   const label = input.label.trim().replace(/\s+/g, " ");
-  const section = input.section.trim().replace(/\s+/g, " ") || "More details";
+  const section = input.section.trim().replace(/\s+/g, " ") || "More details / கூடுதல் விவரங்கள்";
   if (!label) return { ok: false, message: "The question needs a label." };
   if (label.length > 300) return { ok: false, message: "Keep the question under 300 characters." };
   if (section.length > 80) return { ok: false, message: "Keep the section name under 80 characters." };
@@ -101,4 +101,13 @@ export function cleanQuestion(input: QuestionInput, others: AdminQuestion[], sel
 /** Admin-entered post list: one per line, trimmed, no blanks or repeats. */
 export function cleanPosts(text: string): string[] {
   return [...new Set(text.split("\n").map((p) => p.trim().replace(/\s+/g, " ")).filter(Boolean))].map((p) => p.slice(0, 120));
+}
+
+/** "Gender / பாலினம்" → ["Gender", "பாலினம்"]. The Tamil part starts at the first Tamil letter; English-only text gives ["…", ""]. */
+export function splitBilingual(text: string): [string, string] {
+  const i = text.search(/[஀-௿]/);
+  if (i < 0) return [text.trim(), ""];
+  const cut = text.lastIndexOf(" / ", i);
+  if (cut < 0) return [text.trim(), ""];
+  return [text.slice(0, cut).trim(), text.slice(cut + 3).trim()];
 }

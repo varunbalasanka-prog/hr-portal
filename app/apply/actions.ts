@@ -6,10 +6,10 @@ import { checkAnswer, fieldName, isVisible } from "@/lib/apply-questions";
 import { loadApplyConfig } from "./config";
 
 const MESSAGES: Record<string, string> = {
-  bad_mobile: "Please enter a valid 10-digit mobile number.",
-  missing: "Please fill all required fields marked *.",
-  bad_branch: "Please choose the branch you are applying to.",
-  too_big: "Some answers are too long. Please shorten them.",
+  bad_mobile: "Please enter a valid 10-digit mobile number. / சரியான 10 இலக்க கைபேசி எண்ணை உள்ளிடவும்.",
+  missing: "Please fill all required fields marked *. / * குறியிட்ட அனைத்தையும் நிரப்பவும்.",
+  bad_branch: "Please choose the branch you are applying to. / கிளையைத் தேர்வு செய்யவும்.",
+  too_big: "Some answers are too long. Please shorten them. / சில பதில்கள் மிக நீளம், சுருக்கவும்.",
 };
 
 const text = (fd: FormData, k: string, max = 500) => String(fd.get(k) ?? "").trim().slice(0, max);
@@ -28,7 +28,7 @@ export async function submitApplication(fd: FormData): Promise<{ ok: boolean; me
   if (!/^[6-9]\d{9}$/.test(mobile)) return { ok: false, message: MESSAGES.bad_mobile };
 
   const config = await loadApplyConfig();
-  if (!config) return { ok: false, message: "Could not submit. Please try again." };
+  if (!config) return { ok: false, message: "Could not submit. Please try again. / சமர்ப்பிக்க முடியவில்லை, மீண்டும் முயற்சிக்கவும்." };
   const { questions } = config;
 
   const answers: Record<string, string> = {};
@@ -41,11 +41,11 @@ export async function submitApplication(fd: FormData): Promise<{ ok: boolean; me
     if (q.type === "file") {
       const f = fd.get(fieldName(q));
       if (!(f instanceof File) || f.size === 0) {
-        if (q.required) return { ok: false, message: `Please upload: ${q.label}` };
+        if (q.required) return { ok: false, message: `Please upload / பதிவேற்றவும்: ${q.label}` };
         continue;
       }
-      if (f.size > MAX_FILE_BYTES) return { ok: false, message: `${q.label} is larger than 8 MB.` };
-      if (!ALLOWED_TYPES.includes(f.type)) return { ok: false, message: `${q.label} must be a photo or PDF.` };
+      if (f.size > MAX_FILE_BYTES) return { ok: false, message: `${q.label}: larger than 8 MB / 8 MB-க்கு மேல் உள்ளது.` };
+      if (!ALLOWED_TYPES.includes(f.type)) return { ok: false, message: `${q.label}: photo or PDF only / புகைப்படம் அல்லது PDF மட்டும்.` };
       files.push([q.id, q.label, f]);
       continue;
     }
@@ -60,7 +60,7 @@ export async function submitApplication(fd: FormData): Promise<{ ok: boolean; me
     const ext = f.type === "application/pdf" ? "pdf" : f.type.split("/")[1];
     const path = `${folder}/${id}.${ext}`;
     const { error } = await db.storage.from("applications").upload(path, f, { contentType: f.type });
-    if (error) return { ok: false, message: `Upload failed for ${label}. Please try again.` };
+    if (error) return { ok: false, message: `Upload failed / பதிவேற்றம் தோல்வி: ${label}. Please try again.` };
     form_data[label] = `app-file:${path}`;
   }
 
@@ -70,7 +70,7 @@ export async function submitApplication(fd: FormData): Promise<{ ok: boolean; me
       father_name: fatherName, email: text(fd, "email", 120), address, marital_status: marital,
     },
   });
-  if (error) return { ok: false, message: "Could not submit. Please try again." };
+  if (error) return { ok: false, message: "Could not submit. Please try again. / சமர்ப்பிக்க முடியவில்லை, மீண்டும் முயற்சிக்கவும்." };
   if (data === "ok" || data === "updated") return { ok: true, message: "Submitted" };
-  return { ok: false, message: MESSAGES[data as string] ?? "Could not submit. Please try again." };
+  return { ok: false, message: MESSAGES[data as string] ?? "Could not submit. Please try again. / சமர்ப்பிக்க முடியவில்லை, மீண்டும் முயற்சிக்கவும்." };
 }

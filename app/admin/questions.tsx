@@ -1,11 +1,11 @@
 "use client";
 import { useState, useTransition } from "react";
-import { QUESTION_TYPES, type AdminQuestion, type QuestionInput } from "@/lib/apply-questions";
+import { QUESTION_TYPES, splitBilingual, type AdminQuestion, type QuestionInput } from "@/lib/apply-questions";
 import { moveQuestion, savePosts, saveQuestion, setQuestionActive } from "@/app/actions/questions";
 import { Badge, Field, Flash, Modal, Select } from "@/components/ui";
 
 type Msg = { ok: boolean; message: string } | null;
-const EMPTY: QuestionInput = { section: "More details", label: "", type: "text", options: [], required: false, show_when: null };
+const EMPTY: QuestionInput = { section: "More details / கூடுதல் விவரங்கள்", label: "", type: "text", options: [], required: false, show_when: null };
 
 export function QuestionsAdmin({ questions, posts }: { questions: AdminQuestion[]; posts: string[] }) {
   const [msg, setMsg] = useState<Msg>(null);
@@ -107,7 +107,11 @@ function QuestionEditor({ initial, isNew, parents, sections, pending, error, onC
       <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); onSave({ ...q, options: optionText.split("\n") }); }}>
         {error && <div className="rounded bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
         {!isNew && <p className="rounded bg-amber-50 px-3 py-2 text-xs text-amber-800">Past applications keep the old wording and answers. This change only applies to new applications.</p>}
-        <Field label="Question (shown to applicants)"><input className="input" value={q.label} onChange={(e) => set({ label: e.target.value })} maxLength={300} required /></Field>
+        <Field label="Question (shown to applicants)"><input className="input" value={q.label} onChange={(e) => set({ label: e.target.value })} maxLength={300} required placeholder="Gender / பாலினம்" /></Field>
+        <p className={`-mt-2 text-xs ${q.label && !splitBilingual(q.label)[1] ? "text-amber-700" : "text-slate-500"}`}>
+          Write English, then &quot; / &quot;, then Tamil, e.g. <i>Gender / பாலினம்</i>. The form shows English on top and Tamil under it.
+          {q.label && !splitBilingual(q.label)[1] && " This one has no Tamil yet."}
+        </p>
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Type">
             <Select value={q.type} onChange={(v) => set({ type: v as QuestionInput["type"] })} placeholder="-- Type --"
@@ -115,11 +119,11 @@ function QuestionEditor({ initial, isNew, parents, sections, pending, error, onC
           </Field>
           <Field label="Section">
             <input className="input" list="question-sections" value={q.section} onChange={(e) => set({ section: e.target.value })} maxLength={80} />
-            <datalist id="question-sections">{["About you", ...sections].filter((s, i, a) => a.indexOf(s) === i).map((s) => <option key={s} value={s} />)}</datalist>
+            <datalist id="question-sections">{["About you / உங்களைப் பற்றி", ...sections].filter((s, i, a) => a.indexOf(s) === i).map((s) => <option key={s} value={s} />)}</datalist>
           </Field>
         </div>
         {q.type === "choice" && (
-          <Field label="Options (one per line)"><textarea className="input" rows={4} value={optionText} onChange={(e) => setOptionText(e.target.value)} /></Field>
+          <Field label="Options (one per line, e.g. Male / ஆண்)"><textarea className="input" rows={4} value={optionText} onChange={(e) => setOptionText(e.target.value)} /></Field>
         )}
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={q.required} onChange={(e) => set({ required: e.target.checked })} /> Required</label>
         <div className="grid gap-3 sm:grid-cols-2">

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkAnswer, cleanPosts, cleanQuestion, groupBySection, isVisible, type AdminQuestion } from "../lib/apply-questions";
+import { checkAnswer, cleanPosts, cleanQuestion, groupBySection, isVisible, splitBilingual, type AdminQuestion } from "../lib/apply-questions";
 
 const q = (id: string, extra: Partial<AdminQuestion> = {}): AdminQuestion => ({
   id, section: "Experience", label: id, type: "text", options: [], required: false, show_when: null, sort_order: 0, active: true, ...extra,
@@ -66,4 +66,11 @@ it("groupBySection keeps first-seen order", () => {
 
 it("cleanPosts drops blanks and repeats", () => {
   expect(cleanPosts(" Cashier\n\nHelper \nCashier\n")).toEqual(["Cashier", "Helper"]);
+});
+
+it("splitBilingual separates English and Tamil", () => {
+  expect(splitBilingual("Gender / பாலினம்")).toEqual(["Gender", "பாலினம்"]);
+  expect(splitBilingual("Father's / husband's name / தந்தை / கணவர் பெயர்")).toEqual(["Father's / husband's name", "தந்தை / கணவர் பெயர்"]);
+  expect(splitBilingual("Fresher or experienced? / புதியவரா அல்லது Fresher-ஆ?")).toEqual(["Fresher or experienced?", "புதியவரா அல்லது Fresher-ஆ?"]);
+  expect(splitBilingual("Notice period")).toEqual(["Notice period", ""]);
 });
