@@ -30,8 +30,8 @@ export function WalkinForm({ me, branches, onClose }: { me: Profile; branches: B
           <Field label="Interview date & time *"><input type="datetime-local" className="input" value={f.interviewAt ?? ""} onChange={(e) => set("interviewAt")(e.target.value)} /></Field>
         ) : (
           <>
-            <Field label="Basic salary (₹)"><input className="input" inputMode="numeric" value={f.basicSalary ?? ""} onChange={(e) => set("basicSalary")(e.target.value)} /></Field>
-            <Field label="Allowances (₹)"><input className="input" inputMode="numeric" value={f.allowances ?? ""} onChange={(e) => set("allowances")(e.target.value)} /></Field>
+            <Field label="Proposed basic salary (₹)"><input className="input" inputMode="numeric" value={f.basicSalary ?? ""} onChange={(e) => set("basicSalary")(e.target.value)} /></Field>
+            <Field label="Proposed allowances (₹)"><input className="input" inputMode="numeric" value={f.allowances ?? ""} onChange={(e) => set("allowances")(e.target.value)} /></Field>
             <Field label="Expected joining date *"><input type="date" className="input" value={f.expectedJoiningDate ?? ""} onChange={(e) => set("expectedJoiningDate")(e.target.value)} /></Field>
           </>
         )}

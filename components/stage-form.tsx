@@ -12,8 +12,8 @@ export function StageForm({ c, branches, admin, onSaved }: { c: Candidate; branc
   const firstApplied = branches.find((b) => b.name === c.applied_locations[0])?.id ?? "";
   const [f, setF] = useState<StageInput>({
     interviewBranchId: c.branch_id ?? firstApplied,
-    basicSalary: c.basic_salary ? String(c.basic_salary) : "",
-    allowances: c.allowances ? String(c.allowances) : "",
+    basicSalary: String(c.proposed_basic ?? (c.basic_salary || "")),
+    allowances: String(c.proposed_allowances ?? (c.allowances || "")),
     branchId: c.branch_id ?? branches.find((b) => b.name === c.applied_locations[0])?.id ?? "",
     designation: c.designation ?? c.posts[0] ?? "",
   });
@@ -52,10 +52,11 @@ export function StageForm({ c, branches, admin, onSaved }: { c: Candidate; branc
     <div className="grid grid-cols-1 gap-3 rounded-md border border-green-200 bg-green-50 p-3 sm:grid-cols-2">
       <Field label="Branch allocated *"><Select value={f.branchId ?? ""} onChange={set("branchId")} options={branchOptions} /></Field>
       <Field label="Designation"><input className="input" value={f.designation ?? ""} onChange={(e) => set("designation")(e.target.value)} /></Field>
-      <Field label="Basic salary (₹)"><input className="input" inputMode="numeric" value={f.basicSalary ?? ""} onChange={(e) => set("basicSalary")(e.target.value)} /></Field>
-      <Field label="Allowances (₹)"><input className="input" inputMode="numeric" value={f.allowances ?? ""} onChange={(e) => set("allowances")(e.target.value)} /></Field>
+      <Field label="Proposed basic salary (₹)"><input className="input" inputMode="numeric" value={f.basicSalary ?? ""} onChange={(e) => set("basicSalary")(e.target.value)} /></Field>
+      <Field label="Proposed allowances (₹)"><input className="input" inputMode="numeric" value={f.allowances ?? ""} onChange={(e) => set("allowances")(e.target.value)} /></Field>
       <Field label="Expected joining date *"><input type="date" className="input" value={f.expectedJoiningDate ?? ""} onChange={(e) => set("expectedJoiningDate")(e.target.value)} /></Field>
       <SalaryPreview basic={f.basicSalary} allowances={f.allowances} />
+      {!admin && <p className="text-xs text-slate-600 sm:col-span-2">The salary goes to an admin for approval. The offer letter opens once it is approved.</p>}
     </div>
   );
 

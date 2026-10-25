@@ -18,6 +18,7 @@ const base: Candidate = {
   source_channel: null, referred_by: null, talent_pool: false, talent_tags: [], offer_response: null, offer_responded_at: null,
   offer_decline_reason: null, confirmation_date: null, last_sms_key: null, last_sms_at: null, employee_code: null, shift_time: null,
   store_details_at: null, payroll_completed_at: null, payroll_completed_by: null, reapply_review: false, reapply_at: null,
+  proposed_basic: null, proposed_allowances: null, salary_status: null, salary_approved_by: null, salary_approved_at: null, aadhaar_check: null,
   created_at: "", updated_at: "",
 };
 const now = new Date("2026-10-24T06:00:00Z");

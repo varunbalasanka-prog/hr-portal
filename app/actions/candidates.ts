@@ -145,7 +145,10 @@ export async function addWalkin(input: WalkinInput): Promise<Result> {
     pipeline_status: interview ? "Interview Scheduled" : "Expected Joining",
     interview_at: interviewAt,
     expected_joining_date: interview ? null : input.expectedJoiningDate,
-    basic_salary: Number(input.basicSalary || 0), allowances: Number(input.allowances || 0),
+    // A salary typed at the walk-in is a proposal for an admin to approve.
+    ...(Number(input.basicSalary || 0) || Number(input.allowances || 0)
+      ? { proposed_basic: Number(input.basicSalary || 0), proposed_allowances: Number(input.allowances || 0), salary_status: "proposed" }
+      : {}),
     next_action: interview ? "Check interview attendance" : `Check joining status (${input.expectedJoiningDate})`,
     next_action_at: interview ? interviewAt : dateToIso(input.expectedJoiningDate) ?? tomorrowIstIso(),
   }).select("id").single();
@@ -207,6 +210,40 @@ export async function completePayroll(candidateId: string): Promise<Result> {
   await supabase.from("candidate_events").insert({ candidate_id: candidateId, actor: profile.username, stage: "payroll", remark: "Final payroll done, marked as completed" });
   revalidatePath("/dashboard");
   return { ok: true, message: "Payroll completed. Moved to the Completed list." };
+}
+
+/** Admin approves the salary HR proposed (or a corrected one). The offer letter opens after this. */
+export async function approveSalary(candidateId: string, basic: number, allowances: number): Promise<Result> {
+  const { profile, supabase } = await requireAdmin();
+  if (!(basic > 0)) return { ok: false, message: "Enter the basic salary." };
+  if (allowances < 0) return { ok: false, message: "Allowances can't be negative." };
+  const { data: c } = await supabase.from("candidates").select("id, name, mobile, assigned_hr, proposed_basic, proposed_allowances").eq("id", candidateId)
+    .single<{ id: string; name: string; mobile: string; assigned_hr: string; proposed_basic: number | null; proposed_allowances: number | null }>();
+  if (!c) return { ok: false, message: "Candidate not found." };
+  const { error } = await supabase.from("candidates").update({
+    basic_salary: basic, allowances, salary_status: "approved", salary_approved_by: profile.username, salary_approved_at: new Date().toISOString(),
+  }).eq("id", candidateId);
+  if (error) return { ok: false, message: error.message };
+  const changed = c.proposed_basic != null && (Number(c.proposed_basic) !== basic || Number(c.proposed_allowances ?? 0) !== allowances);
+  const text = `Salary approved for ${c.name} (${c.mobile}): ₹${basic} basic + ₹${allowances} allowances${changed ? ` (proposed ₹${c.proposed_basic} + ₹${c.proposed_allowances ?? 0})` : ""}. The offer letter can be sent now.`;
+  await supabase.from("candidate_events").insert({ candidate_id: candidateId, actor: profile.username, stage: "salary", remark: text });
+  if (c.assigned_hr !== profile.username) {
+    await supabase.from("notifications").insert({ sender: profile.username, recipient: c.assigned_hr, message: text });
+    await pushTo(c.assigned_hr, { title: "Salary approved", body: text, url: "/dashboard" });
+  }
+  revalidatePath("/dashboard");
+  return { ok: true, message: "Salary approved." };
+}
+
+/** HR saw the candidate's original Aadhaar in person (for those who couldn't use the QR or e-KYC check). */
+export async function markAadhaarSeen(candidateId: string): Promise<Result> {
+  const { profile, supabase } = await requireProfile();
+  if (profile.role === "branch") return { ok: false, message: "Only HR can record this." };
+  const { error } = await supabase.rpc("mark_aadhaar_seen", { p_candidate: candidateId });
+  if (error) return { ok: false, message: error.message };
+  await supabase.from("candidate_events").insert({ candidate_id: candidateId, actor: profile.username, stage: "onboarding", remark: "Original Aadhaar seen in person" });
+  revalidatePath("/dashboard");
+  return { ok: true, message: "Recorded: original Aadhaar seen." };
 }
 
 /** Change the allocated branch after selection; the candidate moves to that branch's HR. */

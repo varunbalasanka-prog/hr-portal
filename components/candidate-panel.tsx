@@ -6,10 +6,11 @@ import type { Categorized } from "@/lib/categorize";
 import { formatDate, formatDateTime } from "@/lib/dates";
 import { getCandidateDetails, type CandidateDetails } from "@/app/actions/details";
 import { eraseCandidate, renewLink } from "@/app/actions/privacy";
-import { addRemark, changeBranch, completePayroll, setEmployeeDetails, setOnboardingStatus } from "@/app/actions/candidates";
+import { addRemark, approveSalary, changeBranch, markAadhaarSeen, completePayroll, setEmployeeDetails, setOnboardingStatus } from "@/app/actions/candidates";
 import { dismissReapply, releaseReapply, sendToReapply } from "@/app/actions/workflow";
 import { isAdminRole } from "@/lib/types";
-import { DOC_LABELS, MANDATORY_DOCS, docLabel } from "@/lib/onboarding";
+import { salaryApproved } from "@/lib/salary";
+import { DETAIL_LABELS, DOC_LABELS, FIELD_FLAG, MANDATORY_DOCS, docLabel, namesMatch } from "@/lib/onboarding";
 import { StageForm } from "./stage-form";
 import { WaComposer } from "./wa-composer";
 import { Scorecard } from "./scorecard";
@@ -38,7 +39,8 @@ export function CandidatePanel({ me, c, cat, branches, appUrl, onClose }: {
   const base = appUrl || (typeof window !== "undefined" ? window.location.origin : "");
   // The link token is only fetched when the candidate is opened, so it never sits in the dashboard list.
   const token = details?.accessToken;
-  const offerUrl = token ? `${base}/letters/offer/${token}` : "";
+  // No offer link until an admin has approved the salary.
+  const offerUrl = token && salaryApproved(c) ? `${base}/letters/offer/${token}` : "";
   const apptUrl = token ? `${base}/letters/appointment/${token}` : "";
   const onboardUrl = token ? `${base}/onboard/${token}` : "";
   const formData = details?.formData ?? {};
@@ -55,6 +57,7 @@ export function CandidatePanel({ me, c, cat, branches, appUrl, onClose }: {
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <Badge tone={cat.tone}>{cat.label}</Badge>
         <Badge tone={c.source === "walkin" ? "purple" : "sky"}>{c.source === "walkin" ? "Walk-in" : "Online"}</Badge>
+        {!store && c.aadhaar_check && <Badge tone="green">Aadhaar ✓ {c.aadhaar_check.method === "in person" ? "seen" : "UIDAI"}</Badge>}
         <span className="text-xs text-slate-500">HR: {c.assigned_hr}</span>
         <a className="btn-outline ml-auto !py-1 text-xs" href={`tel:+91${c.mobile}`}>Call</a>
         {details ? (
@@ -63,6 +66,7 @@ export function CandidatePanel({ me, c, cat, branches, appUrl, onClose }: {
             links={{ offer: offerUrl, onboarding: onboardUrl, appointment: c.pipeline_status === "Joined" ? apptUrl : "" }} />
         ) : <a className="btn-outline !py-1 text-xs" target="_blank" rel="noreferrer" href={`https://wa.me/91${c.mobile}`}>WhatsApp</a>}
       </div>
+      {admin && c.salary_status === "proposed" && <SalaryBox c={c} onSaved={refresh} />}
       {cat.category === "reapply" && admin && <ReapplyBox c={c} branch={branch?.name} onDone={refresh} />}
       {c.pipeline_status === "Joined" && <JoiningBox c={c} canComplete={!store} onSaved={refresh} />}
       <div className="mb-4 flex flex-wrap gap-1 border-b border-slate-200">
@@ -86,7 +90,7 @@ export function CandidatePanel({ me, c, cat, branches, appUrl, onClose }: {
           <Row k="Email" v={c.email ?? "-"} />
           <Row k="Address" v={c.address ?? "-"} />
           <Row k="Interview" v={formatDateTime(c.interview_at)} />
-          <Row k="Salary" v={c.basic_salary ? `₹${c.basic_salary} + ₹${c.allowances}` : "-"} />
+          <Row k="Salary" v={salaryText(c)} />
           <Row k="Expected joining" v={formatDate(c.expected_joining_date)} />
           <Row k="Actual joining" v={formatDate(c.actual_joining_date)} />
           <Row k="Next action" v={`${c.next_action ?? "-"}${c.next_action_at ? ` (${formatDateTime(c.next_action_at)})` : ""}`} />
@@ -160,6 +164,33 @@ function JoiningBox({ c, canComplete, onSaved }: { c: Candidate; canComplete: bo
       {canComplete && !done && c.store_details_at && (
         <button className="btn-success" disabled={pending} onClick={() => start(async () => { const r = await completePayroll(c.id); setMsg(r); if (r.ok) onSaved(); })}>Final payroll &amp; mark as completed</button>
       )}
+      <Flash msg={msg} />
+    </div>
+  );
+}
+
+const salaryText = (c: Candidate) => {
+  const approved = c.salary_status === "approved" || (!c.salary_status && c.basic_salary > 0);
+  if (approved) return `₹${c.basic_salary} + ₹${c.allowances} (approved${c.salary_approved_by ? ` by ${c.salary_approved_by}` : ""})`;
+  if (c.salary_status === "proposed") return `₹${c.proposed_basic ?? 0} + ₹${c.proposed_allowances ?? 0} (proposed, waiting for admin approval)`;
+  return "-";
+};
+
+/** Admin: approve HR's proposed salary, or correct it first. The offer letter opens after approval. */
+function SalaryBox({ c, onSaved }: { c: Candidate; onSaved: () => void }) {
+  const [basic, setBasic] = useState(String(c.proposed_basic ?? ""));
+  const [allow, setAllow] = useState(String(c.proposed_allowances ?? 0));
+  const [pending, start] = useTransition();
+  const [msg, setMsg] = useState<{ ok: boolean; message: string } | null>(null);
+  return (
+    <div className="mb-3 space-y-2 rounded border border-amber-300 bg-amber-50 p-3 text-sm">
+      <b>Salary approval</b>
+      <p className="text-xs text-slate-600">Proposed by HR ({c.assigned_hr}): ₹{c.proposed_basic ?? 0} basic + ₹{c.proposed_allowances ?? 0} allowances. Change the amounts if needed, then approve.</p>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <input className="input" inputMode="numeric" aria-label="Basic salary" placeholder="Basic (₹)" value={basic} onChange={(e) => setBasic(e.target.value)} />
+        <input className="input" inputMode="numeric" aria-label="Allowances" placeholder="Allowances (₹)" value={allow} onChange={(e) => setAllow(e.target.value)} />
+        <button className="btn-success" disabled={pending} onClick={() => start(async () => { const r = await approveSalary(c.id, Number(basic), Number(allow || 0)); setMsg(r); if (r.ok) onSaved(); })}>Approve salary</button>
+      </div>
       <Flash msg={msg} />
     </div>
   );
@@ -290,6 +321,28 @@ function EraseBox({ c, onErased }: { c: Candidate; onErased: () => void }) {
   );
 }
 
+/** Aadhaar check result (UIDAI QR / e-KYC, by the candidate) or HR seeing the original. */
+function AadhaarBox({ c, onChanged }: { c: Candidate; onChanged: () => void }) {
+  const [pending, start] = useTransition();
+  const [msg, setMsg] = useState<{ ok: boolean; message: string } | null>(null);
+  const a = c.aadhaar_check;
+  const mismatch = a?.name && !namesMatch(a.name, c.name);
+  return (
+    <div className={`space-y-1 rounded border p-2 text-sm ${!a ? "border-slate-200" : mismatch ? "border-red-300 bg-red-50" : "border-green-200 bg-green-50"}`}>
+      {!a ? <>
+        <b>Aadhaar not verified yet.</b> <span className="text-xs text-slate-600">The candidate can scan the Aadhaar QR or upload the e-KYC file on the onboarding link. Otherwise see the original when they join.</span>
+        <div><button className="btn-outline !py-1 text-xs" disabled={pending} onClick={() => start(async () => { const r = await markAadhaarSeen(c.id); setMsg(r); if (r.ok) onChanged(); })}>I have seen the original Aadhaar</button></div>
+      </> : a.method === "in person" ? (
+        <span>✓ Original Aadhaar seen in person by <b>{a.by}</b> on {formatDate(a.at)}.</span>
+      ) : (
+        <span>✓ Aadhaar verified with UIDAI {a.method === "e-kyc" ? "offline e-KYC file" : "Secure QR"} on {formatDate(a.at)}: <b>{a.name}</b>, born {a.dob}, {a.gender}, Aadhaar ending <b>{a.last4}</b>.
+          {mismatch && <b className="block text-red-700">The name on the Aadhaar does not match &quot;{c.name}&quot;. Check before you continue.</b>}</span>
+      )}
+      <Flash msg={msg} />
+    </div>
+  );
+}
+
 function Documents({ c, details, offerUrl, apptUrl, onboardUrl, onChanged }: {
   c: Candidate; details: CandidateDetails | null;
   offerUrl: string; apptUrl: string; onboardUrl: string; onChanged: () => void;
@@ -299,6 +352,7 @@ function Documents({ c, details, offerUrl, apptUrl, onboardUrl, onChanged }: {
   const [missing, setMissing] = useState<string[]>([]);
   const ob = details?.onboarding;
   useEffect(() => { setMissing(ob?.missing_docs ?? []); }, [ob]);
+  const flip = (key: string) => setMissing((m) => (m.includes(key) ? m.filter((x) => x !== key) : [...m, key]));
 
   const wa = (label: string, url: string) =>
     `https://wa.me/91${c.mobile}?text=${encodeURIComponent(`Balasanka Group of Companies - Dear ${c.name},\n\nPlease open your ${label} here:\n${url}\n\nBest regards,\nHR Team`)}`;
@@ -318,8 +372,10 @@ function Documents({ c, details, offerUrl, apptUrl, onboardUrl, onChanged }: {
       <section className="space-y-2">
         <h3 className="font-bold">Letters</h3>
         <div className="flex flex-wrap gap-2">
-          <a className="btn-outline" href={offerUrl} target="_blank" rel="noreferrer">Offer letter</a>
-          <a className="btn-success" href={wa("offer letter", offerUrl)} target="_blank" rel="noreferrer">Send offer on WhatsApp</a>
+          {offerUrl ? <>
+            <a className="btn-outline" href={offerUrl} target="_blank" rel="noreferrer">Offer letter</a>
+            <a className="btn-success" href={wa("offer letter", offerUrl)} target="_blank" rel="noreferrer">Send offer on WhatsApp</a>
+          </> : <span className="text-xs text-amber-700">Offer letter opens after an admin approves the salary.</span>}
           {c.pipeline_status === "Joined" && <>
             <a className="btn-outline" href={apptUrl} target="_blank" rel="noreferrer">Appointment letter</a>
             <a className="btn-success" href={wa("appointment letter", apptUrl)} target="_blank" rel="noreferrer">Send appointment on WhatsApp</a>
@@ -340,30 +396,41 @@ function Documents({ c, details, offerUrl, apptUrl, onboardUrl, onChanged }: {
             <button className="btn-outline" onClick={() => navigator.clipboard.writeText(onboardUrl)}>Copy link</button>
           </div>
         )}
+        <AadhaarBox c={c} onChanged={onChanged} />
         {ob && (
           <>
-            <div>Status: <Badge tone={ob.status === "completed" ? "green" : ob.status === "pending" ? "amber" : "sky"}>{ob.status}</Badge> · submitted {formatDateTime(ob.submitted_at)}</div>
+            <div className="flex flex-wrap items-center gap-2">
+              Status: <Badge tone={ob.status === "completed" ? "green" : ob.status === "pending" ? "amber" : "sky"}>{ob.status === "submitted" ? "to verify" : ob.status}</Badge> · submitted {formatDateTime(ob.submitted_at)}
+              <a className="btn-outline ml-auto !py-1 text-xs" href={`/documents/${c.id}`} target="_blank" rel="noreferrer">Full onboarding view / print</a>
+            </div>
+            {ob.status === "pending" && ob.missing_docs.length > 0 && <p className="text-xs text-amber-700">Asked to correct: {ob.missing_docs.map(docLabel).join(", ")}</p>}
             <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
-              {Object.keys(DOC_LABELS).map((key) => {
+              {Object.keys(DOC_LABELS).filter((key) => details?.fileLinks[key] || MANDATORY_DOCS.includes(key) || missing.includes(key)).map((key) => {
                 const link = details?.fileLinks[key];
-                const mandatory = MANDATORY_DOCS.includes(key);
                 return (
                   <label key={key} className="flex items-center gap-2">
-                    <input type="checkbox" checked={missing.includes(key)} onChange={(e) => setMissing((m) => e.target.checked ? [...m, key] : m.filter((x) => x !== key))} title="Mark as missing" />
-                    <span className={mandatory ? "font-semibold" : ""}>{docLabel(key)}</span>
+                    <input type="checkbox" checked={missing.includes(key)} onChange={() => flip(key)} title="Ask the candidate to re-upload" />
+                    <span className={MANDATORY_DOCS.includes(key) ? "font-semibold" : ""}>{docLabel(key)}</span>
                     {link ? <a className="text-sky-700 underline" href={link} target="_blank" rel="noreferrer">view</a> : <span className="text-xs text-slate-400">not uploaded</span>}
                   </label>
                 );
               })}
             </div>
-            <p className="text-xs text-slate-500">Tick documents that are missing or wrong, then mark as pending. The candidate can re-submit through the same link.</p>
-            <dl className="grid grid-cols-2 gap-2">
-              {Object.entries(ob.details ?? {}).filter(([, v]) => v).map(([k, v]) => <Row key={k} k={k.replace(/_/g, " ")} v={String(v)} />)}
-            </dl>
+            <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
+              {Object.entries(ob.details ?? {}).filter(([k, v]) => v && k !== "consent_version").map(([k, v]) => (
+                <label key={k} className="flex items-start gap-2">
+                  {k in DETAIL_LABELS
+                    ? <input type="checkbox" className="mt-1" checked={missing.includes(FIELD_FLAG + k)} onChange={() => flip(FIELD_FLAG + k)} title="Ask the candidate to correct this" />
+                    : <span className="w-[13px] shrink-0" />}
+                  <span><span className="text-xs font-semibold text-slate-500">{(DETAIL_LABELS[k] ?? k.replace(/_/g, " ")).split(" / ")[0]}</span><br />{String(v)}</span>
+                </label>
+              ))}
+            </div>
+            <p className="text-xs text-slate-500">Tick documents or details that are missing or wrong, then send them back. The candidate&apos;s link then shows only those items.</p>
             <div className="flex flex-wrap gap-2">
-              <button className="btn-success" disabled={pending} onClick={() => start(async () => { setMsg(await setOnboardingStatus(c.id, "completed")); onChanged(); })}>Mark completed</button>
-              <button className="btn-outline" disabled={pending || missing.length === 0} onClick={() => start(async () => { setMsg(await setOnboardingStatus(c.id, "pending", missing)); onChanged(); })}>Mark pending ({missing.length})</button>
-              {ob.status === "pending" && <a className="btn-success" href={wa("onboarding form (please re-upload the missing documents)", onboardUrl)} target="_blank" rel="noreferrer">Ask to re-submit on WhatsApp</a>}
+              <button className="btn-success" disabled={pending} onClick={() => start(async () => { setMsg(await setOnboardingStatus(c.id, "completed")); onChanged(); })}>Mark documents completed</button>
+              <button className="btn-outline" disabled={pending || missing.length === 0} onClick={() => start(async () => { setMsg(await setOnboardingStatus(c.id, "pending", missing)); onChanged(); })}>Send back for correction ({missing.length})</button>
+              {ob.status === "pending" && <a className="btn-success" href={wa("onboarding form (please correct or re-upload the items HR marked)", onboardUrl)} target="_blank" rel="noreferrer">Send re-upload link on WhatsApp</a>}
             </div>
           </>
         )}

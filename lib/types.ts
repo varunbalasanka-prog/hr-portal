@@ -88,6 +88,12 @@ export interface Candidate {
   payroll_completed_by: string | null;
   reapply_review: boolean;
   reapply_at: string | null;
+  proposed_basic: number | null;
+  proposed_allowances: number | null;
+  salary_status: "proposed" | "approved" | null;
+  salary_approved_by: string | null;
+  salary_approved_at: string | null;
+  aadhaar_check: AadhaarCheck | null;
   created_at: string;
   updated_at: string;
 }
@@ -104,8 +110,20 @@ export const CANDIDATE_COLUMNS = [
   "revised_joining_status", "actual_joining_date", "employment_status", "left_type", "relieving_date", "rejection_reason",
   "interview_needed", "source_channel", "referred_by", "talent_pool", "talent_tags", "offer_response", "offer_responded_at",
   "offer_decline_reason", "confirmation_date", "last_sms_key", "last_sms_at", "employee_code", "shift_time", "store_details_at",
-  "payroll_completed_at", "payroll_completed_by", "reapply_review", "reapply_at", "created_at", "updated_at",
+  "payroll_completed_at", "payroll_completed_by", "reapply_review", "reapply_at", "proposed_basic", "proposed_allowances", "salary_status", "salary_approved_by", "salary_approved_at",
+  "aadhaar_check", "created_at", "updated_at",
 ].join(", ");
+
+/** Result of the free Aadhaar check (UIDAI Secure QR, offline e-KYC file) or HR seeing it in person. Never the full number. */
+export interface AadhaarCheck {
+  method: "secure qr" | "e-kyc" | "in person";
+  name?: string;
+  dob?: string;
+  gender?: string;
+  last4?: string;
+  by?: string;
+  at: string;
+}
 
 export interface OnboardingSubmission {
   id: string;

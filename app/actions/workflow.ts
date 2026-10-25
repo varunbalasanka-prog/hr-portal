@@ -71,7 +71,7 @@ export async function decideWalkin(requestId: string, approve: boolean): Promise
         source: "walkin", entry_by: r.requested_by, post: p.post, branch_name: b.name, branch_id: interview ? "" : b.id,
         assigned_hr: b.hr_username, interview_needed: interview, interview_at: interviewAt,
         expected_joining_date: interview ? null : p.expectedJoiningDate || null, designation: interview ? null : p.post,
-        basic_salary: Number(p.basicSalary || 0), allowances: Number(p.allowances || 0),
+        proposed_basic: Number(p.basicSalary || 0), proposed_allowances: Number(p.allowances || 0),
         pipeline_status: interview ? "Interview Scheduled" : "Expected Joining",
         next_action: interview ? "Check interview attendance" : `Check joining status (${p.expectedJoiningDate})`,
         next_action_at: interview ? interviewAt : dateToIso(p.expectedJoiningDate) ?? tomorrowIstIso(),

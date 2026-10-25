@@ -44,18 +44,20 @@ const TERMINAL_STATUSES = [
   "Interview Rescheduled Not Attended", "Selected Candidate Dropped",
 ];
 
-/** Blocked for good (same rule as is_blacklisted() in the database). Old "Age Criteria" rejections count as over-age. */
+/** Blocked for good (same rule as is_blacklisted() in the database): Not Suitable or over-age. Old "Age Criteria"
+ *  rejections count as over-age. */
 export function isBlacklisted(c: Pick<Candidate, "pipeline_status" | "rejection_reason">): boolean {
   const r = c.rejection_reason ?? "";
-  const s = c.pipeline_status ?? "";
   if (r.includes("Underage")) return false;
-  return r.includes("Not Suitable") || r.includes("Age Criteria") || r.includes("Over Age") || s.startsWith("Screening Rejected");
+  return r.includes("Not Suitable") || r.includes("Age Criteria") || r.includes("Over Age");
 }
 
-/** May apply again, but an admin decides first (needs_reapply_review() in the database): underage, or left without information. */
+/** May apply again, but an admin decides first (needs_reapply_review() in the database): underage, left without
+ *  information, or rejected at screening for another reason (salary, timing, distance, not interested). */
 export function needsReapplyReview(c: Pick<Candidate, "pipeline_status" | "rejection_reason">): boolean {
+  if (isBlacklisted(c)) return false;
   const s = c.pipeline_status ?? "";
-  return (c.rejection_reason ?? "").includes("Underage") || (s.startsWith("Left") && s.includes("Without Information"));
+  return (c.rejection_reason ?? "").includes("Underage") || (s.startsWith("Left") && s.includes("Without Information")) || s.startsWith("Screening Rejected");
 }
 
 /** A walk-in for this person needs an admin's approval. */
@@ -128,11 +130,14 @@ const num = (v?: string) => (v && v.trim() ? Number(v) : 0);
 function selectedPatch(input: StageInput): Partial<Candidate> | string {
   if (!input.expectedJoiningDate) return "Expected joining date is required.";
   if (!input.branchId) return "Branch allocated is required.";
+  // HR proposes the salary; an admin approves it (the database refuses anyone else writing basic_salary / allowances).
+  const salary = input.basicSalary?.trim() || input.allowances?.trim()
+    ? { proposed_basic: num(input.basicSalary), proposed_allowances: num(input.allowances), salary_status: "proposed" as const }
+    : {};
   return {
     pipeline_status: "Expected Joining",
     interview_status: "Selected",
-    basic_salary: num(input.basicSalary),
-    allowances: num(input.allowances),
+    ...salary,
     branch_id: input.branchId,
     designation: input.designation?.trim() || null,
     expected_joining_date: input.expectedJoiningDate,
@@ -266,8 +271,6 @@ export function applyStage(c: Candidate, stage: Stage, input: StageInput, now: D
         if (!input.actualJoiningDate) return fail("Enter the actual joining date.");
         Object.assign(patch, {
           pipeline_status: "Joined", actual_joining_date: input.actualJoiningDate, employment_status: "Working",
-          basic_salary: input.basicSalary ? num(input.basicSalary) : c.basic_salary,
-          allowances: input.allowances ? num(input.allowances) : c.allowances,
           next_action: "Joined successfully", next_action_at: null,
         });
         notify.push({ recipient: "branch", message: `New employee joined: ${c.name}. Please assign employee code and shift timing.` });

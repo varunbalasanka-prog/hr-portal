@@ -66,7 +66,8 @@ export function categorize(c: Candidate, onboarding?: OnboardingSubmission | nul
     const prefix = hasJoined(c) ? "joined_" : "not_joined_";
     if (!onboarding) docCategory = prefix + "docs_not_submitted";
     else if (onboarding.status === "pending") docCategory = prefix + "docs_pending";
-    else docCategory = prefix + "docs_received";
+    else if (onboarding.status === "completed") docCategory = prefix + "docs_completed";
+    else docCategory = prefix + "docs_received"; // submitted, HR still has to verify
   }
   return { ...r, docCategory };
 }

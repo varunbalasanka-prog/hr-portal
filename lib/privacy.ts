@@ -1,6 +1,6 @@
 /** Privacy notice shown on /apply and /onboard. Bump CONSENT_VERSION whenever the wording changes; each
  *  application and onboarding submission stores the version the person agreed to. */
-export const CONSENT_VERSION = "2026-10-24";
+export const CONSENT_VERSION = "2026-10-25";
 
 export type PrivacyContact = { name: string; phone: string; email: string; address: string };
 

@@ -29,18 +29,20 @@ type Filter =
   | { kind: "sms" }
   | { kind: "reminders" }
   | { kind: "reapply" }
+  | { kind: "salary" }
   | { kind: "talent" };
 
 const FILTER_TITLES: Record<string, string> = {
   followup: "In follow-up", completed: "Completed", rejected: "Rejected / dropped", today: "Today's work", reminders: "Tomorrow's reminders", talent: "Talent pool (search by tag, e.g. sales)",
-  sms: "Today's SMS list", reapply: "Re-Apply folder (admin only)", onboarding: "Joined: store details & payroll",
+  sms: "Today's SMS list", salary: "Salary approvals (admin only)", reapply: "Re-Apply folder (admin only)", onboarding: "Joined: store details & payroll",
   store_details_pending: "Waiting for store: employee code & shift", payroll_pending: "Payroll completion pending",
   left_with: "Left with information (resigned, re-apply allowed)", left_without: "Left without information (absconding)",
   received: "New / not started", interview_scheduled: "Interview scheduled", selected_joined: "Expected joining", not_contacted: "Unreachable / retry",
   online_joined_list: "Online joined", walkin_joined_list: "Walk-in joined",
   screening_rejected: "Screening rejected", wrong_number: "Wrong number", not_contactable: "Not contactable", candidate_dropped: "Candidate dropped", joined_left: "Joined & left",
-  joined_docs_received: "Docs submitted · joined", not_joined_docs_received: "Docs submitted · expected joining",
-  joined_docs_pending: "Docs pending · joined", not_joined_docs_pending: "Docs pending · expected joining",
+  joined_docs_received: "Docs to verify · joined", not_joined_docs_received: "Docs to verify · expected joining",
+  joined_docs_pending: "Pending documents · joined", not_joined_docs_pending: "Pending documents · expected joining",
+  joined_docs_completed: "Documents completed · joined", not_joined_docs_completed: "Documents completed · expected joining",
   joined_docs_not_submitted: "Docs not submitted · joined", not_joined_docs_not_submitted: "Docs not submitted · expected joining",
 };
 
@@ -59,6 +61,7 @@ function matches(r: Row, f: Filter): boolean {
     case "sms": return !!smsItem(r.c, r.cat);
     case "reminders": return needsTomorrowReminder(r.c, r.cat);
     case "reapply": return cat === "reapply";
+    case "salary": return r.c.salary_status === "proposed";
     case "talent": return r.c.talent_pool;
   }
 }
@@ -78,6 +81,7 @@ export function Dashboard({ me, photoUrl, rows, branches, people, notifications,
   const store = me.role === "branch";
   const counts = useMemo(() => countAll(rows.map((r) => r.cat)), [rows]);
   const todayCount = useMemo(() => rows.filter((r) => isTodaysWork(r.c, r.cat)).length, [rows]);
+  const salaryCount = useMemo(() => rows.filter((r) => r.c.salary_status === "proposed").length, [rows]);
   const smsCount = useMemo(() => rows.filter((r) => smsItem(r.c, r.cat)).length, [rows]);
   const reminderCount = useMemo(() => rows.filter((r) => needsTomorrowReminder(r.c, r.cat)).length, [rows]);
   // Joined at this store, but the store hasn't entered employee code + shift yet: a popup the store must finish.
@@ -118,8 +122,9 @@ export function Dashboard({ me, photoUrl, rows, branches, people, notifications,
       [{ kind: "onboarding", sub: "store_details_pending" }, `Waiting for store: code & shift (${counts.store_details_pending})`],
       [{ kind: "onboarding", sub: "payroll_pending" }, `Payroll completion pending (${counts.payroll_pending})`],
       ...(store ? [] : ([
-        [{ kind: "docs", sub: "joined_docs_received" }, "Docs submitted · joined"], [{ kind: "docs", sub: "not_joined_docs_received" }, "Docs submitted · expected joining"],
-        [{ kind: "docs", sub: "joined_docs_pending" }, "Docs pending · joined"], [{ kind: "docs", sub: "not_joined_docs_pending" }, "Docs pending · expected joining"],
+        [{ kind: "docs", sub: "joined_docs_received" }, "Docs to verify · joined"], [{ kind: "docs", sub: "not_joined_docs_received" }, "Docs to verify · expected joining"],
+        [{ kind: "docs", sub: "joined_docs_pending" }, "Pending documents · joined"], [{ kind: "docs", sub: "not_joined_docs_pending" }, "Pending documents · expected joining"],
+        [{ kind: "docs", sub: "joined_docs_completed" }, "Documents completed · joined"], [{ kind: "docs", sub: "not_joined_docs_completed" }, "Documents completed · expected joining"],
         [{ kind: "docs", sub: "joined_docs_not_submitted" }, "Docs not submitted · joined"], [{ kind: "docs", sub: "not_joined_docs_not_submitted" }, "Docs not submitted · expected joining"],
       ] as MenuItem[])),
     ] },
@@ -129,7 +134,7 @@ export function Dashboard({ me, photoUrl, rows, branches, people, notifications,
     ...(store ? [] : [[{ kind: "sms" }, `Today's SMS (${smsCount})`] as MenuItem]),
     [{ kind: "reminders" }, `Reminders (${reminderCount})`],
     [{ kind: "talent" }, `Talent pool (${talentCount})`],
-    ...(admin ? [[{ kind: "reapply" }, `Re-Apply folder (${counts.reapply})`] as MenuItem] : []),
+    ...(admin ? [[{ kind: "reapply" }, `Re-Apply folder (${counts.reapply})`] as MenuItem, [{ kind: "salary" }, `Salary approvals (${salaryCount})`] as MenuItem] : []),
   ];
   const profileButton = (
     <button className="flex items-center gap-1.5 rounded-full border border-slate-300 bg-white py-0.5 pl-0.5 pr-2.5 text-xs font-bold" onClick={() => { setModal("settings"); setDrawer(false); }}>
@@ -187,7 +192,7 @@ export function Dashboard({ me, photoUrl, rows, branches, people, notifications,
 
       <div className="sticky top-0 z-30 hidden flex-wrap items-center gap-2 border-b border-slate-200 bg-slate-50/95 px-3 py-2 backdrop-blur md:flex">
         {groups.map((g) => <Menu key={g.label} label={g.label} tone={g.tone} items={g.items} onPick={pick} />)}
-        {quick.map(([f, l]) => <button key={l} className={`btn-outline ${f.kind === "talent" ? "text-purple-700" : f.kind === "reapply" ? "text-fuchsia-700" : ""}`} onClick={() => pick(f)}>{l}</button>)}
+        {quick.map(([f, l]) => <button key={l} className={`btn-outline ${f.kind === "talent" ? "text-purple-700" : f.kind === "reapply" ? "text-fuchsia-700" : f.kind === "salary" ? "text-amber-700" : ""}`} onClick={() => pick(f)}>{l}</button>)}
         <button className="btn-success" onClick={() => setModal("walkin")}>+ Walk-in</button>
 
         <div className="ml-auto flex items-center gap-2">
