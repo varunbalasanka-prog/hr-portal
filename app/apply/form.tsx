@@ -20,7 +20,7 @@ type FieldError = { field?: string; message: string } | null;
 /** Fixed fields (branch, post, name, mobile, father's name, marital status, email, address) feed the candidate record and
  *  letters, so they can't be removed. Everything else comes from the questions the admin manages.
  *  Files upload from the browser straight to storage; the server only receives answers and file paths. */
-export function ApplyForm({ branches, questions, initialBranch, source }: ApplyConfig & { initialBranch?: string; source?: string | null }) {
+export function ApplyForm({ branches, questions, initialBranch, lockBranch, source }: ApplyConfig & { initialBranch?: string; lockBranch?: boolean; source?: string | null }) {
   const [choices, setChoices] = useState<Record<string, string>>({});
   const [branchId, setBranchId] = useState(initialBranch ?? "");
   const [heard, setHeard] = useState(source ?? "");
@@ -123,15 +123,24 @@ export function ApplyForm({ branches, questions, initialBranch, source }: ApplyC
 
       <Section n={1} title="Job you are applying for / நீங்கள் விண்ணப்பிக்கும் வேலை">
         <Field label="Branch / கிளை" required wide error={errFor("branch_id")}>
-          <select name="branch_id" className="input h-10" required value={branchId}
-            onChange={(e) => { setBranchId(e.target.value); setPost(""); }}>
-            <option value="">{SELECT}</option>
-            {towns.map((t) => (
-              <optgroup key={t} label={t}>
-                {branches.filter((b) => b.town === t).map((b) => <option key={b.id} value={b.id}>{b.name} ({b.business_type})</option>)}
-              </optgroup>
-            ))}
-          </select>
+          {lockBranch ? (
+            <>
+              <input type="hidden" name="branch_id" value={branchId} />
+              <p className="input flex h-10 items-center bg-slate-50 font-semibold text-slate-800">
+                {(() => { const b = branches.find((x) => x.id === branchId); return b ? `${b.name} (${b.business_type})` : ""; })()}
+              </p>
+            </>
+          ) : (
+            <select name="branch_id" className="input h-10" required value={branchId}
+              onChange={(e) => { setBranchId(e.target.value); setPost(""); }}>
+              <option value="">{SELECT}</option>
+              {towns.map((t) => (
+                <optgroup key={t} label={t}>
+                  {branches.filter((b) => b.town === t).map((b) => <option key={b.id} value={b.id}>{b.name} ({b.business_type})</option>)}
+                </optgroup>
+              ))}
+            </select>
+          )}
         </Field>
         <Field label="Post applying for / விண்ணப்பிக்கும் பதவி" required wide error={errFor("post")}>
           <select name="post" className="input h-10 disabled:bg-slate-50 disabled:text-slate-500" required disabled={!branchId} value={post} onChange={(e) => setPost(e.target.value)}>
