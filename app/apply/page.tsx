@@ -19,6 +19,10 @@ type Props = { searchParams: Promise<{ branch?: string; src?: string }> };
 export default async function ApplyPage({ searchParams }: Props) {
   const [config, sp] = await Promise.all([loadApplyConfig(), searchParams]);
   const branch = config?.branches.some((b) => b.id === sp.branch) ? sp.branch : undefined;
+  // A showroom poster's QR code and the careers page's "Apply at this branch" button are for that showroom only,
+  // so their visitors can't switch branch.
+  const source = cleanSource(sp.src);
+  const lockBranch = !!branch && (source === "poster" || source === "careers");
   return (
     <main className="mx-auto max-w-2xl p-3 sm:p-6">
       <div className="card overflow-hidden">
@@ -31,7 +35,7 @@ export default async function ApplyPage({ searchParams }: Props) {
           </div>
         </div>
         <div className="p-4 sm:p-6">
-          {config ? <ApplyForm {...config} initialBranch={branch} source={cleanSource(sp.src)} /> : <p className="py-6 text-center text-sm text-red-700">The form could not load. Please refresh the page.</p>}
+          {config ? <ApplyForm {...config} initialBranch={branch} lockBranch={lockBranch} source={source} /> : <p className="py-6 text-center text-sm text-red-700">The form could not load. Please refresh the page.</p>}
         </div>
       </div>
     </main>
