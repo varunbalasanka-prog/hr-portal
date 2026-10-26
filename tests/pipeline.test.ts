@@ -134,6 +134,13 @@ describe("salary and probation", () => {
     expect(calculateSalary(11000, 2500)).toMatchObject({ gross: 13500, pfEmployee: 1320, totalCtc: 15178 });
     expect(probationEnd("2020-09-08")).toBe("2021-03-31");
   });
+  it("matches the branches' printed appointment letters", () => {
+    // PRADEEPA, Akshaya Velli Tirunelveli (jewellery), and AYYANAR S, Balasanka TVS Sivakasi (automobiles)
+    expect(calculateSalary(11500, 3500)).toMatchObject({ gross: 15000, esiEmployee: 86, pfEmployee: 1380, takeHome: 13534, totalCtc: 16754 });
+    expect(probationEnd("2026-07-11")).toBe("2027-01-31");
+    expect(calculateSalary(10000, 1000)).toMatchObject({ gross: 11000, esiEmployee: 75, pfEmployee: 1200, takeHome: 9725, totalCtc: 12525 });
+    expect(probationEnd("2026-08-11")).toBe("2027-02-28");
+  });
   it("treats form datetimes as IST", () => {
     expect(localInputToIso("2026-10-24T09:30")).toBe("2026-10-24T04:00:00.000Z");
   });

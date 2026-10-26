@@ -13,3 +13,7 @@ export async function loadLetter(token: string) {
   const companyName = address.split(",")[0].trim();
   return { expired: false as const, c, branch, address, companyName };
 }
+
+/** Jewellery stores (Akshaya Velli, Tanishq, Caratlane…) get their own letter wording; everything else is Automobiles. */
+export const isJewellery = (branch: { business_type: string } | null, address: string) =>
+  (branch?.business_type ?? "").toLowerCase().includes("jewellery") || address.toLowerCase().includes("velli");
