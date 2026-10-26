@@ -126,6 +126,14 @@ describe("salary and probation", () => {
     expect(probationEnd("2026-11-15")).toBe("2027-05-31");
     expect(probationEnd("2026-08-31")).toBe("2027-02-28");
   });
+  it("matches the branches' printed confirmation letters", () => {
+    // RADHA KANNAN M, Sivakasi, 25.10.2026
+    expect(calculateSalary(10500, 2000)).toMatchObject({ gross: 12500, esiEmployee: 79, pfEmployee: 1260, takeHome: 11161, totalCtc: 14101 });
+    expect(probationEnd("2026-03-01")).toBe("2026-08-31");
+    // ABBAS M (the letter shows ESI 82 for 82.5 and take-home 12,098; CTC 15,178 matches)
+    expect(calculateSalary(11000, 2500)).toMatchObject({ gross: 13500, pfEmployee: 1320, totalCtc: 15178 });
+    expect(probationEnd("2020-09-08")).toBe("2021-03-31");
+  });
   it("treats form datetimes as IST", () => {
     expect(localInputToIso("2026-10-24T09:30")).toBe("2026-10-24T04:00:00.000Z");
   });
