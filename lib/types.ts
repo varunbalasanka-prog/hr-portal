@@ -20,6 +20,8 @@ export interface Branch {
   address: string | null;
   business_type: string;
   hr_username: string;
+  /** Group of stores (0019). Defaults to the brand before " - " in the name. */
+  division?: string | null;
 }
 
 export interface Candidate {
