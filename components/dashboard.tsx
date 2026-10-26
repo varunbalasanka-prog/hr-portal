@@ -253,7 +253,7 @@ function CandidateCard({ c, cat, onboarding, branch, onOpen }: { c: Candidate; c
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline justify-between gap-2">
             <span className="truncate font-semibold text-slate-900 group-hover:text-brand">{c.name}</span>
-            <span className="shrink-0 text-xs text-slate-400" title={`Received ${formatDateTime(c.received_at)}`}>{ago(c.received_at)}</span>
+            <span suppressHydrationWarning className="shrink-0 text-xs text-slate-400" title={`Received ${formatDateTime(c.received_at)}`}>{ago(c.received_at)}</span>
           </div>
           <div className="truncate text-sm text-slate-600">{c.designation || c.posts.join(", ") || "-"} · <span className="tabular-nums">{formatMobile(c.mobile)}</span></div>
           <div className="truncate text-xs text-slate-500">{branch || "No branch yet"}</div>
@@ -268,7 +268,7 @@ function CandidateCard({ c, cat, onboarding, branch, onOpen }: { c: Candidate; c
       {c.next_action && cat.active && (
         <div className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium ${when?.overdue ? "bg-red-50 text-red-700" : when?.soon ? "bg-amber-50 text-amber-800" : "bg-slate-50 text-slate-600"}`}>
           <Icon name="clock" className="h-3.5 w-3.5 shrink-0" />
-          <span className="truncate">{c.next_action}{when ? ` · ${when.text}` : ""}</span>
+          <span suppressHydrationWarning className="truncate">{c.next_action}{when ? ` · ${when.text}` : ""}</span>
         </div>
       )}
     </button>
