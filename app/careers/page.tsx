@@ -27,7 +27,8 @@ export default async function CareersPage() {
         <h1 className="font-serif text-xl font-extrabold uppercase tracking-wide">Work with Balasanka Group</h1>
         <p className="text-sm text-slate-200">பாலசங்கா குழுமத்தில் பணியாற்றுங்கள்</p>
         <p className="mt-2 text-sm text-slate-200">Jewellery and automobile showrooms in {towns.join(", ") || "South Tamil Nadu"}.</p>
-        <Link href="/apply?src=careers" className="mt-4 inline-block rounded-md bg-sky-500 px-5 py-2.5 font-bold text-white">Apply now / இப்போதே விண்ணப்பிக்கவும்</Link>
+        {/* No general "Apply now" here: applicants pick a showroom below, so the form opens locked to it. */}
+        <p className="mt-3 text-sm font-semibold">Choose a showroom below to apply. / விண்ணப்பிக்க கீழே ஒரு கிளையைத் தேர்ந்தெடுக்கவும்.</p>
       </header>
       {!branches && <p className="card p-6 text-center text-sm text-red-700">Could not load openings. Please refresh.</p>}
       {branches && branches.length === 0 && <p className="card p-6 text-center text-sm">No openings right now. Please check again later. / தற்போது காலியிடங்கள் இல்லை.</p>}
