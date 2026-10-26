@@ -19,9 +19,10 @@ type Props = { searchParams: Promise<{ branch?: string; src?: string }> };
 export default async function ApplyPage({ searchParams }: Props) {
   const [config, sp] = await Promise.all([loadApplyConfig(), searchParams]);
   const branch = config?.branches.some((b) => b.id === sp.branch) ? sp.branch : undefined;
-  // A showroom poster's QR code is for that showroom only, so its visitors can't switch branch.
+  // A showroom poster's QR code and the careers page's "Apply at this branch" button are for that showroom only,
+  // so their visitors can't switch branch.
   const source = cleanSource(sp.src);
-  const lockBranch = !!branch && source === "poster";
+  const lockBranch = !!branch && (source === "poster" || source === "careers");
   return (
     <main className="mx-auto max-w-2xl p-3 sm:p-6">
       <div className="card overflow-hidden">
