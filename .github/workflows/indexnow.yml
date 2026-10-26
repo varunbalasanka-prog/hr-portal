@@ -1,0 +1,28 @@
+# Tells Bing (which ChatGPT, Copilot and DuckDuckGo search through), Yandex and other IndexNow engines
+# that the jobs pages exist or changed, instead of waiting for them to find the site on their own.
+# The key is public by design: it only proves we own the site, served at /indexnow-<key>.txt.
+name: IndexNow
+on:
+  push: { branches: [main] }
+  schedule: [{ cron: "30 3 * * 1" }]
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    if: ${{ github.repository == 'varunbalasanka-prog/hr-portal' }}
+    steps:
+      - name: Submit sitemap URLs
+        env:
+          SITE: "${{ vars.SITE_URL || 'https://hr.balasanka.in' }}"
+          KEY: "cc71ee91fe6709574f83fdd45a3980f2"
+        run: |
+          # A push to main deploys in about 2 minutes; wait so engines fetch the new version.
+          [ "${{ github.event_name }}" = "push" ] && sleep 180
+          urls=$(curl -sf --max-time 30 "$SITE/sitemap.xml" | grep -o '<loc>[^<]*</loc>' | sed -e 's#</\?loc>##g' -e 's/&amp;/\&/g')
+          [ -n "$urls" ] || { echo "::error::No URLs in $SITE/sitemap.xml"; exit 1; }
+          host=${SITE#https://}
+          body=$(jq -n --arg host "$host" --arg key "$KEY" --arg loc "$SITE/indexnow-$KEY.txt" --arg urls "$urls"             '{host: $host, key: $key, keyLocation: $loc, urlList: ($urls | split("\n") | map(select(length > 0)))}')
+          code=$(curl -s -o /dev/stderr -w "%{http_code}" --max-time 30 -H "Content-Type: application/json; charset=utf-8" -d "$body" https://api.indexnow.org/indexnow)
+          echo "IndexNow -> $code"
+          # 200 = accepted, 202 = accepted but key still being checked.
+          [ "$code" = "200" ] || [ "$code" = "202" ] || { echo "::error::IndexNow returned $code"; exit 1; }
