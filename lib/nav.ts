@@ -3,7 +3,7 @@ import type { IconName } from "@/components/icons";
 
 export type NavItem = { key: string; label: string; icon: IconName; count?: number; alert?: boolean; href?: string; external?: boolean };
 export type NavSection = { title: string; items: NavItem[] };
-export type NavCounts = Partial<Record<"today" | "reminders" | "sms" | "approvals" | "followup" | "onboarding" | "completed" | "rejected" | "talent" | "reapply", number>>;
+export type NavCounts = Partial<Record<"today" | "reminders" | "sms" | "confirmations" | "approvals" | "followup" | "onboarding" | "completed" | "rejected" | "talent" | "reapply", number>>;
 
 /** The same menu on every staff page. Dashboard lists are links to /dashboard?list=…, so they work from Reports or Admin too. */
 export function staffSections(role: Role, counts: NavCounts = {}): NavSection[] {
@@ -15,7 +15,7 @@ export function staffSections(role: Role, counts: NavCounts = {}): NavSection[] 
     { title: "My work", items: [
       item("today", "Today's work", "today", true),
       item("reminders", "Tomorrow's reminders", "alarm"),
-      ...(store ? [] : [item("sms", "SMS to send", "message", true)]),
+      ...(store ? [] : [item("sms", "SMS to send", "message", true), item("confirmations", "Confirmations to approve", "check", true)]),
       ...(admin ? [item("approvals", "Waiting for approval", "badge", true)] : []),
     ] },
     { title: "Candidates", items: [

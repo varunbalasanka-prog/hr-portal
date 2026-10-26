@@ -79,6 +79,8 @@ export interface Candidate {
   offer_responded_at: string | null;
   offer_decline_reason: string | null;
   confirmation_date: string | null;
+  confirmation_approved_by: string | null;
+  confirmation_approved_at: string | null;
   last_sms_key: string | null;
   last_sms_at: string | null;
   employee_code: string | null;
@@ -109,7 +111,7 @@ export const CANDIDATE_COLUMNS = [
   "basic_salary", "allowances", "expected_joining_date", "joining_status", "not_joined_reason", "revised_joining_date",
   "revised_joining_status", "actual_joining_date", "employment_status", "left_type", "relieving_date", "rejection_reason",
   "interview_needed", "source_channel", "referred_by", "talent_pool", "talent_tags", "offer_response", "offer_responded_at",
-  "offer_decline_reason", "confirmation_date", "last_sms_key", "last_sms_at", "employee_code", "shift_time", "store_details_at",
+  "offer_decline_reason", "confirmation_date", "confirmation_approved_by", "confirmation_approved_at", "last_sms_key", "last_sms_at", "employee_code", "shift_time", "store_details_at",
   "payroll_completed_at", "payroll_completed_by", "reapply_review", "reapply_at", "proposed_basic", "proposed_allowances", "salary_status", "salary_approved_by", "salary_approved_at",
   "aadhaar_check", "created_at", "updated_at",
 ].join(", ");

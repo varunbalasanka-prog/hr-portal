@@ -6,8 +6,9 @@
 import type { Candidate } from "./types";
 import type { Categorized } from "./categorize";
 import { addDays, formatDate, isoToIstDate, todayIst } from "./dates";
+import { confirmationDate, confirmationState } from "./confirmation";
 
-export type SmsKind = "interview_scheduled" | "interview_reminder" | "interview_missed" | "not_contactable" | "joining_reminder" | "not_joined";
+export type SmsKind = "interview_scheduled" | "interview_reminder" | "interview_missed" | "not_contactable" | "joining_reminder" | "not_joined" | "confirmation_letter";
 
 export const SMS_TITLES: Record<SmsKind, string> = {
   interview_scheduled: "Interview scheduled",
@@ -16,6 +17,7 @@ export const SMS_TITLES: Record<SmsKind, string> = {
   not_contactable: "Not contactable: ask to call back",
   joining_reminder: "Joining tomorrow (reminder)",
   not_joined: "Not joined (no response)",
+  confirmation_letter: "Confirmation letter (approved)",
 };
 
 export interface SmsItem { kind: SmsKind; key: string; done: string[] }
@@ -29,6 +31,11 @@ const joiningDate = (c: Candidate) => c.revised_joining_date ?? c.expected_joini
 
 /** The message this candidate needs today, if any. `done` lists keys that also count as already sent. */
 export function smsItem(c: Candidate, cat: Categorized, now: Date = new Date()): SmsItem | null {
+  // Working employees: the approved confirmation letter goes out from the 1st they are confirmed.
+  if (confirmationState(c, now) === "send") {
+    const key = `confirmation_letter:${confirmationDate(c)}`;
+    return c.last_sms_key === key ? null : { kind: "confirmation_letter", key, done: [] };
+  }
   if (!cat.active) return null;
   const today = todayIst(now);
   const tomorrow = todayIst(new Date(now.getTime() + 86400000));
@@ -62,6 +69,7 @@ export interface SmsContext {
   hrName: string;
   hrMobile: string | null; // the allocated HR's own number, from their profile
   validity?: string;       // offer letter validity date
+  url?: string;            // the letter link, for confirmation_letter
 }
 
 const callLine = (c: SmsContext) => c.hrMobile
@@ -84,6 +92,8 @@ export function smsText(kind: SmsKind, c: SmsContext): string {
       return `வணக்கம் ${c.name}, நாளை ${c.when} அன்று ${c.store}-இல் பணியில் சேர உங்களை எதிர்பார்க்கிறோம். ஆதார், புகைப்படம், வங்கி விவரங்களைக் கொண்டு வரவும்.\n\nDear ${c.name}, we look forward to you joining ${c.store} tomorrow, ${c.when}. Please bring your Aadhaar, a photo and bank details.${sign}`;
     case "not_joined":
       return `வணக்கம் ${c.name}, ${c.when} அன்று நீங்கள் பணியில் சேரவில்லை. உங்கள் பணி வாய்ப்பு ${c.validity ?? "-"} வரை மட்டுமே செல்லுபடியாகும். ${call.ta}\n\nDear ${c.name}, you did not join on ${c.when}. Your offer is valid only until ${c.validity ?? "-"}. ${call.en}${sign}`;
+    case "confirmation_letter":
+      return `வணக்கம் ${c.name}, உங்கள் தகுதிகாண் காலம் வெற்றிகரமாக நிறைவடைந்தது. ${c.when} முதல் ${c.store}-இல் ${c.post} ஆக உங்கள் பணி உறுதி செய்யப்படுகிறது. வாழ்த்துகள்! உங்கள் பணி உறுதிக் கடிதம்: ${c.url ?? ""}\n\nDear ${c.name}, congratulations on completing your probation. Your employment as ${c.post} at ${c.store} is confirmed from ${c.when}. Your confirmation letter: ${c.url ?? ""}${sign}`;
   }
 }
 

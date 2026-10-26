@@ -1,19 +1,14 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { loadLetter } from "@/lib/letters";
-import { formatDate, probationEnd, todayIst } from "@/lib/dates";
+import { formatDate, probationEnd } from "@/lib/dates";
+import { confirmationDate, letterDate } from "@/lib/confirmation";
 import { calculateSalary } from "@/lib/salary";
 import { Addresses, ExpiredLink, Letterhead, Tamil } from "@/components/letterhead";
 
 type Props = { params: Promise<{ token: string }> };
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Confirmation letter · Balasanka Group", robots: { index: false } };
-
-const nextDay = (iso: string) => {
-  const d = new Date(`${iso.slice(0, 10)}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + 1);
-  return d.toISOString().slice(0, 10);
-};
 
 /** Whole rupees, as on the branches' printed confirmation letters (11,161 not 11,161.00). */
 const inr = (n: number) => n.toLocaleString("en-IN");
@@ -34,17 +29,17 @@ const CLAUSES: [string, (v: Record<string, string>) => string, (v: Record<string
     () => "(அப்பாயிண்ட்மெண்ட் லெட்டரில் உள்ள வேலை நேரம் மற்றும் இதர சேவை விதிகள் அனைத்தும் தொடர்ந்து நடைமுறையில் இருக்கும்.)"],
 ];
 
-/** Issued when the 6-month probation ends and the employee is still working. */
+/** Issued when the 6-month probation ends and the employee is still working. Opens only after HR approves it. */
 export default async function ConfirmationLetter({ params }: Props) {
   const { token } = await params;
   const letter = await loadLetter(token);
   if (letter.expired) return <ExpiredLink />;
   const { c, address } = letter;
   if (c.pipeline_status !== "Joined" || !c.actual_joining_date || c.employment_status === "Left") notFound();
-  const probEndIso = probationEnd(c.actual_joining_date);
+  if (!c.confirmation_approved_at) return <NotYetApproved />;
   const v = {
-    doj: formatDate(c.actual_joining_date), probEnd: formatDate(probEndIso),
-    confirmed: formatDate(c.confirmation_date ?? nextDay(probEndIso)),
+    doj: formatDate(c.actual_joining_date), probEnd: formatDate(probationEnd(c.actual_joining_date)),
+    confirmed: formatDate(confirmationDate(c)),
     designation: (c.designation ?? c.posts[0] ?? "Staff").toUpperCase(),
   };
   const s = calculateSalary(c.basic_salary, c.allowances);
@@ -55,7 +50,7 @@ export default async function ConfirmationLetter({ params }: Props) {
 
   return (
     <Letterhead>
-      <div className="mb-2 text-right">Date: {formatDate(todayIst())}</div>
+      <div className="mb-2 text-right">Date: {formatDate(letterDate(c))}</div>
       <Addresses stacked from={address} name={c.name} address={c.address} phone={c.mobile} />
       <p className="mb-2">Dear {c.name},</p>
       <h1 className="my-3 text-center font-bold uppercase">Employment Service Confirmation Letter</h1>
@@ -84,5 +79,17 @@ export default async function ConfirmationLetter({ params }: Props) {
         <p className="mt-10">Signature of Mr / Ms. {c.name}<br />Date:</p>
       </div>
     </Letterhead>
+  );
+}
+
+function NotYetApproved() {
+  return (
+    <main className="mx-auto max-w-md p-6 text-center">
+      <div className="card p-6">
+        <h1 className="mb-2 text-lg font-bold text-brand">Confirmation letter not ready yet</h1>
+        <p className="text-sm text-slate-700">Your confirmation letter will open here once HR approves it after your probation period.</p>
+        <p className="mt-2 text-sm text-slate-600">உங்கள் தகுதிகாண் காலம் முடிந்ததும் HR ஒப்புதல் அளித்த பிறகு உங்கள் பணி உறுதிக் கடிதம் இங்கே திறக்கும்.</p>
+      </div>
+    </main>
   );
 }

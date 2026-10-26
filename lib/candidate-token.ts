@@ -5,7 +5,7 @@ import type { Candidate, OnboardingSubmission } from "./types";
 /** Only the fields the letters and onboarding form show (candidate_by_token returns nothing else). */
 export type TokenCandidate = Pick<Candidate, "name" | "mobile" | "address" | "father_name" | "marital_status" | "email" | "posts"
   | "applied_locations" | "designation" | "basic_salary" | "allowances" | "pipeline_status" | "expected_joining_date"
-  | "revised_joining_date" | "actual_joining_date" | "employment_status" | "left_type" | "relieving_date" | "confirmation_date"
+  | "revised_joining_date" | "actual_joining_date" | "employment_status" | "left_type" | "relieving_date" | "confirmation_date" | "confirmation_approved_at"
   | "offer_response" | "offer_responded_at" | "salary_status"> & { aadhaar_checked?: boolean };
 
 export type TokenLookup =
