@@ -16,6 +16,11 @@ export const metadata: Metadata = {
   title: "Balasanka HR Portal",
   description: "Recruitment and onboarding portal for Balasanka Group of Companies",
   icons: { icon: "/balasanka_logo.png" },
+  // Codes from Google Search Console and Bing Webmaster Tools ("HTML tag" method), set in Vercel.
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION || undefined,
+    other: process.env.BING_SITE_VERIFICATION ? { "msvalidate.01": process.env.BING_SITE_VERIFICATION } : undefined,
+  },
 };
 export const viewport: Viewport = { width: "device-width", initialScale: 1 };
 
