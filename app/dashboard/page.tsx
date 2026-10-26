@@ -3,6 +3,7 @@ import { categorize } from "@/lib/categorize";
 import { fetchAll } from "@/lib/fetch-all";
 import { CANDIDATE_COLUMNS, isAdminRole, type Branch, type Candidate, type NotificationRow, type OnboardingSubmission, type Profile } from "@/lib/types";
 import { Dashboard } from "@/components/dashboard";
+import { todayIst } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 
@@ -10,14 +11,17 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const { list } = await searchParams;
   const { profile, supabase } = await requireProfile();
 
-  const [cands, subs, branches, people, notifs, receipts] = await Promise.all([
+  const [cands, subs, branches, people, notifs, receipts, letters] = await Promise.all([
     fetchAll<Candidate>((f, t) => supabase.from("candidates").select(CANDIDATE_COLUMNS).order("received_at", { ascending: false }).order("id").range(f, t).returns<Candidate[]>()),
     fetchAll<OnboardingSubmission>((f, t) => supabase.from("onboarding_submissions").select("*").order("id").range(f, t)),
     supabase.from("branches").select("*").order("name"),
     supabase.from("profiles").select("id, username, full_name, role, branch_id, mobile, photo_path").order("username"),
     supabase.from("notifications").select("*").order("created_at", { ascending: false }).limit(300),
     supabase.from("notification_receipts").select("*").eq("username", profile.username),
+    // Link tokens only for approved confirmation letters that are due, so the SMS list can include the link.
+    supabase.from("candidates").select("id, access_token").not("confirmation_approved_at", "is", null).lte("confirmation_date", todayIst()),
   ]);
+  const letterTokens = Object.fromEntries(((letters.data ?? []) as { id: string; access_token: string }[]).map((r) => [r.id, r.access_token]));
 
   const subByCand = new Map(subs.map((s) => [s.candidate_id, s]));
   const rows = cands.map((c) => ({ c, cat: categorize(c, subByCand.get(c.id)), onboarding: subByCand.get(c.id) ?? null }));
@@ -42,6 +46,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       people={(people.data as Profile[]) ?? []}
       notifications={notifications}
       appUrl={process.env.NEXT_PUBLIC_APP_URL ?? ""}
+      letterTokens={letterTokens}
       initialList={list}
     />
   );

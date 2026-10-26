@@ -3,24 +3,37 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createSyncClient } from "@/lib/supabase/sync";
 import { deleteCandidateFiles } from "@/lib/candidate-files";
 import { cleanRetention } from "@/lib/privacy";
+import { pushTo } from "@/lib/push";
+import { ALERT_DAYS_BEFORE, BACKLOG_DAYS } from "@/lib/confirmation";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-/** Nightly (vercel.json): removes uploads from applications that were never submitted, then strips closed
- *  records older than the retention period set in Admin. Vercel sends "Authorization: Bearer $CRON_SECRET". */
+/** Nightly (vercel.json): tells HR about confirmations to approve, removes uploads from applications that were never
+ *  submitted, then strips closed records older than the retention period set in Admin. Vercel sends "Authorization: Bearer $CRON_SECRET". */
 export async function GET(req: NextRequest) {
   if (!process.env.CRON_SECRET || req.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   try {
     const db = await createSyncClient();
+    // A failed alert must not stop the clean-up; it is retried the next night (alerts are sent once each).
+    const confirmations = await alertConfirmations(db).catch((e: Error) => `failed: ${e.message}`);
     const abandoned = await removeAbandonedUploads(db);
     const stripped = await stripOldRecords(db);
-    return NextResponse.json({ ok: true, abandoned, stripped });
+    return NextResponse.json({ ok: true, confirmations, abandoned, stripped });
   } catch (e) {
     return NextResponse.json({ ok: false, error: (e as Error).message }, { status: 500 });
   }
+}
+
+/** Employees whose confirmation date is a week away: their HR gets a notification (written by the database) and a push. */
+async function alertConfirmations(db: SupabaseClient) {
+  const { data, error } = await db.rpc("send_confirmation_alerts", { p_days_before: ALERT_DAYS_BEFORE, p_backlog_days: BACKLOG_DAYS });
+  if (error) throw new Error(error.message);
+  const due = (data ?? []) as { hr: string; candidate: string; due: string }[];
+  await Promise.all(due.map((d) => pushTo(d.hr, { title: "Confirmation to approve", body: `${d.candidate} is confirmed from ${d.due.split("-").reverse().join("/")}. Approve the letter.`, url: "/dashboard?list=confirmations" })));
+  return due.length;
 }
 
 async function removeAbandonedUploads(db: SupabaseClient) {

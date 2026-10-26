@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin, requireProfile } from "@/lib/auth";
 import { pushTo } from "@/lib/push";
 import { applyStage, isBlacklisted, reactivate, stageFor, walkinBlocked, type StageInput } from "@/lib/pipeline";
-import { formatDateTime, localInputToIso, dateToIso, tomorrowIstIso } from "@/lib/dates";
+import { formatDateTime, localInputToIso, dateToIso, todayIst, tomorrowIstIso } from "@/lib/dates";
 import { CANDIDATE_COLUMNS, type Branch, type Candidate } from "@/lib/types";
 
 type Result = { ok: true; message: string } | { ok: false; message: string; blocked?: string };
@@ -233,6 +233,18 @@ export async function approveSalary(candidateId: string, basic: number, allowanc
   }
   revalidatePath("/dashboard");
   return { ok: true, message: "Salary approved." };
+}
+
+/** HR approves an employee's confirmation after probation. The letter opens now and is sent from the SMS list on the 1st. */
+export async function approveConfirmation(candidateId: string): Promise<Result> {
+  const { profile, supabase } = await requireProfile();
+  if (profile.role === "branch") return { ok: false, message: "Only HR can approve a confirmation." };
+  const { data, error } = await supabase.rpc("approve_confirmation", { p_candidate: candidateId });
+  if (error) return { ok: false, message: error.message };
+  revalidatePath("/dashboard");
+  const d = String(data ?? "");
+  const when = d > todayIst() ? `on ${d.split("-").reverse().join("/")}` : "now";
+  return { ok: true, message: `Confirmation approved. Send the letter from "SMS to send" ${when}.` };
 }
 
 /** HR saw the candidate's original Aadhaar in person (for those who couldn't use the QR or e-KYC check). */

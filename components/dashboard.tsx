@@ -7,6 +7,7 @@ import { SMS_TITLES, joiningDate, offerValidity, smsItem, smsLink, smsText, type
 import { waLink } from "@/lib/wa-templates";
 import { markSmsSent, setEmployeeDetails } from "@/app/actions/candidates";
 import { ago, formatDate, formatDateTime, friendlyWhen } from "@/lib/dates";
+import { confirmationDate, confirmationState } from "@/lib/confirmation";
 import { AppShell, Avatar, staffSections, type NavCounts } from "./app-shell";
 import { CandidatePanel } from "./candidate-panel";
 import { WalkinForm } from "./walkin-form";
@@ -16,16 +17,17 @@ import { Badge, Field, Flash, Modal } from "./ui";
 
 type Row = { c: Candidate; cat: Categorized; onboarding: OnboardingSubmission | null };
 
-type Group = "followup" | "completed" | "rejected" | "onboarding" | "today" | "sms" | "reminders" | "approvals" | "reapply" | "talent";
+type Group = "followup" | "completed" | "rejected" | "onboarding" | "today" | "sms" | "reminders" | "confirmations" | "approvals" | "reapply" | "talent";
 /** A list is a group, optionally narrowed: "followup", "followup.received", "onboarding.docs_received"… */
 type ListKey = string;
 
-const GROUPS: Group[] = ["followup", "completed", "rejected", "onboarding", "today", "sms", "reminders", "approvals", "reapply", "talent"];
+const GROUPS: Group[] = ["followup", "completed", "rejected", "onboarding", "today", "sms", "reminders", "confirmations", "approvals", "reapply", "talent"];
 
 const TITLES: Record<Group, { title: string; hint: string }> = {
   today: { title: "Today's work", hint: "Calls and updates due today or overdue, plus tomorrow's interviews and joinings." },
   reminders: { title: "Tomorrow's reminders", hint: "Interviews and joinings happening tomorrow. Remind them today." },
   sms: { title: "SMS to send today", hint: "Nothing is sent automatically. Tap WhatsApp or SMS: your phone opens with the message ready, and the row is ticked off." },
+  confirmations: { title: "Confirmations to approve", hint: "Employees finishing their 6-month probation. Open one and approve: the confirmation letter then appears in SMS to send on the 1st." },
   approvals: { title: "Waiting for approval", hint: "Salaries proposed by HR, and candidates HR put on hold after the interview." },
   followup: { title: "In follow-up", hint: "Everyone still being called, interviewed or waiting to join." },
   onboarding: { title: "Joined · onboarding", hint: "New joiners waiting for the store's employee code or HR's payroll step, and onboarding documents." },
@@ -75,7 +77,7 @@ function subsFor(g: Group, store: boolean): Sub[] {
   }
 }
 
-function inGroup(r: Row, g: Group, admin: boolean): boolean {
+function inGroup(r: Row, g: Group, admin: boolean, store: boolean): boolean {
   const cat = r.cat.category;
   switch (g) {
     case "followup": return r.cat.active;
@@ -84,6 +86,7 @@ function inGroup(r: Row, g: Group, admin: boolean): boolean {
     case "onboarding": return ONBOARDING_CATEGORIES.includes(cat) || r.cat.docCategory !== "none";
     case "today": return isTodaysWork(r.c, r.cat);
     case "sms": return !!smsItem(r.c, r.cat);
+    case "confirmations": return !store && confirmationState(r.c) === "due";
     case "reminders": return needsTomorrowReminder(r.c, r.cat);
     case "approvals": return admin && (r.c.salary_status === "proposed" || r.c.pipeline_status === "Waiting for Admin Approval");
     case "reapply": return cat === "reapply";
@@ -99,8 +102,9 @@ function parseKey(key: string | undefined): { group: Group; sub?: string } {
   return GROUPS.includes(g as Group) ? { group: g as Group, sub } : { group: "followup" };
 }
 
-export function Dashboard({ me, photoUrl, rows, branches, people, notifications, appUrl, initialList }: {
-  me: Profile; photoUrl: string | null; rows: Row[]; branches: Branch[]; people: Profile[]; notifications: NotificationRow[]; appUrl: string; initialList?: string;
+export function Dashboard({ me, photoUrl, rows, branches, people, notifications, appUrl, letterTokens, initialList }: {
+  me: Profile; photoUrl: string | null; rows: Row[]; branches: Branch[]; people: Profile[]; notifications: NotificationRow[]; appUrl: string;
+  letterTokens: Record<string, string>; initialList?: string;
 }) {
   const admin = isAdminRole(me.role);
   const store = me.role === "branch";
@@ -117,7 +121,7 @@ export function Dashboard({ me, photoUrl, rows, branches, people, notifications,
   }, [list]);
 
   const counts = useMemo(() => countAll(rows.map((r) => r.cat)), [rows]);
-  const groupCount = useMemo(() => Object.fromEntries(GROUPS.map((g) => [g, rows.filter((r) => inGroup(r, g, admin)).length])) as Record<Group, number>, [rows, admin]);
+  const groupCount = useMemo(() => Object.fromEntries(GROUPS.map((g) => [g, rows.filter((r) => inGroup(r, g, admin, store)).length])) as Record<Group, number>, [rows, admin, store]);
   const navCounts: NavCounts = { ...groupCount };
   const subs = subsFor(list.group, store);
   const needStoreDetails = useMemo(() => store ? rows.filter((r) => r.cat.category === "store_details_pending").map((r) => r.c) : [], [rows, store]);
@@ -129,8 +133,8 @@ export function Dashboard({ me, photoUrl, rows, branches, people, notifications,
         && [r.c.name, r.c.mobile, r.c.posts.join(" "), r.c.applied_locations.join(" "), r.cat.label, r.c.talent_tags.join(" ")].join(" ").toLowerCase().includes(needle));
     }
     const sub = subs.find((s) => s.key === list.sub);
-    return rows.filter((r) => inGroup(r, list.group, admin) && (!sub || sub.test(r)));
-  }, [rows, list, q, subs, admin]);
+    return rows.filter((r) => inGroup(r, list.group, admin, store) && (!sub || sub.test(r)));
+  }, [rows, list, q, subs, admin, store]);
 
   const open = rows.find((r) => r.c.id === openId);
   const branchName = (id: string | null) => branches.find((b) => b.id === id)?.name;
@@ -219,7 +223,7 @@ export function Dashboard({ me, photoUrl, rows, branches, people, notifications,
             <div className="space-y-3">
               {visible.map(({ c, cat }) => {
                 const item = smsItem(c, cat);
-                return item ? <SmsRow key={c.id} c={c} item={item} branches={branches} people={people} onOpen={() => setOpenId(c.id)} /> : null;
+                return item ? <SmsRow key={c.id} c={c} item={item} branches={branches} people={people} letterUrl={letterTokens[c.id] ? `${appUrl}/letters/confirmation/${letterTokens[c.id]}` : undefined} onOpen={() => setOpenId(c.id)} /> : null;
               })}
             </div>
           ) : (
@@ -276,7 +280,7 @@ function CandidateCard({ c, cat, onboarding, branch, onOpen }: { c: Candidate; c
 }
 
 /** One row of Today's SMS List: the message for today, with WhatsApp and normal SMS buttons. */
-function SmsRow({ c, item, branches, people, onOpen }: { c: Candidate; item: SmsItem; branches: Branch[]; people: Profile[]; onOpen: () => void }) {
+function SmsRow({ c, item, branches, people, letterUrl, onOpen }: { c: Candidate; item: SmsItem; branches: Branch[]; people: Profile[]; letterUrl?: string; onOpen: () => void }) {
   const router = useRouter();
   const [, start] = useTransition();
   const branch = branches.find((b) => b.id === c.branch_id) ?? branches.find((b) => b.name === c.applied_locations[0]);
@@ -285,8 +289,8 @@ function SmsRow({ c, item, branches, people, onOpen }: { c: Candidate; item: Sms
   const isJoining = item.kind === "joining_reminder" || item.kind === "not_joined";
   const text = smsText(item.kind, {
     name: c.name, post: c.designation ?? c.posts[0] ?? "", store: branch?.name ?? "Balasanka Group", address: branch?.address ?? branch?.town ?? "",
-    when: isJoining ? formatDate(joining) : formatDateTime(c.interview_at), hrName: hr?.full_name || c.assigned_hr, hrMobile: hr?.mobile || null,
-    validity: joining ? offerValidity(joining) : undefined,
+    when: item.kind === "confirmation_letter" ? formatDate(confirmationDate(c)) : isJoining ? formatDate(joining) : formatDateTime(c.interview_at), hrName: hr?.full_name || c.assigned_hr, hrMobile: hr?.mobile || null,
+    validity: joining ? offerValidity(joining) : undefined, url: letterUrl,
   });
   const needsHr = item.kind === "not_contactable" || item.kind === "interview_missed" || item.kind === "not_joined";
   const sent = (channel: "whatsapp" | "sms") => start(async () => { await markSmsSent(c.id, item.key, SMS_TITLES[item.kind], channel); router.refresh(); });

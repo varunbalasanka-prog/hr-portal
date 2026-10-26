@@ -3,13 +3,14 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { Branch, Candidate, CandidateEvent, Profile } from "@/lib/types";
 import type { Categorized } from "@/lib/categorize";
-import { formatDate, formatDateTime } from "@/lib/dates";
+import { addDays, formatDate, formatDateTime } from "@/lib/dates";
 import { getCandidateDetails, type CandidateDetails } from "@/app/actions/details";
 import { eraseCandidate, renewLink } from "@/app/actions/privacy";
-import { addRemark, approveSalary, changeBranch, markAadhaarSeen, completePayroll, setEmployeeDetails, setOnboardingStatus } from "@/app/actions/candidates";
+import { addRemark, approveConfirmation, approveSalary, changeBranch, markSmsSent, markAadhaarSeen, completePayroll, setEmployeeDetails, setOnboardingStatus } from "@/app/actions/candidates";
 import { dismissReapply, releaseReapply, sendToReapply } from "@/app/actions/workflow";
 import { isAdminRole } from "@/lib/types";
 import { salaryApproved } from "@/lib/salary";
+import { ALERT_DAYS_BEFORE, confirmationDate, confirmationState } from "@/lib/confirmation";
 import { DETAIL_LABELS, DOC_LABELS, FIELD_FLAG, MANDATORY_DOCS, docLabel, namesMatch } from "@/lib/onboarding";
 import { StageForm } from "./stage-form";
 import { WaComposer } from "./wa-composer";
@@ -343,6 +344,35 @@ function AadhaarBox({ c, onChanged }: { c: Candidate; onChanged: () => void }) {
   );
 }
 
+/** Confirmation after the 6-month probation: HR approves (alerted a week before the 1st), then sends the letter on the 1st. */
+function Confirmation({ c, url, wa, onChanged }: { c: Candidate; url: string; wa: (label: string, url: string) => string; onChanged: () => void }) {
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  const [msg, setMsg] = useState<{ ok: boolean; message: string } | null>(null);
+  const state = confirmationState(c);
+  const d = confirmationDate(c)!;
+  const approve = () => start(async () => { setMsg(await approveConfirmation(c.id)); onChanged(); router.refresh(); });
+  const sent = () => start(async () => { await markSmsSent(c.id, `confirmation_letter:${d}`, "Confirmation letter (approved)", "whatsapp"); router.refresh(); });
+  return (
+    <div className="rounded border border-slate-200 p-2 text-xs">
+      <b>Confirmation:</b>{" "}
+      {state === "upcoming" && <>probation ends {formatDate(addDays(d, -1))}; you&apos;ll get an approval alert on {formatDate(addDays(d, -ALERT_DAYS_BEFORE))}.</>}
+      {(state === "due" || state === "none") && <>
+        confirmed from <b>{formatDate(d)}</b>, waiting for your approval.{" "}
+        <button className="btn-primary !py-1 text-xs" disabled={pending} onClick={approve}>Approve confirmation</button>
+      </>}
+      {(state === "approved" || state === "send") && <>
+        approved by {c.confirmation_approved_by} on {formatDate(c.confirmation_approved_at)}, effective <b>{formatDate(d)}</b>.{" "}
+        <a className="btn-outline !py-1 text-xs" href={url} target="_blank" rel="noreferrer">Confirmation letter</a>{" "}
+        {state === "send"
+          ? <a className="btn-success !py-1 text-xs" href={wa("confirmation letter", url)} target="_blank" rel="noreferrer" onClick={sent}>Send confirmation on WhatsApp</a>
+          : <span className="text-slate-500">It appears in SMS to send on {formatDate(d)}.</span>}
+      </>}
+      <Flash msg={msg} />
+    </div>
+  );
+}
+
 function Documents({ c, details, offerUrl, apptUrl, onboardUrl, onChanged }: {
   c: Candidate; details: CandidateDetails | null;
   offerUrl: string; apptUrl: string; onboardUrl: string; onChanged: () => void;
@@ -379,11 +409,12 @@ function Documents({ c, details, offerUrl, apptUrl, onboardUrl, onChanged }: {
           {c.pipeline_status === "Joined" && <>
             <a className="btn-outline" href={apptUrl} target="_blank" rel="noreferrer">Appointment letter</a>
             <a className="btn-success" href={wa("appointment letter", apptUrl)} target="_blank" rel="noreferrer">Send appointment on WhatsApp</a>
-            <a className="btn-outline" href={apptUrl.replace("/appointment/", "/confirmation/")} target="_blank" rel="noreferrer">Confirmation letter</a>
           </>}
           {c.employment_status === "Left" && c.left_type === "With Information" && c.relieving_date &&
             <a className="btn-outline" href={apptUrl.replace("/appointment/", "/relieving/")} target="_blank" rel="noreferrer">Relieving &amp; experience letter</a>}
         </div>
+        {c.pipeline_status === "Joined" && c.employment_status !== "Left" && c.actual_joining_date &&
+          <Confirmation c={c} url={apptUrl.replace("/appointment/", "/confirmation/")} wa={wa} onChanged={onChanged} />}
         <p className="text-xs text-slate-600">Offer reply: {c.offer_response ? <b>{c.offer_response === "accepted" ? "Accepted" : "Declined"} on {formatDate(c.offer_responded_at)}</b> : "not yet answered (the candidate can accept or decline at the bottom of the offer letter)"}</p>
       </section>
 
