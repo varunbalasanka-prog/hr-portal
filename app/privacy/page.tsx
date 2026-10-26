@@ -19,8 +19,8 @@ export default async function PrivacyPage() {
   const keepTa = months ? `${months} மாதங்கள்` : "நாங்கள் நிர்ணயிக்கும் காலம்";
 
   const rows: [string, string, string, string][] = [
-    ["What we collect", "Your name, mobile, address, family name, date of birth, education, work history, salary details, photo and the documents you upload. If you join, also Aadhaar (masked), bank, PF/ESI and emergency contact details.",
-      "நாங்கள் சேகரிப்பவை", "உங்கள் பெயர், கைபேசி எண், முகவரி, குடும்பப் பெயர், பிறந்த தேதி, கல்வி, பணி அனுபவம், சம்பள விவரம், புகைப்படம் மற்றும் நீங்கள் பதிவேற்றும் ஆவணங்கள். பணியில் சேர்ந்தால் ஆதார் (மறைக்கப்பட்டது), வங்கி, PF/ESI மற்றும் அவசரத் தொடர்பு விவரங்கள்."],
+    ["What we collect", "Your name, mobile, address, family name, date of birth, education, work history, salary details, photo and the documents you upload. If you join, also Aadhaar, bank, PF/ESI, family (for ESI / PF nomination) and emergency contact details. If you check your Aadhaar with its QR code or e-KYC file, we keep only the name, date of birth, gender and last 4 digits from it.",
+      "நாங்கள் சேகரிப்பவை", "உங்கள் பெயர், கைபேசி எண், முகவரி, குடும்பப் பெயர், பிறந்த தேதி, கல்வி, பணி அனுபவம், சம்பள விவரம், புகைப்படம் மற்றும் நீங்கள் பதிவேற்றும் ஆவணங்கள். பணியில் சேர்ந்தால் ஆதார், வங்கி, PF/ESI, குடும்ப விவரங்கள் (ESI / PF நியமனத்திற்கு) மற்றும் அவசரத் தொடர்பு விவரங்கள். ஆதார் QR அல்லது e-KYC கோப்பு மூலம் சரிபார்த்தால், பெயர், பிறந்த தேதி, பாலினம், கடைசி 4 இலக்கங்கள் மட்டுமே வைத்திருப்போம்."],
     ["Why", "To consider you for the job you applied for, contact you, arrange interviews, prepare offer and appointment letters, and, if you join, for payroll, PF, ESI and legal records.",
       "ஏன்", "நீங்கள் விண்ணப்பித்த வேலைக்கு உங்களைப் பரிசீலிக்க, தொடர்பு கொள்ள, நேர்காணல் ஏற்பாடு செய்ய, பணி வாய்ப்பு மற்றும் நியமனக் கடிதங்கள் தயாரிக்க, பணியில் சேர்ந்தால் சம்பளம், PF, ESI மற்றும் சட்டப் பதிவுகளுக்காக."],
     ["Who can see it", "Only our HR team, the store you applied to, and our administrators. Files are kept in private storage in India (Mumbai). We do not sell or share your details with anyone else, except where the law requires.",

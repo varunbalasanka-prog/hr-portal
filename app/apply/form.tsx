@@ -195,8 +195,8 @@ export function ApplyForm({ branches, questions, initialBranch, source }: ApplyC
       </div>
 
       <p className="text-xs text-slate-600">
-        Photos or PDFs only, up to 8 MB each. Large photos are made smaller on your phone before upload.
-        <br />புகைப்படம் அல்லது PDF மட்டும், ஒவ்வொன்றும் 8 MB வரை. பெரிய புகைப்படங்கள் தானாகச் சிறியதாக்கப்படும்.
+        Photos or PDFs only, up to 5 MB each. Large photos are made smaller on your phone before upload.
+        <br />புகைப்படம் அல்லது PDF மட்டும், ஒவ்வொன்றும் 5 MB வரை. பெரிய புகைப்படங்கள் தானாகச் சிறியதாக்கப்படும்.
       </p>
       <Turnstile key={captchaKey} onToken={setCaptcha} />
       <button className="btn-primary h-12 w-full text-base" disabled={!!progress} aria-live="polite">

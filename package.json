@@ -17,13 +17,17 @@
     "@fontsource/noto-sans-tamil": "^5.2.7",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.118.0",
+    "@xmldom/xmldom": "^0.9.12",
+    "@zip.js/zip.js": "^2.24.0",
     "googleapis": "^150.0.1",
+    "jsqr": "^1.4.0",
     "next": "^15.5.28",
     "qrcode": "^1.5.4",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "server-only": "^0.0.1",
     "web-push": "^3.6.7",
+    "xml-crypto": "^6.4.0",
     "zod": "^4.6.6"
   },
   "devDependencies": {

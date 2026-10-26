@@ -32,3 +32,7 @@ export function calculateSalary(basicIn: number | string, allowancesIn: number |
 export function rupees(n: number): string {
   return n.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
+
+/** The offer letter opens only once an admin has approved the salary (salaries from before the approval step count as approved). */
+export const salaryApproved = (c: { salary_status?: string | null; basic_salary: number }) =>
+  c.salary_status === "approved" || (!c.salary_status && Number(c.basic_salary) > 0);

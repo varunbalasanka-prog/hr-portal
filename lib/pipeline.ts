@@ -34,8 +34,9 @@ export const STAGE_TITLES: Record<Stage, string> = {
 };
 
 export const CALL_OUTCOMES = ["Contacted", "Not Reachable", "Switch Off", "Ringing Not Response", "Busy / Cut Call", "Wrong Number"];
-export const SCREENING_REJECTION_REASONS = ["Salary Expectation High", "Timing Preference", "Not Suitable", "Age Criteria", "Distance Issue", "Not Interested"];
-export const REPORT_REASONS = ["Not Suitable", "Age Criteria", "Salary Expectation High", "Distance Issue", "Not Interested", "Wrong Number", "Not Contactable", "Joined & Left"];
+/** "Age - Over Age Limit" blocks for good; "Age - Underage" may apply again later through the admin's Re-Apply folder. */
+export const SCREENING_REJECTION_REASONS = ["Salary Expectation High", "Timing Preference", "Not Suitable", "Age - Over Age Limit", "Age - Underage", "Distance Issue", "Not Interested"];
+export const REPORT_REASONS = ["Not Suitable", "Age Criteria", "Over Age", "Underage", "Salary Expectation High", "Distance Issue", "Not Interested", "Wrong Number", "Not Contactable", "Joined & Left"];
 
 const TERMINAL_STATUSES = [
   "Wrong Number", "Not Contactable", "Scheduled Not Contactable", "Interview Scheduled - No Response",
@@ -43,12 +44,25 @@ const TERMINAL_STATUSES = [
   "Interview Rescheduled Not Attended", "Selected Candidate Dropped",
 ];
 
+/** Blocked for good (same rule as is_blacklisted() in the database): Not Suitable or over-age. Old "Age Criteria"
+ *  rejections count as over-age. */
 export function isBlacklisted(c: Pick<Candidate, "pipeline_status" | "rejection_reason">): boolean {
   const r = c.rejection_reason ?? "";
-  const s = c.pipeline_status ?? "";
-  return r.includes("Not Suitable") || r.includes("Age Criteria") || s.startsWith("Screening Rejected")
-    || (s.startsWith("Left") && s.includes("Without Information"));
+  if (r.includes("Underage")) return false;
+  return r.includes("Not Suitable") || r.includes("Age Criteria") || r.includes("Over Age");
 }
+
+/** May apply again, but an admin decides first (needs_reapply_review() in the database): underage, left without
+ *  information, or rejected at screening for another reason (salary, timing, distance, not interested). */
+export function needsReapplyReview(c: Pick<Candidate, "pipeline_status" | "rejection_reason">): boolean {
+  if (isBlacklisted(c)) return false;
+  const s = c.pipeline_status ?? "";
+  return (c.rejection_reason ?? "").includes("Underage") || (s.startsWith("Left") && s.includes("Without Information")) || s.startsWith("Screening Rejected");
+}
+
+/** A walk-in for this person needs an admin's approval. */
+export const walkinBlocked = (c: Pick<Candidate, "pipeline_status" | "rejection_reason" | "reapply_review">) =>
+  isBlacklisted(c) || needsReapplyReview(c) || c.reapply_review;
 
 /** Which update form a candidate gets, based on where they are. */
 export function stageFor(c: Candidate): Stage {
@@ -71,6 +85,7 @@ export interface StageInput {
   callOutcome?: string;           // screening stages
   callAction?: "Interview Scheduled" | "Rejected" | "";
   interviewAt?: string;           // datetime-local
+  interviewBranchId?: string;     // store the interview is at; the candidate moves to that store's HR
   rejectionReason?: string;
 
   attendance?: "Attended" | "Not Attended" | "";
@@ -115,11 +130,14 @@ const num = (v?: string) => (v && v.trim() ? Number(v) : 0);
 function selectedPatch(input: StageInput): Partial<Candidate> | string {
   if (!input.expectedJoiningDate) return "Expected joining date is required.";
   if (!input.branchId) return "Branch allocated is required.";
+  // HR proposes the salary; an admin approves it (the database refuses anyone else writing basic_salary / allowances).
+  const salary = input.basicSalary?.trim() || input.allowances?.trim()
+    ? { proposed_basic: num(input.basicSalary), proposed_allowances: num(input.allowances), salary_status: "proposed" as const }
+    : {};
   return {
     pipeline_status: "Expected Joining",
     interview_status: "Selected",
-    basic_salary: num(input.basicSalary),
-    allowances: num(input.allowances),
+    ...salary,
     branch_id: input.branchId,
     designation: input.designation?.trim() || null,
     expected_joining_date: input.expectedJoiningDate,
@@ -158,7 +176,9 @@ export function applyStage(c: Candidate, stage: Stage, input: StageInput, now: D
         if (input.callAction === "Interview Scheduled") {
           const interviewAt = localInputToIso(input.interviewAt);
           if (!interviewAt) return fail("Enter the interview date and time.");
+          if (!input.interviewBranchId) return fail("Select the interview location.");
           Object.assign(patch, {
+            branch_id: input.interviewBranchId,
             calling_action: "Interview Scheduled",
             pipeline_status: "Interview Scheduled",
             interview_at: interviewAt,
@@ -251,8 +271,6 @@ export function applyStage(c: Candidate, stage: Stage, input: StageInput, now: D
         if (!input.actualJoiningDate) return fail("Enter the actual joining date.");
         Object.assign(patch, {
           pipeline_status: "Joined", actual_joining_date: input.actualJoiningDate, employment_status: "Working",
-          basic_salary: input.basicSalary ? num(input.basicSalary) : c.basic_salary,
-          allowances: input.allowances ? num(input.allowances) : c.allowances,
           next_action: "Joined successfully", next_action_at: null,
         });
         notify.push({ recipient: "branch", message: `New employee joined: ${c.name}. Please assign employee code and shift timing.` });
@@ -307,7 +325,7 @@ export function applyStage(c: Candidate, stage: Stage, input: StageInput, now: D
 
 /** Reactivate a dropped / unreachable candidate (fixed version of reactivate_candidate()). */
 export function reactivate(c: Candidate, now: Date = new Date()): StageResult {
-  if (isBlacklisted(c)) return { patch: {}, notify: [], error: "Permanently rejected or absconding candidates cannot be reactivated." };
+  if (isBlacklisted(c) || needsReapplyReview(c)) return { patch: {}, notify: [], error: "Permanently rejected, underage or absconding candidates cannot be reopened here. Use the Re-Apply folder." };
   const s = c.pipeline_status;
   const tomorrow = tomorrowIstIso(now);
   let patch: Partial<Candidate>;

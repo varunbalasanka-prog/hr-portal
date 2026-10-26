@@ -7,11 +7,13 @@ import type { Branch, Candidate } from "@/lib/types";
 import { reactivateCandidate, updateCandidateStage } from "@/app/actions/candidates";
 import { Field, Flash, Select } from "./ui";
 
-export function StageForm({ c, branches, onSaved }: { c: Candidate; branches: Branch[]; onSaved: () => void }) {
+export function StageForm({ c, branches, admin, onSaved }: { c: Candidate; branches: Branch[]; admin: boolean; onSaved: () => void }) {
   const stage = stageFor(c);
+  const firstApplied = branches.find((b) => b.name === c.applied_locations[0])?.id ?? "";
   const [f, setF] = useState<StageInput>({
-    basicSalary: c.basic_salary ? String(c.basic_salary) : "",
-    allowances: c.allowances ? String(c.allowances) : "",
+    interviewBranchId: c.branch_id ?? firstApplied,
+    basicSalary: String(c.proposed_basic ?? (c.basic_salary || "")),
+    allowances: String(c.proposed_allowances ?? (c.allowances || "")),
     branchId: c.branch_id ?? branches.find((b) => b.name === c.applied_locations[0])?.id ?? "",
     designation: c.designation ?? c.posts[0] ?? "",
   });
@@ -30,22 +32,31 @@ export function StageForm({ c, branches, onSaved }: { c: Candidate; branches: Br
       <div className="space-y-3">
         <p className="text-sm text-slate-600">This candidate is closed: <b>{c.pipeline_status}</b>{c.rejection_reason ? ` (${c.rejection_reason})` : ""}.</p>
         <Flash msg={msg} />
-        <button className="btn-outline" disabled={pending} onClick={() => start(async () => { const r = await reactivateCandidate(c.id); setMsg(r); if (r.ok) onSaved(); })}>
-          Reactivate candidate
-        </button>
+        {admin ? (
+          <button className="btn-outline" disabled={pending} onClick={() => start(async () => { const r = await reactivateCandidate(c.id); setMsg(r); if (r.ok) onSaved(); })}>
+            Reopen follow-up (admin)
+          </button>
+        ) : <p className="text-xs text-slate-500">Closed by mistake? Ask an admin to reopen it.</p>}
       </div>
     );
   }
 
   const branchOptions = branches.map((b) => ({ value: b.id, label: b.name }));
+  // Stores the candidate applied to come first in the interview location list.
+  const interviewOptions = [
+    ...branches.filter((b) => c.applied_locations.includes(b.name)).map((b) => ({ value: b.id, label: `${b.name} (applied)` })),
+    ...branches.filter((b) => !c.applied_locations.includes(b.name)).map((b) => ({ value: b.id, label: b.name })),
+  ];
+  const interviewHr = branches.find((b) => b.id === f.interviewBranchId)?.hr_username;
   const selectionFields = (
     <div className="grid grid-cols-1 gap-3 rounded-md border border-green-200 bg-green-50 p-3 sm:grid-cols-2">
       <Field label="Branch allocated *"><Select value={f.branchId ?? ""} onChange={set("branchId")} options={branchOptions} /></Field>
       <Field label="Designation"><input className="input" value={f.designation ?? ""} onChange={(e) => set("designation")(e.target.value)} /></Field>
-      <Field label="Basic salary (₹)"><input className="input" inputMode="numeric" value={f.basicSalary ?? ""} onChange={(e) => set("basicSalary")(e.target.value)} /></Field>
-      <Field label="Allowances (₹)"><input className="input" inputMode="numeric" value={f.allowances ?? ""} onChange={(e) => set("allowances")(e.target.value)} /></Field>
+      <Field label="Proposed basic salary (₹)"><input className="input" inputMode="numeric" value={f.basicSalary ?? ""} onChange={(e) => set("basicSalary")(e.target.value)} /></Field>
+      <Field label="Proposed allowances (₹)"><input className="input" inputMode="numeric" value={f.allowances ?? ""} onChange={(e) => set("allowances")(e.target.value)} /></Field>
       <Field label="Expected joining date *"><input type="date" className="input" value={f.expectedJoiningDate ?? ""} onChange={(e) => set("expectedJoiningDate")(e.target.value)} /></Field>
       <SalaryPreview basic={f.basicSalary} allowances={f.allowances} />
+      {!admin && <p className="text-xs text-slate-600 sm:col-span-2">The salary goes to an admin for approval. The offer letter opens once it is approved.</p>}
     </div>
   );
 
@@ -60,13 +71,17 @@ export function StageForm({ c, branches, onSaved }: { c: Candidate; branches: Br
             <Field label="Action *"><Select value={f.callAction ?? ""} onChange={set("callAction")} options={["Interview Scheduled", "Rejected"]} /></Field>
           )}
           {f.callOutcome === "Contacted" && f.callAction === "Interview Scheduled" && (
-            <Field label="Interview date & time *"><input type="datetime-local" className="input" value={f.interviewAt ?? ""} onChange={(e) => set("interviewAt")(e.target.value)} /></Field>
+            <>
+              <Field label="Interview date & time *"><input type="datetime-local" className="input" value={f.interviewAt ?? ""} onChange={(e) => set("interviewAt")(e.target.value)} /></Field>
+              <Field label="Interview location *"><Select value={f.interviewBranchId ?? ""} onChange={set("interviewBranchId")} options={interviewOptions} /></Field>
+              {interviewHr && interviewHr !== c.assigned_hr && <p className="text-xs text-amber-700">Saving moves this candidate to <b>{interviewHr}</b>, the HR for that store.</p>}
+            </>
           )}
           {f.callOutcome === "Contacted" && f.callAction === "Rejected" && (
             <Field label="Rejection reason *"><Select value={f.rejectionReason ?? ""} onChange={set("rejectionReason")} options={SCREENING_REJECTION_REASONS} /></Field>
           )}
           {f.callOutcome && !["Contacted", "Wrong Number"].includes(f.callOutcome) && (
-            <a className="btn-outline" href={smsLink(c, `Dear ${c.name}, we tried to reach you about your job application with Balasanka Group. Please call us back.`)}>Send "tried to reach you" SMS</a>
+            <p className="text-xs text-slate-500">After saving, they appear in Today&apos;s SMS list with the message ready.</p>
           )}
         </>
       )}
@@ -158,6 +173,3 @@ function SalaryPreview({ basic, allowances }: { basic?: string; allowances?: str
   );
 }
 
-export function smsLink(c: Candidate, body: string) {
-  return `sms:+91${c.mobile}?body=${encodeURIComponent(body)}`;
-}

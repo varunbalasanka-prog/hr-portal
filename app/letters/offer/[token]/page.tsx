@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { loadLetter } from "@/lib/letters";
 import { addDays, formatDate, todayIst } from "@/lib/dates";
-import { calculateSalary, rupees } from "@/lib/salary";
+import { calculateSalary, rupees, salaryApproved } from "@/lib/salary";
 import { OfferReply } from "./reply";
 import { Addresses, ExpiredLink, Letterhead, Tamil } from "@/components/letterhead";
 
@@ -14,6 +14,7 @@ export default async function OfferLetter({ params }: Props) {
   const letter = await loadLetter(token);
   if (letter.expired) return <ExpiredLink />;
   const { c, branch, address, companyName } = letter;
+  if (!salaryApproved(c)) return <NotReady />;
   const doj = c.revised_joining_date ?? c.expected_joining_date ?? todayIst();
   const dojStr = formatDate(doj);
   const validity = formatDate(addDays(doj, 3));
@@ -48,5 +49,17 @@ export default async function OfferLetter({ params }: Props) {
       </tr></tbody></table>
       {c.pipeline_status !== "Joined" && <OfferReply token={token} answered={c.offer_response} />}
     </Letterhead>
+  );
+}
+
+function NotReady() {
+  return (
+    <main className="mx-auto max-w-md p-6 text-center">
+      <div className="card p-6">
+        <h1 className="mb-2 text-lg font-bold text-brand">Your offer letter is being prepared</h1>
+        <p className="text-sm text-slate-700">Please open this link again later, or ask the HR team when it will be ready.</p>
+        <p className="mt-2 text-sm text-slate-600">உங்கள் பணி வாய்ப்பு கடிதம் தயாராகிக் கொண்டிருக்கிறது. சிறிது நேரம் கழித்து இந்த இணைப்பை மீண்டும் திறக்கவும்.</p>
+      </div>
+    </main>
   );
 }

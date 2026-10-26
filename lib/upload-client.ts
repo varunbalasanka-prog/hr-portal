@@ -40,6 +40,6 @@ export const extFor = (type: string) => (type === "application/pdf" ? "pdf" : ty
 /** Checks type and size after shrinking. Returns an error message or null. */
 export function checkFile(f: File, label: string): string | null {
   if (!ALLOWED_TYPES.includes(f.type)) return `${label}: photo or PDF only / புகைப்படம் அல்லது PDF மட்டும்.`;
-  if (f.size > MAX_FILE_BYTES) return `${label}: larger than 8 MB / 8 MB-க்கு மேல் உள்ளது.`;
+  if (f.size > MAX_FILE_BYTES) return `${label}: larger than 5 MB / 5 MB-க்கு மேல் உள்ளது.`;
   return null;
 }

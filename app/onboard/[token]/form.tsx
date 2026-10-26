@@ -1,30 +1,31 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { BLOOD_GROUPS, DOC_LABELS, RELATIONSHIPS } from "@/lib/onboarding";
+import { BLOOD_GROUPS, DETAIL_LABELS, DOC_LABELS, FIELD_FLAG, RELATIONSHIPS, familyRequirements } from "@/lib/onboarding";
+import { AadhaarCheck } from "./aadhaar-check";
 import { splitBilingual } from "@/lib/apply-questions";
 import { browserStorage, checkFile, extFor, shrinkImage } from "@/lib/upload-client";
 import { submitOnboarding } from "./actions";
 
-type Cand = { name: string; mobile: string; branch: string; address: string; father_name: string; marital_status: string; email: string };
+type Cand = { name: string; mobile: string; branch: string; address: string; father_name: string; marital_status: "Married" | "Unmarried" | ""; email: string };
 
 const SELECT = "-- Select / தேர்வு செய்க --";
 const en = (label: string) => splitBilingual(label)[0];
+const YES_NO = ["Yes / ஆம்", "No / இல்லை"];
 
 /** Files upload from the browser into "<token>/" in private storage; the server only receives their paths.
- *  Only the three mandatory documents are required. Family documents are optional and asked only for ESI / PF nomination. */
-export function OnboardingForm({ token, cand, resubmit, digilocker, fetched, fetchError }: {
-  token: string; cand: Cand; resubmit: boolean; digilocker: boolean; fetched: Record<string, string>; fetchError: boolean;
+ *  ESI (gross up to ₹21,000) or UAN (above): a candidate who already has the number skips the family section;
+ *  otherwise the family details and their documents are required. A re-upload link shows only what HR flagged. */
+export function OnboardingForm({ token, cand, flagged, question, aadhaarCheck, digilocker, fetched, fetchError }: {
+  token: string; cand: Cand; flagged: string[] | null; question: "esi" | "uan"; aadhaarCheck: boolean; digilocker: boolean; fetched: Record<string, string>; fetchError: boolean;
 }) {
-  const [marital, setMarital] = useState(cand.marital_status === "Single" ? "Unmarried" : cand.marital_status);
+  const [marital, setMarital] = useState<string>(cand.marital_status);
   const [relation, setRelation] = useState("");
-  const [esi, setEsi] = useState("");
-  const [uan, setUan] = useState("");
-  const [kids, setKids] = useState(0);
+  const [has, setHas] = useState("");
+  const [kids, setKids] = useState("");
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
   const [progress, setProgress] = useState("");
-  const req = !resubmit; // on re-submission, already-uploaded files are kept
 
   if (done) {
     return (
@@ -67,6 +68,48 @@ export function OnboardingForm({ token, cand, resubmit, digilocker, fetched, fet
     }
   }
 
+  const footer = (
+    <>
+      <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
+        <p className="text-slate-700">We use these details and documents only for your employment: payroll, PF, ESI, emergencies and legal records. Only HR and administrators can see them.
+          <Link href="/privacy" target="_blank" className="ml-1 text-sky-800 underline">Privacy notice</Link></p>
+        <p className="mt-1 text-slate-600">இந்த விவரங்களும் ஆவணங்களும் உங்கள் பணிக்காக மட்டுமே (சம்பளம், PF, ESI, அவசரநிலை, சட்டப் பதிவுகள்) பயன்படுத்தப்படும். HR மற்றும் நிர்வாகிகள் மட்டுமே பார்க்க முடியும்.</p>
+        <label className="mt-2 flex items-start gap-2 font-semibold">
+          <input type="checkbox" name="consent" value="yes" required className="mt-1 h-5 w-5 shrink-0" />
+          <span>I agree. / நான் ஒப்புக்கொள்கிறேன். <span className="text-red-700">*</span></span>
+        </label>
+      </div>
+      <p className="text-xs text-slate-600">Photos or PDFs only, up to 5 MB each. Large photos are made smaller on your phone first.
+        <br />புகைப்படம் அல்லது PDF மட்டும், ஒவ்வொன்றும் 5 MB வரை.</p>
+      <button className="btn-primary h-11 w-full" disabled={!!progress} aria-live="polite">
+        {progress || (flagged ? "Re-submit / மீண்டும் சமர்ப்பிக்கவும்" : "Submit / சமர்ப்பிக்கவும்")}
+      </button>
+    </>
+  );
+
+  // Re-upload link: only the items HR flagged.
+  if (flagged) {
+    return (
+      <form className="space-y-5" onSubmit={onSubmit}>
+        {error && <div role="alert" className="rounded bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+        <Section n={1} title="Items HR asked for / HR கேட்டவை">
+          {flagged.map((k) => k.startsWith(FIELD_FLAG) ? <FlaggedField key={k} name={k.slice(FIELD_FLAG.length)} /> : (
+            <div key={k}>
+              <FileIn name={k} label={DOC_LABELS[k] ?? k} required />
+              {k === "aadhar" && <AadhaarHint />}
+            </div>
+          ))}
+          {flagged.includes("aadhar") && <div className="sm:col-span-2"><AadhaarCheck token={token} enabled={aadhaarCheck} /></div>}
+        </Section>
+        {footer}
+      </form>
+    );
+  }
+
+  const label = question === "esi" ? "ESI" : "UAN (PF)";
+  const family = has === "No" ? familyRequirements(marital, Number(kids || 0)) : null;
+  const need = (k: string) => !!family && (family.docs.includes(k) || family.fields.includes(k));
+
   return (
     <form className="space-y-5" onSubmit={onSubmit}>
       {error && <div role="alert" className="rounded bg-red-50 p-3 text-sm text-red-700">{error}</div>}
@@ -77,8 +120,15 @@ export function OnboardingForm({ token, cand, resubmit, digilocker, fetched, fet
         <Static label="Branch / கிளை" value={cand.branch} />
         <Static label="Address / முகவரி" value={cand.address || "-"} />
         <Input name="father_name" label="Father's / husband's name / தந்தை / கணவர் பெயர்" defaultValue={cand.father_name} required />
-        <Choice name="marital_status" label="Marital status / திருமண நிலை" value={marital} onChange={setMarital}
-          options={["Married / திருமணம் ஆனவர்", "Unmarried / திருமணம் ஆகாதவர்"]} required />
+        {cand.marital_status ? (
+          <>
+            <Static label="Marital status / திருமண நிலை" value={cand.marital_status === "Married" ? "Married / திருமணம் ஆனவர்" : "Unmarried / திருமணம் ஆகாதவர்"} />
+            <input type="hidden" name="marital_status" value={cand.marital_status} />
+          </>
+        ) : (
+          <Choice name="marital_status" label="Marital status / திருமண நிலை" value={marital} onChange={setMarital}
+            options={["Married / திருமணம் ஆனவர்", "Unmarried / திருமணம் ஆகாதவர்"]} required />
+        )}
         {marital === "Married" && <Input name="wedding_date" label="Wedding date / திருமண தேதி" type="date" />}
         <Input name="email" label="Email / மின்னஞ்சல்" type="email" defaultValue={cand.email} required />
       </Section>
@@ -109,13 +159,11 @@ export function OnboardingForm({ token, cand, resubmit, digilocker, fetched, fet
       )}
 
       <Section n={3} title="Mandatory documents / கட்டாய ஆவணங்கள்">
-        <p className="rounded bg-sky-50 p-2 text-xs text-sky-900 sm:col-span-2">
-          Please upload a <b>masked Aadhaar</b> (only the last 4 digits visible). Download it free from myaadhaar.uidai.gov.in, or cover the first 8 digits before taking the photo.
-          <br />மறைக்கப்பட்ட ஆதாரைப் பதிவேற்றவும் (கடைசி 4 இலக்கங்கள் மட்டும் தெரியும்). myaadhaar.uidai.gov.in-இல் இலவசமாகப் பதிவிறக்கலாம், அல்லது முதல் 8 இலக்கங்களை மறைத்து புகைப்படம் எடுக்கவும்.
-        </p>
-        <FileIn name="aadhar" label={DOC_LABELS.aadhar} required={req} />
-        <FileIn name="school_certificate" label={DOC_LABELS.school_certificate} required={req && !fetched.school_certificate} done={!!fetched.school_certificate} />
-        <FileIn name="passport_photo" label={DOC_LABELS.passport_photo} required={req} />
+        <AadhaarHint />
+        <FileIn name="aadhar" label={DOC_LABELS.aadhar} required />
+        <div className="sm:col-span-2"><AadhaarCheck token={token} enabled={aadhaarCheck} /></div>
+        <FileIn name="school_certificate" label={DOC_LABELS.school_certificate} required={!fetched.school_certificate} done={!!fetched.school_certificate} />
+        <FileIn name="passport_photo" label={DOC_LABELS.passport_photo} required />
       </Section>
 
       <Section n={4} title="Other documents (optional) / மற்ற ஆவணங்கள் (விருப்பம்)">
@@ -124,64 +172,70 @@ export function OnboardingForm({ token, cand, resubmit, digilocker, fetched, fet
         <FileIn name="driving_license" label={DOC_LABELS.driving_license} done={!!fetched.driving_license} />
       </Section>
 
-      <Section n={5} title="PF & ESI">
-        <Choice name="esi_status" label="Do you have an ESI number? / ESI எண் உள்ளதா?" value={esi} onChange={setEsi} options={["Yes / ஆம்", "No / இல்லை"]} required />
-        {esi === "Yes" && <Input name="esi_number" label="ESI number / ESI எண்" required />}
-        <Choice name="uan_status" label="Do you have a UAN (PF) number? / UAN (PF) எண் உள்ளதா?" value={uan} onChange={setUan} options={["Yes / ஆம்", "No / இல்லை"]} required />
-        {uan === "Yes" && <Input name="uan_number" label="UAN number / UAN எண்" required />}
+      <Section n={5} title={question === "esi" ? "ESI" : "PF (UAN)"}>
+        <Choice name={`${question}_status`} label={`Do you already have a${question === "esi" ? "n" : ""} ${label} number? / ${label} எண் ஏற்கனவே உள்ளதா?`} value={has} onChange={setHas} options={YES_NO} required />
+        {has === "Yes" && <Input name={`${question}_number`} label={`${label} number / ${label} எண்`} required />}
+        {has === "Yes" && <p className="text-xs text-slate-600 sm:col-span-2">Family details are not needed. / குடும்ப விவரங்கள் தேவையில்லை.</p>}
       </Section>
 
-      <Section n={6} title="Family details for ESI / PF nomination (optional) / ESI / PF நியமனத்திற்கான குடும்ப விவரங்கள் (விருப்பம்)">
-        <p className="text-xs text-slate-600 sm:col-span-2">Only fill this if you want them covered under ESI or named as PF nominee. Masked Aadhaar only.
-          <br />ESI காப்பீடு அல்லது PF நியமனத்திற்கு மட்டும் நிரப்பவும். மறைக்கப்பட்ட ஆதார் மட்டும்.</p>
-        {marital !== "Married" ? (
-          <>
-            <FileIn name="father_aadhar" label={DOC_LABELS.father_aadhar} />
-            <FileIn name="father_photo" label={DOC_LABELS.father_photo} />
-            <Input name="mother_name" label="Mother name / தாய் பெயர்" />
-            <FileIn name="mother_aadhar" label={DOC_LABELS.mother_aadhar} />
-            <FileIn name="mother_photo" label={DOC_LABELS.mother_photo} />
-          </>
-        ) : (
-          <>
-            <Input name="spouse_name" label="Spouse name / வாழ்க்கைத் துணை பெயர்" />
-            <FileIn name="spouse_aadhar" label={DOC_LABELS.spouse_aadhar} />
-            <FileIn name="spouse_photo" label={DOC_LABELS.spouse_photo} />
-            <label className="block">
-              <span className="label">Number of children / குழந்தைகள் எண்ணிக்கை</span>
-              <select name="kids_count" className="input" value={kids} onChange={(e) => setKids(Number(e.target.value))}>
-                {[0, 1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
-              </select>
-            </label>
-            {Array.from({ length: kids }, (_, i) => i + 1).map((i) => (
-              <div key={i} className="space-y-2 rounded border border-slate-200 p-2 sm:col-span-2">
-                <div className="text-xs font-bold">Child {i} / குழந்தை {i}</div>
-                <Input name={`kid_${i}_name`} label="Name / பெயர்" />
-                <FileIn name={`kid_${i}_aadhar`} label={DOC_LABELS[`kid_${i}_aadhar`]} />
-                <FileIn name={`kid_${i}_photo`} label={DOC_LABELS[`kid_${i}_photo`]} />
-              </div>
-            ))}
-          </>
-        )}
-      </Section>
+      {family && (
+        <Section n={6} title={`Family details for ${label} / ${label}-க்கான குடும்ப விவரங்கள்`}>
+          <p className="text-xs text-slate-600 sm:col-span-2">Needed to register you for {label}. Upload the full Aadhaar and a photo of each person.
+            <br />{label} பதிவுக்குத் தேவை. ஒவ்வொருவரின் முழு ஆதார் மற்றும் புகைப்படத்தைப் பதிவேற்றவும்.</p>
+          {marital !== "Married" ? (
+            <>
+              <FileIn name="father_aadhar" label={DOC_LABELS.father_aadhar} required={need("father_aadhar")} />
+              <FileIn name="father_photo" label={DOC_LABELS.father_photo} required={need("father_photo")} />
+              <Input name="mother_name" label="Mother name / தாய் பெயர்" required={need("mother_name")} />
+              <FileIn name="mother_aadhar" label={DOC_LABELS.mother_aadhar} required={need("mother_aadhar")} />
+              <FileIn name="mother_photo" label={DOC_LABELS.mother_photo} required={need("mother_photo")} />
+            </>
+          ) : (
+            <>
+              <Input name="spouse_name" label="Spouse name / வாழ்க்கைத் துணை பெயர்" required />
+              <FileIn name="spouse_aadhar" label={DOC_LABELS.spouse_aadhar} required />
+              <FileIn name="spouse_photo" label={DOC_LABELS.spouse_photo} required />
+              <label className="block">
+                <Label text="Number of children / குழந்தைகள் எண்ணிக்கை" required />
+                <select name="kids_count" className="input" value={kids} required onChange={(e) => setKids(e.target.value)}>
+                  <option value="">{SELECT}</option>
+                  {[0, 1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
+                </select>
+              </label>
+              {Array.from({ length: Number(kids || 0) }, (_, i) => i + 1).map((i) => (
+                <div key={i} className="space-y-2 rounded border border-slate-200 p-2 sm:col-span-2">
+                  <div className="text-xs font-bold">Child {i} / குழந்தை {i}</div>
+                  <Input name={`kid_${i}_name`} label="Name / பெயர்" required />
+                  <FileIn name={`kid_${i}_aadhar`} label={DOC_LABELS[`kid_${i}_aadhar`]} required />
+                  <FileIn name={`kid_${i}_photo`} label={DOC_LABELS[`kid_${i}_photo`]} required />
+                </div>
+              ))}
+            </>
+          )}
+        </Section>
+      )}
 
-      <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
-        <p className="text-slate-700">We use these details and documents only for your employment: payroll, PF, ESI, emergencies and legal records. Only HR and administrators can see them.
-          <Link href="/privacy" target="_blank" className="ml-1 text-sky-800 underline">Privacy notice</Link></p>
-        <p className="mt-1 text-slate-600">இந்த விவரங்களும் ஆவணங்களும் உங்கள் பணிக்காக மட்டுமே (சம்பளம், PF, ESI, அவசரநிலை, சட்டப் பதிவுகள்) பயன்படுத்தப்படும். HR மற்றும் நிர்வாகிகள் மட்டுமே பார்க்க முடியும்.</p>
-        <label className="mt-2 flex items-start gap-2 font-semibold">
-          <input type="checkbox" name="consent" value="yes" required className="mt-1 h-5 w-5 shrink-0" />
-          <span>I agree. / நான் ஒப்புக்கொள்கிறேன். <span className="text-red-700">*</span></span>
-        </label>
-      </div>
-
-      <p className="text-xs text-slate-600">Photos or PDFs only, up to 8 MB each. Large photos are made smaller on your phone first.
-        <br />புகைப்படம் அல்லது PDF மட்டும், ஒவ்வொன்றும் 8 MB வரை.</p>
-      <button className="btn-primary h-11 w-full" disabled={!!progress} aria-live="polite">
-        {progress || (resubmit ? "Re-submit documents / மீண்டும் சமர்ப்பிக்கவும்" : "Submit / சமர்ப்பிக்கவும்")}
-      </button>
+      {footer}
     </form>
   );
+}
+
+function AadhaarHint() {
+  return (
+    <p className="rounded bg-sky-50 p-2 text-xs text-sky-900 sm:col-span-2">
+      Please upload your <b>full Aadhaar (not masked)</b>: front and back, all 12 digits clearly visible. HR needs it for PF and ESI registration.
+      <br />உங்கள் <b>முழு ஆதாரைப்</b> (மறைக்காமல்) பதிவேற்றவும்: முன்பக்கம், பின்பக்கம், 12 இலக்கங்களும் தெளிவாகத் தெரிய வேண்டும். PF, ESI பதிவுக்கு HR-க்குத் தேவை.
+    </p>
+  );
+}
+
+/** A detail HR flagged for correction. */
+function FlaggedField({ name }: { name: string }) {
+  const text = DETAIL_LABELS[name] ?? name;
+  if (name === "blood_group") return <Choice name={name} label={text} options={BLOOD_GROUPS} required />;
+  if (name === "emergency_relationship") return <Choice name={name} label={text} options={RELATIONSHIPS} required />;
+  return <Input name={name} label={text} required type={name === "wedding_date" ? "date" : name === "email" ? "email" : "text"}
+    {...(name === "emergency_mobile" ? { inputMode: "tel" as const, pattern: "[0-9+ ]{10,14}" } : {})} />;
 }
 
 function Label({ text, required }: { text: string; required?: boolean }) {

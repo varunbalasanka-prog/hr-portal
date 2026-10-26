@@ -19,7 +19,8 @@ describe("upload helpers", () => {
     expect(extFor("image/jpeg")).toBe("jpeg");
   });
   it("shows staff the English part of a document label", () => {
-    expect(docLabel("aadhar")).toBe("Aadhaar card (masked)");
+    expect(docLabel("aadhar")).toBe("Aadhaar card (full, not masked)");
+    expect(docLabel("field:esi_number")).toBe("ESI number");
     expect(docLabel("unknown_key")).toBe("unknown_key");
   });
 });

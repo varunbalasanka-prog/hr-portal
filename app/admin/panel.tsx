@@ -7,15 +7,17 @@ import { BranchPostsAdmin } from "./branch-posts";
 import { UsersAdmin } from "./users";
 import { ChangeHistory, type AuditRow } from "./history";
 import { PrivacyAdmin } from "./privacy";
+import { WalkinApprovals, type WalkinRequestRow } from "./walkins";
 import type { PrivacyContact } from "@/lib/privacy";
 import type { Branch } from "@/lib/types";
 
-export function AdminPanel({ me, people, log, questions, posts, branches, branchPosts, history, privacyContact, retentionMonths }: {
-  privacyContact: PrivacyContact; retentionMonths: number | null;
+export function AdminPanel({ walkins, me, people, log, questions, posts, branches, branchPosts, history, privacyContact, retentionMonths }: {
+  privacyContact: PrivacyContact; retentionMonths: number | null; walkins: WalkinRequestRow[];
   me: Profile; history: AuditRow[] | null; people: Profile[]; log: NotificationRow[]; questions: AdminQuestion[]; posts: string[]; branches: Branch[]; branchPosts: Record<string, string[]>;
 }) {
   return (
-    <div className="grid gap-4 p-4 lg:grid-cols-2">
+    <div className="grid gap-4 p-3 sm:p-4 lg:grid-cols-2">
+      <WalkinApprovals rows={walkins} />
       {history && <ChangeHistory rows={history} />}
       <BranchPostsAdmin branches={branches} posts={posts} open={branchPosts} />
       <QuestionsAdmin questions={questions} posts={posts} />
@@ -23,7 +25,7 @@ export function AdminPanel({ me, people, log, questions, posts, branches, branch
       <PrivacyAdmin contact={privacyContact} months={retentionMonths} />
       <section className="card p-3">
         <h2 className="mb-2 text-sm font-bold">Notification log &amp; read tracking</h2>
-        <div className="max-h-[70vh] overflow-y-auto">
+        <div className="max-h-[70vh] overflow-auto">
           <table className="w-full text-xs">
             <thead><tr className="border-b text-left text-slate-500"><th>When</th><th>From → To</th><th>Message</th><th>Read</th></tr></thead>
             <tbody>{log.map((n) => (

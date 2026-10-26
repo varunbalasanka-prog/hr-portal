@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { lookupToken } from "@/lib/candidate-token";
-import { DOC_LABELS } from "@/lib/onboarding";
+import { DOC_LABELS, insuranceQuestion, itemLabelFull, normalizeMarital } from "@/lib/onboarding";
 import { ExpiredLink } from "@/components/letterhead";
 import { OnboardingForm } from "./form";
 import { digilockerEnabled } from "@/lib/digilocker";
+import { aadhaarCheckEnabled } from "@/lib/aadhaar";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Candidate onboarding · Balasanka Group", robots: { index: false } };
@@ -42,13 +43,14 @@ export default async function OnboardPage({ params, searchParams }: Props) {
     <Shell>
       {sub?.status === "pending" && (
         <div className="mb-4 rounded bg-amber-50 p-3 text-sm text-amber-900" role="status">
-          HR asked you to re-upload / மீண்டும் பதிவேற்றவும்: <b>{sub.missing_docs.map((k) => DOC_LABELS[k] ?? k).join(", ")}</b>.
+          HR asked you to correct or re-upload / திருத்தவும் அல்லது மீண்டும் பதிவேற்றவும்: <b>{sub.missing_docs.map(itemLabelFull).join(", ")}</b>.
           Your other documents are already saved. / மற்ற ஆவணங்கள் சேமிக்கப்பட்டுள்ளன.
         </div>
       )}
-      <OnboardingForm token={token} resubmit={sub?.status === "pending"} digilocker={digilockerEnabled()} fetched={fetchedPaths(token, sp.dl)} fetchError={!!sp.dl_error} cand={{
+      <OnboardingForm token={token} flagged={sub?.status === "pending" ? sub.missing_docs : null}
+        question={insuranceQuestion(Number(c.basic_salary || 0) + Number(c.allowances || 0))} aadhaarCheck={aadhaarCheckEnabled() && !c.aadhaar_checked} digilocker={digilockerEnabled()} fetched={fetchedPaths(token, sp.dl)} fetchError={!!sp.dl_error} cand={{
         name: c.name, mobile: c.mobile, branch: branch?.name ?? c.applied_locations[0] ?? "", address: c.address ?? "",
-        father_name: c.father_name ?? "", marital_status: c.marital_status ?? "", email: c.email ?? "",
+        father_name: c.father_name ?? "", marital_status: normalizeMarital(c.marital_status), email: c.email ?? "",
       }} />
     </Shell>
   );

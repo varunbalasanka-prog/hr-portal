@@ -2,7 +2,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { Branch, Profile } from "@/lib/types";
-import { addWalkin, type WalkinInput } from "@/app/actions/candidates";
+import { addWalkin, requestWalkinApproval, type WalkinInput } from "@/app/actions/candidates";
 import { Field, Flash, Modal, Select } from "./ui";
 
 export function WalkinForm({ me, branches, onClose }: { me: Profile; branches: Branch[]; onClose: () => void }) {
@@ -12,6 +12,7 @@ export function WalkinForm({ me, branches, onClose }: { me: Profile; branches: B
     branchId: me.role === "branch" ? me.branch_id ?? "" : "",
   });
   const [msg, setMsg] = useState<{ ok: boolean; message: string } | null>(null);
+  const [blocked, setBlocked] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const set = (k: keyof WalkinInput) => (v: string) => setF((p) => ({ ...p, [k]: v }));
 
@@ -29,8 +30,8 @@ export function WalkinForm({ me, branches, onClose }: { me: Profile; branches: B
           <Field label="Interview date & time *"><input type="datetime-local" className="input" value={f.interviewAt ?? ""} onChange={(e) => set("interviewAt")(e.target.value)} /></Field>
         ) : (
           <>
-            <Field label="Basic salary (₹)"><input className="input" inputMode="numeric" value={f.basicSalary ?? ""} onChange={(e) => set("basicSalary")(e.target.value)} /></Field>
-            <Field label="Allowances (₹)"><input className="input" inputMode="numeric" value={f.allowances ?? ""} onChange={(e) => set("allowances")(e.target.value)} /></Field>
+            <Field label="Proposed basic salary (₹)"><input className="input" inputMode="numeric" value={f.basicSalary ?? ""} onChange={(e) => set("basicSalary")(e.target.value)} /></Field>
+            <Field label="Proposed allowances (₹)"><input className="input" inputMode="numeric" value={f.allowances ?? ""} onChange={(e) => set("allowances")(e.target.value)} /></Field>
             <Field label="Expected joining date *"><input type="date" className="input" value={f.expectedJoiningDate ?? ""} onChange={(e) => set("expectedJoiningDate")(e.target.value)} /></Field>
           </>
         )}
@@ -39,9 +40,23 @@ export function WalkinForm({ me, branches, onClose }: { me: Profile; branches: B
       <div className="mt-3"><Flash msg={msg} /></div>
       <button className="btn-primary mt-1" disabled={pending} onClick={() => start(async () => {
         const r = await addWalkin(f);
+        if (!r.ok && r.blocked) { setBlocked(r.blocked); setMsg(null); return; }
         setMsg(r);
         if (r.ok) { router.refresh(); setTimeout(onClose, 800); }
       })}>{pending ? "Saving…" : "Save walk-in"}</button>
+      {blocked && (
+        <Modal open onClose={() => setBlocked(null)} title="⚠ Walk-in blocked">
+          <div className="space-y-3 text-sm">
+            <p className="rounded bg-red-50 p-3 font-semibold text-red-800">{blocked}</p>
+            <p>This person can&apos;t be added without an admin&apos;s approval. Send the request and tell the candidate HR will call them.</p>
+            <Flash msg={msg} />
+            <div className="flex flex-wrap gap-2">
+              <button className="btn-primary" disabled={pending || !!msg?.ok} onClick={() => start(async () => setMsg(await requestWalkinApproval(f)))}>Ask admin to approve</button>
+              <button className="btn-outline" onClick={() => { setBlocked(null); onClose(); }}>Close</button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </Modal>
   );
 }

@@ -5,7 +5,7 @@ import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypt
  * DigiLocker (MeriPehchaan / API Setu "Pull documents" OAuth). Switched off until a partner account is approved and
  * these are set in Vercel: DIGILOCKER_CLIENT_ID, DIGILOCKER_CLIENT_SECRET, DIGILOCKER_REDIRECT_URI
  * (https://hr.balasanka.in/api/digilocker/callback). DIGILOCKER_BASE can point at the sandbox.
- * Aadhaar is NOT pulled: the onboarding form asks for a masked Aadhaar, and DigiLocker's e-Aadhaar shows the full number.
+ * Aadhaar is NOT pulled: the onboarding form takes the Aadhaar as a photo, checked with the free UIDAI QR or e-KYC file (lib/aadhaar.ts).
  */
 const BASE = () => (process.env.DIGILOCKER_BASE || "https://digilocker.meripehchaan.gov.in/public/oauth2").replace(/\/$/, "");
 export const digilockerEnabled = () =>
