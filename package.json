@@ -17,6 +17,7 @@
     "@fontsource/noto-sans-tamil": "^5.2.7",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.118.0",
+    "@vercel/analytics": "^2.0.1",
     "@xmldom/xmldom": "^0.9.12",
     "@zip.js/zip.js": "^2.24.0",
     "googleapis": "^150.0.1",
