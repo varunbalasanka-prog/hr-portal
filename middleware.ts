@@ -1,9 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PREFIXES = ["/login", "/onboard", "/letters", "/api/sync-sheet", "/api/cleanup", "/api/digilocker", "/apply", "/privacy", "/careers"];
+const PUBLIC_PREFIXES = ["/login", "/onboard", "/letters", "/api/sync-sheet", "/api/cleanup", "/api/digilocker", "/apply", "/privacy", "/careers", "/robots.txt", "/sitemap.xml", "/llms.txt"];
 // Candidate pages and crons never need a staff session, so skip the Supabase round trip there.
-const NO_SESSION = ["/onboard", "/letters", "/api/cron", "/api/cleanup", "/api/sync-sheet", "/api/digilocker", "/apply", "/privacy", "/careers"];
+const NO_SESSION = ["/onboard", "/letters", "/api/cron", "/api/cleanup", "/api/sync-sheet", "/api/digilocker", "/apply", "/privacy", "/careers", "/robots.txt", "/sitemap.xml", "/llms.txt"];
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
@@ -23,7 +23,8 @@ export async function middleware(request: NextRequest) {
   const isPublic = path === "/" ? false : PUBLIC_PREFIXES.some((p) => path.startsWith(p));
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();
-    url.pathname = "/login";
+    // Visitors (and search engines) opening the bare domain see the jobs; staff use the login link there.
+    url.pathname = path === "/" ? "/careers" : "/login";
     return NextResponse.redirect(url);
   }
   return response;
