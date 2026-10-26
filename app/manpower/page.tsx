@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { StaffPage } from "@/components/staff-page";
 import { requireProfile } from "@/lib/auth";
 import { isAdminRole, type Branch } from "@/lib/types";
 import { Manpower, type ManpowerRow } from "./manpower";
@@ -13,13 +13,10 @@ export default async function ManpowerPage() {
     supabase.from("app_settings").select("value").eq("key", "branch_posts").maybeSingle(),
   ]);
   return (
-    <div>
-      <header className="flex items-center justify-between bg-brand px-4 py-3 text-white">
-        <h1 className="font-bold">Manpower requests</h1>
-        <Link href="/dashboard" className="btn-outline !py-1">← Dashboard</Link>
-      </header>
+    <StaffPage me={profile} active="manpower" title="Manpower requests"
+      subtitle="Stores ask for staff here. Approved requests show as “Urgently hiring” on the careers page.">
       <Manpower me={profile} admin={isAdminRole(profile.role)} rows={(rows as ManpowerRow[]) ?? []} branches={(branches as Branch[]) ?? []}
         posts={(setting?.value as Record<string, string[]>) ?? {}} />
-    </div>
+    </StaffPage>
   );
 }

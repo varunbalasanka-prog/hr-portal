@@ -6,7 +6,8 @@ import { Dashboard } from "@/components/dashboard";
 
 export const dynamic = "force-dynamic";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ list?: string }> }) {
+  const { list } = await searchParams;
   const { profile, supabase } = await requireProfile();
 
   const [cands, subs, branches, people, notifs, receipts] = await Promise.all([
@@ -41,6 +42,7 @@ export default async function DashboardPage() {
       people={(people.data as Profile[]) ?? []}
       notifications={notifications}
       appUrl={process.env.NEXT_PUBLIC_APP_URL ?? ""}
+      initialList={list}
     />
   );
 }

@@ -5,6 +5,7 @@ import { isAdminRole, type NotificationRow, type Profile } from "@/lib/types";
 import { formatDateTime } from "@/lib/dates";
 import { clearNotification, markNotificationViewed, notificationFileUrl, sendNotification } from "@/app/actions/notifications";
 import { Field, Flash, Modal, Select, tooBig } from "./ui";
+import { Icon } from "./icons";
 
 export function NotificationBell({ me, items }: { me: Profile; items: NotificationRow[] }) {
   const [open, setOpen] = useState(false);
@@ -14,11 +15,11 @@ export function NotificationBell({ me, items }: { me: Profile; items: Notificati
 
   return (
     <div className="relative">
-      <button className="btn-outline relative !px-2.5" onClick={() => setOpen((o) => !o)} aria-label="Notifications">
-        🔔{unread > 0 && <span className="absolute -right-1.5 -top-1.5 rounded-full bg-red-600 px-1.5 text-xs text-white">{unread}</span>}
+      <button className="btn-outline relative !px-2.5" onClick={() => setOpen((o) => !o)} aria-label={`Notifications${unread ? ` (${unread} unread)` : ""}`} aria-expanded={open}>
+        <Icon name="bell" />{unread > 0 && <span className="absolute -right-1.5 -top-1.5 min-w-5 rounded-full bg-brand-accent px-1 text-center text-[11px] font-bold leading-5 text-white">{unread}</span>}
       </button>
       {open && (
-        <div className="absolute right-0 z-40 mt-1 max-h-96 w-80 max-w-[calc(100vw-1.5rem)] overflow-y-auto rounded-lg border border-slate-200 bg-white p-2 shadow-xl">
+        <div className="absolute right-0 z-40 mt-2 max-h-96 w-80 max-w-[calc(100vw-1.5rem)] overflow-y-auto rounded-xl border border-slate-200 bg-white p-2 shadow-pop">
           <div className="mb-1 border-b pb-1 text-xs font-bold">Notifications{isAdminRole(me.role) && " (all, admin view)"}</div>
           {items.length === 0 && <p className="py-3 text-center text-xs text-slate-500">No notifications.</p>}
           {items.map((n) => (

@@ -13,7 +13,7 @@ export function PrivacyAdmin({ contact, months }: { contact: PrivacyContact; mon
   const set = (k: keyof PrivacyContact) => (e: React.ChangeEvent<HTMLInputElement>) => setC({ ...c, [k]: e.target.value });
   const valid = cleanRetention(m);
   return (
-    <section className="card space-y-3 p-3 text-sm">
+    <section className="card space-y-3 p-4 text-sm sm:p-5">
       <h2 className="text-sm font-bold">Privacy &amp; data retention</h2>
       <p className="text-slate-600">Shown to candidates on the <a className="text-sky-700 underline" href="/privacy" target="_blank">privacy page</a>. India&apos;s DPDP rules require a contact person who answers data requests.</p>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">

@@ -9,8 +9,11 @@ import { Field, Flash, Select } from "./ui";
 
 export function StageForm({ c, branches, admin, onSaved }: { c: Candidate; branches: Branch[]; admin: boolean; onSaved: () => void }) {
   const stage = stageFor(c);
+  // A held candidate already attended; only the admin's decision is left.
+  const onHold = c.pipeline_status === "Waiting for Admin Approval";
   const firstApplied = branches.find((b) => b.name === c.applied_locations[0])?.id ?? "";
   const [f, setF] = useState<StageInput>({
+    attendance: onHold ? "Attended" : undefined,
     interviewBranchId: c.branch_id ?? firstApplied,
     basicSalary: String(c.proposed_basic ?? (c.basic_salary || "")),
     allowances: String(c.proposed_allowances ?? (c.allowances || "")),
@@ -89,7 +92,9 @@ export function StageForm({ c, branches, admin, onSaved }: { c: Candidate; branc
       {(stage === "interview" || stage === "interview_rescheduled") && (
         <>
           <p className="text-xs text-slate-600">Interview: <b>{formatDateTime(c.interview_at)}</b>{stage === "interview_rescheduled" && c.reschedule_at ? <> · Rescheduled: <b>{formatDateTime(c.reschedule_at)}</b></> : null}</p>
-          <Field label="Attendance *"><Select value={f.attendance ?? ""} onChange={set("attendance")} options={["Attended", "Not Attended"]} /></Field>
+          {onHold
+            ? <p className="rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">On hold after the interview, waiting for the admin&apos;s decision. Pick Selected or Not Selected once it is decided.</p>
+            : <Field label="Attendance *"><Select value={f.attendance ?? ""} onChange={set("attendance")} options={["Attended", "Not Attended"]} /></Field>}
           {f.attendance === "Attended" && (
             <Field label="Interview result *"><Select value={f.interviewStatus ?? ""} onChange={set("interviewStatus")} options={[{ value: "Selected", label: "Selected" }, { value: "Not Selected", label: "Not Selected" }, { value: "Hold", label: "Hold (waiting for admin approval)" }]} /></Field>
           )}

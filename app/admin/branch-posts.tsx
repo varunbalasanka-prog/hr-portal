@@ -25,7 +25,7 @@ export function BranchPostsAdmin({ branches, posts, open }: { branches: Branch[]
   const save = (ids: string[]) => start(async () => setMsg(await saveBranchPosts(ids, ticked)));
 
   return (
-    <section className="card p-3 lg:col-span-2">
+    <section className="card p-4 sm:p-5">
       <h2 className="mb-1 text-sm font-bold">Posts open at each store</h2>
       <p className="mb-2 text-xs text-slate-500">
         Applicants pick a store, then choose only from the posts ticked for it. A store with nothing ticked is hidden from the apply page.

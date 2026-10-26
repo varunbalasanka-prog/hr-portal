@@ -43,8 +43,8 @@ export function Manpower({ me, admin, rows, branches, posts }: { me: Profile; ad
   );
 
   return (
-    <div className="grid gap-4 p-4 lg:grid-cols-3">
-      <section className="card space-y-3 p-3 lg:col-span-1">
+    <div className="grid gap-4 px-4 sm:px-6 lg:grid-cols-3">
+      <section className="card space-y-3 p-4 sm:p-5 lg:col-span-1">
         <h2 className="text-sm font-bold">Ask for staff</h2>
         {me.role !== "branch" && (
           <Field label="Branch *">
@@ -70,7 +70,7 @@ export function Manpower({ me, admin, rows, branches, posts }: { me: Profile; ad
           const r = await requestManpower(f); setMsg(r); if (r.ok) setF({ ...f, post: "", headcount: 1, needed_by: "", reason: "" });
         })}>Send request</button>
       </section>
-      <section className="card overflow-x-auto p-3 lg:col-span-2">
+      <section className="card overflow-x-auto p-4 sm:p-5 lg:col-span-2">
         <h2 className="mb-2 text-sm font-bold">Open ({open.length})</h2>
         {open.length ? table(open) : <p className="text-sm text-slate-500">No open requests.</p>}
         {closed.length > 0 && <details className="mt-4"><summary className="cursor-pointer text-sm font-bold">Closed ({closed.length})</summary>{table(closed)}</details>}

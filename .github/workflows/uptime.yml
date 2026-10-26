@@ -9,7 +9,7 @@ jobs:
     if: ${{ github.repository == 'varunbalasanka-prog/hr-portal' }}
     steps:
       - name: Check pages
-        env: { SITE: "${{ vars.SITE_URL || 'https://balasanka-hr-portal-varun-8369.vercel.app' }}" }
+        env: { SITE: "${{ vars.SITE_URL || 'https://hr.balasanka.in' }}" }
         run: |
           for p in /apply /login /privacy; do
             code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$SITE$p")
