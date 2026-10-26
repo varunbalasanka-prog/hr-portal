@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { loadLetter } from "@/lib/letters";
+import { isJewellery, loadLetter } from "@/lib/letters";
 import { addDays, formatDate, todayIst } from "@/lib/dates";
 import { calculateSalary, rupees, salaryApproved } from "@/lib/salary";
 import { OfferReply } from "./reply";
@@ -20,7 +20,7 @@ export default async function OfferLetter({ params }: Props) {
   const validity = formatDate(addDays(doj, 3));
   const designation = c.designation ?? c.posts[0] ?? "Staff";
   const s = calculateSalary(c.basic_salary, c.allowances);
-  const jewellery = (branch?.business_type ?? "").toLowerCase().includes("jewellery") || address.toLowerCase().includes("velli");
+  const jewellery = isJewellery(branch, address);
   const reportTime = jewellery ? "09:30 AM" : "09:00 AM";
 
   return (
