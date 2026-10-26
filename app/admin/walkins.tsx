@@ -18,7 +18,7 @@ export function WalkinApprovals({ rows }: { rows: WalkinRequestRow[] }) {
   const waiting = rows.filter((r) => r.status === "pending");
   const decide = (id: string, approve: boolean) => start(async () => { const r = await decideWalkin(id, approve); setMsg(r); if (r.ok) router.refresh(); });
   return (
-    <section className="card p-3 lg:col-span-2">
+    <section className="card p-4 sm:p-5">
       <h2 className="mb-2 text-sm font-bold">Walk-in approvals {waiting.length > 0 && <span className="rounded bg-red-600 px-1.5 text-xs text-white">{waiting.length}</span>}</h2>
       <Flash msg={msg} />
       {rows.length === 0 && <p className="text-xs text-slate-500">No requests.</p>}

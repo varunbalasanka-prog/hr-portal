@@ -18,7 +18,7 @@ const SETTING: Record<string, string> = { apply_posts: "post list", branch_posts
 export function ChangeHistory({ rows }: { rows: AuditRow[] }) {
   const [open, setOpen] = useState<number | null>(null);
   return (
-    <section className="card p-3 lg:col-span-2">
+    <section className="card p-4 sm:p-5">
       <h2 className="mb-1 text-sm font-bold">Change history <span className="font-normal text-slate-500">(only you can see this)</span></h2>
       <p className="mb-2 text-xs text-slate-500">Latest 300 changes to logins, stores, the application form and posts. Click a row for the details.</p>
       <div className="max-h-[60vh] overflow-y-auto">

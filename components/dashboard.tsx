@@ -1,288 +1,277 @@
 "use client";
-import { useMemo, useState, useTransition } from "react";
-import Link from "next/link";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { isAdminRole, type Branch, type Candidate, type NotificationRow, type OnboardingSubmission, type Profile } from "@/lib/types";
 import { ONBOARDING_CATEGORIES, countAll, isTodaysWork, needsTomorrowReminder, type Categorized } from "@/lib/categorize";
 import { SMS_TITLES, joiningDate, offerValidity, smsItem, smsLink, smsText, type SmsItem } from "@/lib/sms";
 import { waLink } from "@/lib/wa-templates";
 import { markSmsSent, setEmployeeDetails } from "@/app/actions/candidates";
-import { formatDate, formatDateTime } from "@/lib/dates";
-import { logout } from "@/app/login/actions";
-import { updateMyProfile } from "@/app/actions/users";
-import { TwoStepLogin } from "./two-step";
-import { PushToggle } from "./push-toggle";
+import { ago, formatDate, formatDateTime, friendlyWhen } from "@/lib/dates";
+import { AppShell, Avatar, staffSections, type NavCounts } from "./app-shell";
 import { CandidatePanel } from "./candidate-panel";
 import { WalkinForm } from "./walkin-form";
 import { NotificationBell, SendNotification } from "./notifications";
-import { Badge, Field, Flash, Modal, tooBig } from "./ui";
+import { Icon, type IconName } from "./icons";
+import { Badge, Field, Flash, Modal } from "./ui";
 
 type Row = { c: Candidate; cat: Categorized; onboarding: OnboardingSubmission | null };
 
-type Filter =
-  | { kind: "followup"; sub?: "received" | "interview_scheduled" | "selected_joined" | "not_contacted" }
-  | { kind: "completed"; sub?: "online_joined_list" | "walkin_joined_list" }
-  | { kind: "rejected"; sub?: "screening_rejected" | "wrong_number" | "not_contactable" | "candidate_dropped" | "joined_left" | "left_with" | "left_without" }
-  | { kind: "docs"; sub: string }
-  | { kind: "onboarding"; sub?: "store_details_pending" | "payroll_pending" }
-  | { kind: "today" }
-  | { kind: "sms" }
-  | { kind: "reminders" }
-  | { kind: "reapply" }
-  | { kind: "salary" }
-  | { kind: "talent" };
+type Group = "followup" | "completed" | "rejected" | "onboarding" | "today" | "sms" | "reminders" | "approvals" | "reapply" | "talent";
+/** A list is a group, optionally narrowed: "followup", "followup.received", "onboarding.docs_received"… */
+type ListKey = string;
 
-const FILTER_TITLES: Record<string, string> = {
-  followup: "In follow-up", completed: "Completed", rejected: "Rejected / dropped", today: "Today's work", reminders: "Tomorrow's reminders", talent: "Talent pool (search by tag, e.g. sales)",
-  sms: "Today's SMS list", salary: "Salary approvals (admin only)", reapply: "Re-Apply folder (admin only)", onboarding: "Joined: store details & payroll",
-  store_details_pending: "Waiting for store: employee code & shift", payroll_pending: "Payroll completion pending",
-  left_with: "Left with information (resigned, re-apply allowed)", left_without: "Left without information (absconding)",
-  received: "New / not started", interview_scheduled: "Interview scheduled", selected_joined: "Expected joining", not_contacted: "Unreachable / retry",
-  online_joined_list: "Online joined", walkin_joined_list: "Walk-in joined",
-  screening_rejected: "Screening rejected", wrong_number: "Wrong number", not_contactable: "Not contactable", candidate_dropped: "Candidate dropped", joined_left: "Joined & left",
-  joined_docs_received: "Docs to verify · joined", not_joined_docs_received: "Docs to verify · expected joining",
-  joined_docs_pending: "Pending documents · joined", not_joined_docs_pending: "Pending documents · expected joining",
-  joined_docs_completed: "Documents completed · joined", not_joined_docs_completed: "Documents completed · expected joining",
-  joined_docs_not_submitted: "Docs not submitted · joined", not_joined_docs_not_submitted: "Docs not submitted · expected joining",
+const GROUPS: Group[] = ["followup", "completed", "rejected", "onboarding", "today", "sms", "reminders", "approvals", "reapply", "talent"];
+
+const TITLES: Record<Group, { title: string; hint: string }> = {
+  today: { title: "Today's work", hint: "Calls and updates due today or overdue, plus tomorrow's interviews and joinings." },
+  reminders: { title: "Tomorrow's reminders", hint: "Interviews and joinings happening tomorrow. Remind them today." },
+  sms: { title: "SMS to send today", hint: "Nothing is sent automatically. Tap WhatsApp or SMS: your phone opens with the message ready, and the row is ticked off." },
+  approvals: { title: "Waiting for approval", hint: "Salaries proposed by HR, and candidates HR put on hold after the interview." },
+  followup: { title: "In follow-up", hint: "Everyone still being called, interviewed or waiting to join." },
+  onboarding: { title: "Joined · onboarding", hint: "New joiners waiting for the store's employee code or HR's payroll step, and onboarding documents." },
+  completed: { title: "Completed", hint: "Joined and payroll done." },
+  rejected: { title: "Rejected / dropped", hint: "Closed candidates. Admins can reopen or move them to the Re-Apply folder." },
+  talent: { title: "Talent pool", hint: "People worth calling for future openings. Search by tag, e.g. sales." },
+  reapply: { title: "Re-Apply folder", hint: "People who applied again after being rejected or leaving. Decide if HR should call them." },
 };
 
-function matches(r: Row, f: Filter): boolean {
+type Sub = { key: string; label: string; test: (r: Row) => boolean };
+const leftWithout = (r: Row) => r.cat.category === "joined_left" && r.cat.label.includes("Without Information");
+const docs = (suffix: string) => (r: Row) => r.cat.docCategory.endsWith(suffix);
+
+/** Narrower lists inside a group, shown as chips above the cards. */
+function subsFor(g: Group, store: boolean): Sub[] {
+  const cat = (c: string) => (r: Row) => r.cat.category === c;
+  switch (g) {
+    case "followup": return [
+      { key: "received", label: "New / not started", test: cat("received") },
+      { key: "not_contacted", label: "Unreachable / retry", test: cat("not_contacted") },
+      { key: "interview_scheduled", label: "Interview", test: cat("interview_scheduled") },
+      { key: "selected_joined", label: "Expected joining", test: cat("selected_joined") },
+    ];
+    case "completed": return [
+      { key: "online_joined_list", label: "Online", test: cat("online_joined_list") },
+      { key: "walkin_joined_list", label: "Walk-in", test: cat("walkin_joined_list") },
+    ];
+    case "rejected": return [
+      { key: "screening_rejected", label: "Screening rejected", test: cat("screening_rejected") },
+      { key: "wrong_number", label: "Wrong number", test: cat("wrong_number") },
+      { key: "not_contactable", label: "Not contactable", test: cat("not_contactable") },
+      { key: "candidate_dropped", label: "Candidate dropped", test: cat("candidate_dropped") },
+      { key: "left_with", label: "Left (resigned)", test: (r) => r.cat.category === "joined_left" && !leftWithout(r) },
+      { key: "left_without", label: "Left (absconded)", test: leftWithout },
+    ];
+    case "onboarding": return [
+      { key: "store_details_pending", label: "Waiting for store: code & shift", test: cat("store_details_pending") },
+      { key: "payroll_pending", label: "Payroll pending", test: cat("payroll_pending") },
+      ...(store ? [] : [
+        { key: "docs_received", label: "Documents to verify", test: docs("docs_received") },
+        { key: "docs_pending", label: "Sent back for correction", test: docs("docs_pending") },
+        { key: "docs_not_submitted", label: "Documents not submitted", test: docs("docs_not_submitted") },
+        { key: "docs_completed", label: "Documents completed", test: docs("docs_completed") },
+      ]),
+    ];
+    default: return [];
+  }
+}
+
+function inGroup(r: Row, g: Group, admin: boolean): boolean {
   const cat = r.cat.category;
-  switch (f.kind) {
-    case "followup": return r.cat.active && (!f.sub || cat === f.sub);
-    case "completed": return cat === "online_joined_list" || cat === "walkin_joined_list" ? (!f.sub || cat === f.sub) : false;
-    case "rejected":
-      if (r.cat.active || cat.endsWith("joined_list") || ONBOARDING_CATEGORIES.includes(cat) || cat === "reapply") return false;
-      if (f.sub === "left_with" || f.sub === "left_without") return cat === "joined_left" && r.cat.label.includes("Without Information") === (f.sub === "left_without");
-      return !f.sub || cat === f.sub;
-    case "docs": return r.cat.docCategory === f.sub;
-    case "onboarding": return ONBOARDING_CATEGORIES.includes(cat) && (!f.sub || cat === f.sub);
+  switch (g) {
+    case "followup": return r.cat.active;
+    case "completed": return cat === "online_joined_list" || cat === "walkin_joined_list";
+    case "rejected": return !r.cat.active && !cat.endsWith("joined_list") && !ONBOARDING_CATEGORIES.includes(cat) && cat !== "reapply";
+    case "onboarding": return ONBOARDING_CATEGORIES.includes(cat) || r.cat.docCategory !== "none";
     case "today": return isTodaysWork(r.c, r.cat);
     case "sms": return !!smsItem(r.c, r.cat);
     case "reminders": return needsTomorrowReminder(r.c, r.cat);
+    case "approvals": return admin && (r.c.salary_status === "proposed" || r.c.pipeline_status === "Waiting for Admin Approval");
     case "reapply": return cat === "reapply";
-    case "salary": return r.c.salary_status === "proposed";
     case "talent": return r.c.talent_pool;
   }
 }
 
-type MenuItem = [Filter, string];
-type MenuGroup = { label: string; tone: string; items: MenuItem[] };
+/** Old links (?list=salary, ?list=docs.joined_docs_received) still land somewhere sensible. */
+function parseKey(key: string | undefined): { group: Group; sub?: string } {
+  const [g, sub] = (key ?? "").split(".");
+  if (g === "salary") return { group: "approvals" };
+  if (g === "docs") return { group: "onboarding", sub: sub?.replace(/^(not_)?joined_/, "") };
+  return GROUPS.includes(g as Group) ? { group: g as Group, sub } : { group: "followup" };
+}
 
-export function Dashboard({ me, photoUrl, rows, branches, people, notifications, appUrl }: {
-  me: Profile; photoUrl: string | null; rows: Row[]; branches: Branch[]; people: Profile[]; notifications: NotificationRow[]; appUrl: string;
+export function Dashboard({ me, photoUrl, rows, branches, people, notifications, appUrl, initialList }: {
+  me: Profile; photoUrl: string | null; rows: Row[]; branches: Branch[]; people: Profile[]; notifications: NotificationRow[]; appUrl: string; initialList?: string;
 }) {
-  const [filter, setFilter] = useState<Filter>({ kind: "followup" });
-  const [q, setQ] = useState("");
-  const [openId, setOpenId] = useState<string | null>(null);
-  const [modal, setModal] = useState<"walkin" | "notify" | "settings" | null>(null);
-  const [drawer, setDrawer] = useState(false);
   const admin = isAdminRole(me.role);
   const store = me.role === "branch";
+  const [list, setList] = useState<{ group: Group; sub?: string }>(() => parseKey(initialList));
+  const [q, setQ] = useState("");
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [modal, setModal] = useState<"walkin" | "notify" | null>(null);
+
+  // Keep the address bar in step, so Back, refresh and shared links open the same list.
+  useEffect(() => {
+    const key = list.sub ? `${list.group}.${list.sub}` : list.group;
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("list") !== key) { url.searchParams.set("list", key); window.history.replaceState(null, "", url); }
+  }, [list]);
+
   const counts = useMemo(() => countAll(rows.map((r) => r.cat)), [rows]);
-  const todayCount = useMemo(() => rows.filter((r) => isTodaysWork(r.c, r.cat)).length, [rows]);
-  const salaryCount = useMemo(() => rows.filter((r) => r.c.salary_status === "proposed").length, [rows]);
-  const smsCount = useMemo(() => rows.filter((r) => smsItem(r.c, r.cat)).length, [rows]);
-  const reminderCount = useMemo(() => rows.filter((r) => needsTomorrowReminder(r.c, r.cat)).length, [rows]);
-  // Joined at this store, but the store hasn't entered employee code + shift yet: a popup the store must finish.
+  const groupCount = useMemo(() => Object.fromEntries(GROUPS.map((g) => [g, rows.filter((r) => inGroup(r, g, admin)).length])) as Record<Group, number>, [rows, admin]);
+  const navCounts: NavCounts = { ...groupCount };
+  const subs = subsFor(list.group, store);
   const needStoreDetails = useMemo(() => store ? rows.filter((r) => r.cat.category === "store_details_pending").map((r) => r.c) : [], [rows, store]);
 
   const visible = useMemo(() => {
     const needle = q.trim().toLowerCase();
     if (needle) {
-      return rows.filter((r) => (filter.kind !== "talent" || r.c.talent_pool)
+      return rows.filter((r) => (list.group !== "talent" || r.c.talent_pool)
         && [r.c.name, r.c.mobile, r.c.posts.join(" "), r.c.applied_locations.join(" "), r.cat.label, r.c.talent_tags.join(" ")].join(" ").toLowerCase().includes(needle));
     }
-    return rows.filter((r) => matches(r, filter));
-  }, [rows, filter, q]);
+    const sub = subs.find((s) => s.key === list.sub);
+    return rows.filter((r) => inGroup(r, list.group, admin) && (!sub || sub.test(r)));
+  }, [rows, list, q, subs, admin]);
 
   const open = rows.find((r) => r.c.id === openId);
   const branchName = (id: string | null) => branches.find((b) => b.id === id)?.name;
-  const talentCount = useMemo(() => rows.filter((r) => r.c.talent_pool).length, [rows]);
-  const title = q ? `Search${filter.kind === "talent" ? " in talent pool" : ""}: “${q}”` : FILTER_TITLES[("sub" in filter && filter.sub) || filter.kind];
-  const pick = (f: Filter) => { setFilter(f); setQ(""); setDrawer(false); };
+  const pick = (key: string) => { setList(parseKey(key)); setQ(""); window.scrollTo({ top: 0 }); };
+  const head = TITLES[list.group];
 
-  const groups: MenuGroup[] = [
-    { label: `In follow-up (${counts.in_followup})`, tone: "text-sky-700", items: [
-      [{ kind: "followup" }, `All (${counts.in_followup})`], [{ kind: "followup", sub: "received" }, `New / not started (${counts.received})`],
-      [{ kind: "followup", sub: "interview_scheduled" }, `Interview scheduled (${counts.interview_scheduled})`],
-      [{ kind: "followup", sub: "selected_joined" }, `Expected joining (${counts.selected_joined})`], [{ kind: "followup", sub: "not_contacted" }, `Unreachable / retry (${counts.not_contacted})`],
-    ] },
-    { label: `Completed (${counts.completed})`, tone: "text-green-700", items: [
-      [{ kind: "completed" }, `All (${counts.completed})`], [{ kind: "completed", sub: "online_joined_list" }, `Online joined (${counts.online_joined_list})`],
-      [{ kind: "completed", sub: "walkin_joined_list" }, `Walk-in joined (${counts.walkin_joined_list})`],
-    ] },
-    { label: `Rejected (${counts.rejected})`, tone: "text-red-700", items: [
-      [{ kind: "rejected" }, `All (${counts.rejected})`], [{ kind: "rejected", sub: "screening_rejected" }, `Screening rejected (${counts.screening_rejected})`],
-      [{ kind: "rejected", sub: "wrong_number" }, `Wrong number (${counts.wrong_number})`], [{ kind: "rejected", sub: "not_contactable" }, `Not contactable (${counts.not_contactable})`],
-      [{ kind: "rejected", sub: "candidate_dropped" }, `Candidate dropped (${counts.candidate_dropped})`],
-      [{ kind: "rejected", sub: "left_with" }, `Left with information (${counts.left_with})`], [{ kind: "rejected", sub: "left_without" }, `Left without information (${counts.left_without})`],
-    ] },
-    { label: `Onboarding (${counts.onboarding})`, tone: "text-teal-700", items: [
-      [{ kind: "onboarding", sub: "store_details_pending" }, `Waiting for store: code & shift (${counts.store_details_pending})`],
-      [{ kind: "onboarding", sub: "payroll_pending" }, `Payroll completion pending (${counts.payroll_pending})`],
-      ...(store ? [] : ([
-        [{ kind: "docs", sub: "joined_docs_received" }, "Docs to verify · joined"], [{ kind: "docs", sub: "not_joined_docs_received" }, "Docs to verify · expected joining"],
-        [{ kind: "docs", sub: "joined_docs_pending" }, "Pending documents · joined"], [{ kind: "docs", sub: "not_joined_docs_pending" }, "Pending documents · expected joining"],
-        [{ kind: "docs", sub: "joined_docs_completed" }, "Documents completed · joined"], [{ kind: "docs", sub: "not_joined_docs_completed" }, "Documents completed · expected joining"],
-        [{ kind: "docs", sub: "joined_docs_not_submitted" }, "Docs not submitted · joined"], [{ kind: "docs", sub: "not_joined_docs_not_submitted" }, "Docs not submitted · expected joining"],
-      ] as MenuItem[])),
-    ] },
+  const tiles: { key: Group; label: string; icon: IconName; n: number; tone: string }[] = [
+    { key: "today", label: "Today's work", icon: "today", n: groupCount.today, tone: "text-brand bg-sky-50" },
+    { key: "reminders", label: "Remind for tomorrow", icon: "alarm", n: groupCount.reminders, tone: "text-amber-700 bg-amber-50" },
+    store
+      ? { key: "onboarding", label: "Need code & shift", icon: "clipboard", n: counts.store_details_pending, tone: "text-red-700 bg-red-50" }
+      : { key: "sms", label: "SMS to send", icon: "message", n: groupCount.sms, tone: "text-emerald-700 bg-emerald-50" },
+    admin
+      ? { key: "approvals", label: "Waiting for approval", icon: "badge", n: groupCount.approvals, tone: "text-red-700 bg-red-50" }
+      : { key: "followup", label: "In follow-up", icon: "users", n: groupCount.followup, tone: "text-slate-700 bg-slate-100" },
   ];
-  const quick: MenuItem[] = [
-    [{ kind: "today" }, `Today (${todayCount})`],
-    ...(store ? [] : [[{ kind: "sms" }, `Today's SMS (${smsCount})`] as MenuItem]),
-    [{ kind: "reminders" }, `Reminders (${reminderCount})`],
-    [{ kind: "talent" }, `Talent pool (${talentCount})`],
-    ...(admin ? [[{ kind: "reapply" }, `Re-Apply folder (${counts.reapply})`] as MenuItem, [{ kind: "salary" }, `Salary approvals (${salaryCount})`] as MenuItem] : []),
-  ];
-  const profileButton = (
-    <button className="flex items-center gap-1.5 rounded-full border border-slate-300 bg-white py-0.5 pl-0.5 pr-2.5 text-xs font-bold" onClick={() => { setModal("settings"); setDrawer(false); }}>
-      {photoUrl
-        // eslint-disable-next-line @next/next/no-img-element
-        ? <img src={photoUrl} alt="" className="h-6 w-6 rounded-full object-cover" />
-        : <span className="flex h-6 w-6 items-center justify-center rounded-full bg-sky-600 text-xs text-white">{me.username[0]?.toUpperCase()}</span>}
-      {me.full_name}
-    </button>
+
+  const bell = <NotificationBell me={me} items={notifications} />;
+  const search = (
+    <label className="relative block w-full sm:w-64">
+      <span className="sr-only">Search candidates</span>
+      <Icon name="search" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+      <input className="input !pl-9" type="search" placeholder="Search name, mobile, post…" value={q} onChange={(e) => setQ(e.target.value)} />
+    </label>
   );
 
   return (
-    <div className="overflow-x-hidden pb-6">
-      <header className="flex items-center justify-between border-b-2 border-brand-accent bg-white px-4 py-2">
-        <div>
-          <div className="font-serif text-base font-extrabold uppercase tracking-wide sm:text-lg">Balasanka Group of Companies</div>
-          <div className="hidden text-xs font-semibold text-slate-500 sm:block">Theni • Madurai • Virudhunagar • Sivakasi • Srivilliputhur • Rajapalayam • Tenkasi • Tirunelveli</div>
-        </div>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/balasanka_logo.png" alt="" className="h-9 w-auto" />
-      </header>
-
-      {/* Phones: one menu button holds every list and page, so nothing scrolls sideways. */}
-      <div className="sticky top-0 z-30 flex items-center gap-2 border-b border-slate-200 bg-slate-50/95 px-3 py-2 backdrop-blur md:hidden">
-        <button className="btn-outline !px-2.5" aria-label="Open menu" aria-expanded={drawer} onClick={() => setDrawer(true)}>☰ Menu</button>
-        <input className="input min-w-0 flex-1" placeholder="Search name, mobile…" value={q} onChange={(e) => setQ(e.target.value)} />
-        <NotificationBell me={me} items={notifications} />
-      </div>
-      {drawer && (
-        <div className="fixed inset-0 z-50 bg-black/50 md:hidden" onMouseDown={() => setDrawer(false)}>
-          <nav className="h-full w-72 max-w-[85vw] overflow-y-auto bg-white p-3 shadow-xl" aria-label="Menu" onMouseDown={(e) => e.stopPropagation()}>
-            <div className="mb-3 flex items-center justify-between">
-              {profileButton}
-              <button className="text-2xl leading-none text-slate-500" aria-label="Close menu" onClick={() => setDrawer(false)}>×</button>
-            </div>
-            <div className="grid grid-cols-2 gap-1.5">
-              {quick.map(([f, l]) => <button key={l} className="btn-outline !justify-start !text-xs" onClick={() => pick(f)}>{l}</button>)}
-              <button className="btn-success col-span-2" onClick={() => { setModal("walkin"); setDrawer(false); }}>+ Walk-in</button>
-            </div>
-            {groups.map((g) => (
-              <div key={g.label} className="mt-3">
-                <div className={`mb-1 text-xs font-bold uppercase ${g.tone}`}>{g.label}</div>
-                {g.items.map(([f, l]) => <button key={l} className="block w-full rounded px-2 py-1.5 text-left text-sm hover:bg-slate-100" onClick={() => pick(f)}>{l}</button>)}
-              </div>
-            ))}
-            <div className="mt-3 grid grid-cols-2 gap-1.5 border-t border-slate-200 pt-3">
-              <button className="btn-outline" onClick={() => { setModal("notify"); setDrawer(false); }}>✉ Message</button>
-              <Link className="btn-outline" href="/manpower">Manpower</Link>
-              {admin && <><Link className="btn-outline" href="/reports">Reports</Link><Link className="btn-outline" href="/admin">Admin</Link></>}
-              <form action={logout} className="col-span-2"><button className="btn-danger w-full">Log out</button></form>
-            </div>
-          </nav>
-        </div>
-      )}
-
-      <div className="sticky top-0 z-30 hidden flex-wrap items-center gap-2 border-b border-slate-200 bg-slate-50/95 px-3 py-2 backdrop-blur md:flex">
-        {groups.map((g) => <Menu key={g.label} label={g.label} tone={g.tone} items={g.items} onPick={pick} />)}
-        {quick.map(([f, l]) => <button key={l} className={`btn-outline ${f.kind === "talent" ? "text-purple-700" : f.kind === "reapply" ? "text-fuchsia-700" : f.kind === "salary" ? "text-amber-700" : ""}`} onClick={() => pick(f)}>{l}</button>)}
-        <button className="btn-success" onClick={() => setModal("walkin")}>+ Walk-in</button>
-
-        <div className="ml-auto flex items-center gap-2">
-          <input className="input !w-48" placeholder="Search name, mobile…" value={q} onChange={(e) => setQ(e.target.value)} />
-          <button className="btn-outline !px-2.5" title="Send notification" onClick={() => setModal("notify")}>✉</button>
-          <NotificationBell me={me} items={notifications} />
-          <Link className="btn-outline" href="/manpower">Manpower</Link>
-          {admin && <>
-            <Link className="btn-outline" href="/reports">Reports</Link>
-            <Link className="btn-outline" href="/admin">Admin</Link>
-          </>}
-          {profileButton}
-          <form action={logout}><button className="btn-danger !px-2.5" title="Log out">⏻</button></form>
-        </div>
-      </div>
-
-      <main className="px-3 py-3">
-        <h1 className="mb-2 text-sm font-bold">{title} <span className="font-normal text-slate-500">· {visible.length}</span></h1>
-        {visible.length === 0 && <p className="card p-6 text-center text-sm text-slate-500">No candidates in this list.</p>}
-        {filter.kind === "sms" && !q ? (
-          <div className="space-y-2">
-            <p className="text-xs text-slate-600">Nothing is sent automatically. Tap WhatsApp or SMS: your phone opens with the message ready, and the row is ticked off.</p>
-            {visible.map(({ c, cat }) => {
-              const item = smsItem(c, cat);
-              return item ? <SmsRow key={c.id} c={c} item={item} branches={branches} people={people} onOpen={() => setOpenId(c.id)} /> : null;
-            })}
+    <AppShell me={me} photoUrl={photoUrl} sections={staffSections(me.role, navCounts)} active={q ? "" : list.group} onPick={pick}
+      actions={<>{bell}<button className="btn-primary !px-2.5" onClick={() => setModal("walkin")} aria-label="Add walk-in"><Icon name="plus" /></button></>}>
+      <main className="pb-10">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 pt-5 sm:px-6">
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold tracking-tight">
+              {q ? <>Search: “{q}”</> : head.title} <span className="ml-1 align-middle text-sm font-semibold text-slate-400 tabular-nums">{visible.length}</span>
+            </h1>
+            {!q && <p className="mt-0.5 max-w-2xl text-sm text-slate-500">{head.hint}</p>}
           </div>
-        ) : <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-          {visible.map(({ c, cat, onboarding }) => (
-            <button key={c.id} onClick={() => setOpenId(c.id)}
-              className={`card border-l-4 p-3 text-left transition hover:shadow-md ${c.source === "walkin" ? "border-l-purple-500" : cat.active ? "border-l-sky-600" : cat.category.endsWith("joined_list") ? "border-l-green-600" : "border-l-red-500"}`}>
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0 break-words font-semibold">{c.name}</div>
-                <Badge tone={cat.tone}>{cat.label}</Badge>
-              </div>
-              <div className="text-xs text-slate-600">{c.mobile} · {c.posts.join(", ") || "-"}</div>
-              <div className="text-xs text-slate-500">{branchName(c.branch_id) ?? c.applied_locations.join(", ")}</div>
-              <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs">
-                {c.next_action && <span className="text-slate-700">▸ {c.next_action}{c.next_action_at ? ` · ${formatDateTime(c.next_action_at)}` : ""}</span>}
-                {onboarding && <Badge tone={onboarding.status === "completed" ? "green" : "amber"}>docs {onboarding.status}</Badge>}
-                <span className="ml-auto text-slate-400">{formatDate(c.received_at)}</span>
-              </div>
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+            {search}
+            <div className="hidden items-center gap-2 lg:flex">
+              <button className="btn-outline" onClick={() => setModal("notify")}><Icon name="send" /> Message</button>
+              {bell}
+              <button className="btn-primary" onClick={() => setModal("walkin")}><Icon name="plus" /> Walk-in</button>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2.5 px-4 pt-4 sm:px-6 xl:grid-cols-4">
+          {tiles.map((t) => (
+            <button key={t.label} onClick={() => pick(t.key)}
+              className={`card flex items-center gap-3 p-3 text-left transition hover:border-sky-200 hover:shadow-md ${list.group === t.key && !q ? "!border-sky-300 ring-2 ring-sky-100" : ""}`}>
+              <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${t.tone}`}><Icon name={t.icon} className="h-5 w-5" /></span>
+              <span className="min-w-0">
+                <span className="block text-2xl font-bold leading-none tabular-nums">{t.n}</span>
+                <span className="mt-1 block truncate text-xs font-medium text-slate-500">{t.label}</span>
+              </span>
             </button>
           ))}
-        </div>}
+        </div>
+
+        {!q && subs.length > 0 && (
+          <div className="scroll-thin flex gap-2 overflow-x-auto px-4 pt-4 sm:flex-wrap sm:px-6" role="tablist" aria-label="Narrow the list">
+            <button role="tab" aria-selected={!list.sub} className={`chip ${!list.sub ? "chip-on" : ""}`} onClick={() => setList({ group: list.group })}>
+              All <span className="tabular-nums opacity-70">{groupCount[list.group]}</span>
+            </button>
+            {subs.map((s) => {
+              const n = rows.filter((r) => s.test(r)).length;
+              return (
+                <button key={s.key} role="tab" aria-selected={list.sub === s.key} className={`chip ${list.sub === s.key ? "chip-on" : ""}`} onClick={() => setList({ group: list.group, sub: s.key })}>
+                  {s.label} <span className="tabular-nums opacity-70">{n}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="px-4 pt-4 sm:px-6">
+          {visible.length === 0 && (
+            <div className="card flex flex-col items-center gap-2 px-6 py-12 text-center">
+              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400"><Icon name={q ? "search" : "inbox"} className="h-6 w-6" /></span>
+              <p className="font-semibold text-slate-700">{q ? "No one matches that search" : "Nothing here right now"}</p>
+              <p className="text-sm text-slate-500">{q ? "Try part of the name or the last 4 digits of the mobile." : list.group === "today" ? "You're all caught up for today." : "Candidates appear here as their status changes."}</p>
+            </div>
+          )}
+          {list.group === "sms" && !q ? (
+            <div className="space-y-3">
+              {visible.map(({ c, cat }) => {
+                const item = smsItem(c, cat);
+                return item ? <SmsRow key={c.id} c={c} item={item} branches={branches} people={people} onOpen={() => setOpenId(c.id)} /> : null;
+              })}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-3">
+              {visible.map(({ c, cat, onboarding }) => (
+                <CandidateCard key={c.id} c={c} cat={cat} onboarding={onboarding} branch={branchName(c.branch_id) ?? c.applied_locations.join(", ")} onOpen={() => setOpenId(c.id)} />
+              ))}
+            </div>
+          )}
+        </div>
       </main>
 
       {needStoreDetails.length > 0 && <StoreJoiningPopup people={needStoreDetails} />}
-
       {open && <CandidatePanel key={open.c.id} me={me} c={open.c} cat={open.cat} branches={branches} appUrl={appUrl} onClose={() => setOpenId(null)} />}
       {modal === "walkin" && <WalkinForm me={me} branches={branches} onClose={() => setModal(null)} />}
       {modal === "notify" && <SendNotification me={me} people={people} onClose={() => setModal(null)} />}
-      {modal === "settings" && <Settings me={me} onClose={() => setModal(null)} />}
-    </div>
+    </AppShell>
   );
 }
 
-function Menu({ label, tone, items, onPick }: { label: string; tone: string; items: MenuItem[]; onPick: (f: Filter) => void }) {
-  const [open, setOpen] = useState(false);
+const formatMobile = (m: string) => (/^\d{10}$/.test(m) ? `${m.slice(0, 5)} ${m.slice(5)}` : m);
+
+function CandidateCard({ c, cat, onboarding, branch, onOpen }: { c: Candidate; cat: Categorized; onboarding: OnboardingSubmission | null; branch: string; onOpen: () => void }) {
+  const when = c.next_action_at ? friendlyWhen(c.next_action_at, { dateOnly: /join/i.test(c.next_action ?? "") }) : null;
+  const accent = cat.active ? "before:bg-sky-500" : cat.category.endsWith("joined_list") ? "before:bg-emerald-500" : ONBOARDING_CATEGORIES.includes(cat.category) ? "before:bg-amber-500" : "before:bg-slate-300";
   return (
-    <div className="relative" onMouseLeave={() => setOpen(false)}>
-      <button className={`btn-outline ${tone}`} onClick={() => setOpen((o) => !o)}>{label} ▾</button>
-      {open && (
-        <div className="absolute left-0 z-40 mt-0.5 min-w-56 rounded-lg border border-slate-200 bg-white p-1 shadow-xl">
-          {items.map(([f, l]) => (
-            <button key={l} className="block w-full rounded px-2.5 py-1.5 text-left text-sm hover:bg-slate-100" onClick={() => { onPick(f); setOpen(false); }}>{l}</button>
-          ))}
+    <button onClick={onOpen}
+      className={`card group relative flex flex-col gap-3 overflow-hidden p-4 text-left transition before:absolute before:inset-y-0 before:left-0 before:w-1 hover:border-sky-200 hover:shadow-md ${accent}`}>
+      <div className="flex items-start gap-3">
+        <Avatar name={c.name} />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline justify-between gap-2">
+            <span className="truncate font-semibold text-slate-900 group-hover:text-brand">{c.name}</span>
+            <span className="shrink-0 text-xs text-slate-400" title={`Received ${formatDateTime(c.received_at)}`}>{ago(c.received_at)}</span>
+          </div>
+          <div className="truncate text-sm text-slate-600">{c.designation || c.posts.join(", ") || "-"} · <span className="tabular-nums">{formatMobile(c.mobile)}</span></div>
+          <div className="truncate text-xs text-slate-500">{branch || "No branch yet"}</div>
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Badge tone={cat.tone} dot>{cat.label}</Badge>
+        {c.source === "walkin" && <Badge tone="purple">Walk-in</Badge>}
+        {onboarding && <Badge tone={onboarding.status === "completed" ? "green" : "amber"}>Docs {onboarding.status === "submitted" ? "to verify" : onboarding.status}</Badge>}
+        {c.talent_pool && <Badge tone="indigo">Talent pool</Badge>}
+      </div>
+      {c.next_action && cat.active && (
+        <div className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium ${when?.overdue ? "bg-red-50 text-red-700" : when?.soon ? "bg-amber-50 text-amber-800" : "bg-slate-50 text-slate-600"}`}>
+          <Icon name="clock" className="h-3.5 w-3.5 shrink-0" />
+          <span className="truncate">{c.next_action}{when ? ` · ${when.text}` : ""}</span>
         </div>
       )}
-    </div>
-  );
-}
-
-function Settings({ me, onClose }: { me: Profile; onClose: () => void }) {
-  const [msg, setMsg] = useState<{ ok: boolean; message: string } | null>(null);
-  const [pending, start] = useTransition();
-  return (
-    <Modal open onClose={onClose} title="Profile settings">
-      <form action={(fd) => start(async () => setMsg(await updateMyProfile(fd)))} className="space-y-3">
-        <p className="text-sm">Signed in as <b>{me.username}</b> ({me.role})</p>
-        <Field label="Mobile"><input name="mobile" className="input" defaultValue={me.mobile ?? ""} /></Field>
-        <Field label="New password (leave blank to keep, min 8 characters)"><input name="password" type="password" className="input" autoComplete="new-password" /></Field>
-        <Field label="Current password (needed only to change the password)"><input name="current_password" type="password" className="input" autoComplete="current-password" /></Field>
-        <Field label="Profile photo"><input name="photo" type="file" accept="image/*" className="input" onChange={tooBig} /></Field>
-        <Flash msg={msg} />
-        <button className="btn-primary" disabled={pending}>Save</button>
-      </form>
-      <PushToggle />
-      <TwoStepLogin admin={isAdminRole(me.role)} />
-    </Modal>
+    </button>
   );
 }
 
@@ -302,17 +291,17 @@ function SmsRow({ c, item, branches, people, onOpen }: { c: Candidate; item: Sms
   const needsHr = item.kind === "not_contactable" || item.kind === "interview_missed" || item.kind === "not_joined";
   const sent = (channel: "whatsapp" | "sms") => start(async () => { await markSmsSent(c.id, item.key, SMS_TITLES[item.kind], channel); router.refresh(); });
   return (
-    <div className="card p-3 text-sm">
+    <div className="card p-4 text-sm">
       <div className="flex flex-wrap items-center gap-2">
-        <button className="font-semibold text-sky-800 underline" onClick={onOpen}>{c.name}</button>
-        <span className="text-xs text-slate-600">{c.mobile} · HR {c.assigned_hr}</span>
-        <Badge tone="indigo">{SMS_TITLES[item.kind]}</Badge>
+        <button className="font-semibold text-slate-900 hover:text-brand hover:underline" onClick={onOpen}>{c.name}</button>
+        <span className="text-xs text-slate-500 tabular-nums">{formatMobile(c.mobile)} · HR {c.assigned_hr}</span>
+        <Badge tone="sky">{SMS_TITLES[item.kind]}</Badge>
       </div>
       {needsHr && !hr?.mobile && <p className="mt-1 text-xs text-amber-700">{c.assigned_hr} has no mobile in Profile settings, so the message says &quot;call us back on this number&quot;.</p>}
-      <p className="mt-1.5 whitespace-pre-line break-words rounded bg-slate-50 p-2 text-xs text-slate-700">{text}</p>
-      <div className="mt-2 flex flex-wrap gap-2">
-        <a className="btn-success" href={waLink(c.mobile, text)} target="_blank" rel="noreferrer" onClick={() => sent("whatsapp")}>WhatsApp</a>
-        <a className="btn-primary" href={smsLink(c.mobile, text)} onClick={() => sent("sms")}>Normal SMS</a>
+      <p className="mt-2 whitespace-pre-line break-words rounded-lg bg-slate-50 p-3 text-xs leading-relaxed text-slate-700">{text}</p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <a className="btn-success" href={waLink(c.mobile, text)} target="_blank" rel="noreferrer" onClick={() => sent("whatsapp")}><Icon name="message" /> WhatsApp</a>
+        <a className="btn-outline" href={smsLink(c.mobile, text)} onClick={() => sent("sms")}><Icon name="send" /> Normal SMS</a>
       </div>
     </div>
   );
@@ -327,7 +316,7 @@ function StoreJoiningPopup({ people }: { people: Candidate[] }) {
   const [msg, setMsg] = useState<{ ok: boolean; message: string } | null>(null);
   const [pending, start] = useTransition();
   return (
-    <Modal open locked onClose={() => {}} title={`New joining: employee code & shift${people.length > 1 ? ` (1 of ${people.length})` : ""}`}>
+    <Modal open locked onClose={() => {}} title="New joining: employee code & shift" subtitle={people.length > 1 ? `1 of ${people.length} new joiners` : undefined}>
       <div className="space-y-3 text-sm">
         <p><b>{c.name}</b> ({c.mobile}) joined on <b>{formatDate(c.actual_joining_date)}</b>{c.designation ? ` as ${c.designation}` : ""}. Enter their employee code and shift timing to continue.</p>
         <Field label="Employee code (biometric code) *"><input className="input" value={code} onChange={(e) => setCode(e.target.value)} autoFocus /></Field>

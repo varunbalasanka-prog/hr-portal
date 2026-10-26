@@ -3,24 +3,32 @@ import { useEffect, useRef } from "react";
 import type { Tone } from "@/lib/categorize";
 
 const TONES: Record<Tone, string> = {
-  slate: "bg-slate-100 text-slate-700 border-slate-300",
-  sky: "bg-sky-50 text-sky-800 border-sky-300",
-  indigo: "bg-indigo-50 text-indigo-800 border-indigo-300",
-  green: "bg-green-50 text-green-800 border-green-300",
-  amber: "bg-amber-50 text-amber-800 border-amber-300",
-  red: "bg-red-50 text-red-700 border-red-300",
-  zinc: "bg-zinc-800 text-white border-zinc-800",
-  purple: "bg-purple-50 text-purple-800 border-purple-300",
+  slate: "bg-slate-100 text-slate-700 ring-slate-200",
+  sky: "bg-sky-50 text-sky-800 ring-sky-200",
+  indigo: "bg-violet-50 text-violet-800 ring-violet-200",
+  green: "bg-emerald-50 text-emerald-800 ring-emerald-200",
+  amber: "bg-amber-50 text-amber-800 ring-amber-200",
+  red: "bg-red-50 text-red-700 ring-red-200",
+  zinc: "bg-zinc-100 text-zinc-700 ring-zinc-300",
+  purple: "bg-fuchsia-50 text-fuchsia-800 ring-fuchsia-200",
+};
+const DOTS: Record<Tone, string> = {
+  slate: "bg-slate-400", sky: "bg-sky-500", indigo: "bg-violet-500", green: "bg-emerald-500", amber: "bg-amber-500", red: "bg-red-500", zinc: "bg-zinc-500", purple: "bg-fuchsia-500",
 };
 
-export function Badge({ tone = "slate", children }: { tone?: Tone; children: React.ReactNode }) {
-  return <span className={`inline-block rounded border px-1.5 py-0.5 text-[11px] font-semibold ${TONES[tone]}`}>{children}</span>;
+export function Badge({ tone = "slate", children, dot }: { tone?: Tone; children: React.ReactNode; dot?: boolean }) {
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${TONES[tone]}`}>
+      {dot && <span className={`h-1.5 w-1.5 rounded-full ${DOTS[tone]}`} aria-hidden />}{children}
+    </span>
+  );
 }
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
 
-/** `locked`: no close button, Escape or outside click (for steps that must be finished, like the store's joining details). */
-export function Modal({ open, onClose, title, children, wide, locked }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode; wide?: boolean; locked?: boolean }) {
+/** `locked`: no close button, Escape or outside click (for steps that must be finished, like the store's joining details).
+ *  `side`: a full-height panel from the right (full screen on phones), for records you read while working. */
+export function Modal({ open, onClose, title, subtitle, children, wide, locked, side }: { open: boolean; onClose: () => void; title: string; subtitle?: React.ReactNode; children: React.ReactNode; wide?: boolean; locked?: boolean; side?: boolean }) {
   const box = useRef<HTMLDivElement>(null);
   const close = useRef(onClose);
   close.current = onClose;
@@ -42,14 +50,32 @@ export function Modal({ open, onClose, title, children, wide, locked }: { open: 
     return () => { window.removeEventListener("keydown", onKey); opener?.focus?.(); };
   }, [open, locked]);
   if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-2 sm:p-6" onMouseDown={locked ? undefined : onClose}>
-      <div ref={box} role="dialog" aria-modal="true" aria-label={title} className={`card w-full ${wide ? "max-w-4xl" : "max-w-xl"} my-4`} onMouseDown={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between rounded-t-lg bg-brand px-4 py-2.5 text-white">
-          <h2 className="text-sm font-bold">{title}</h2>
-          {!locked && <button onClick={onClose} className="text-xl leading-none text-white/80 hover:text-white" aria-label="Close">×</button>}
+  const head = (
+    <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-3.5">
+      <div className="min-w-0">
+        <h2 className="text-base font-bold text-slate-900">{title}</h2>
+        {subtitle && <div className="mt-0.5 text-sm text-slate-500">{subtitle}</div>}
+      </div>
+      {!locked && <button onClick={onClose} className="-mr-1.5 rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700" aria-label="Close">
+        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden><path d="M18 6 6 18M6 6l12 12" /></svg>
+      </button>}
+    </div>
+  );
+  if (side) {
+    return (
+      <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/40" onMouseDown={locked ? undefined : onClose}>
+        <div ref={box} role="dialog" aria-modal="true" aria-label={title} className="flex h-full w-full flex-col bg-white shadow-pop sm:max-w-3xl sm:rounded-l-2xl" onMouseDown={(e) => e.stopPropagation()}>
+          {head}
+          <div className="scroll-thin flex-1 overflow-y-auto px-5 py-4">{children}</div>
         </div>
-        <div className="p-4">{children}</div>
+      </div>
+    );
+  }
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/40 p-2 sm:p-6" onMouseDown={locked ? undefined : onClose}>
+      <div ref={box} role="dialog" aria-modal="true" aria-label={title} className={`w-full rounded-2xl bg-white shadow-pop ${wide ? "max-w-4xl" : "max-w-xl"} my-4 sm:my-10`} onMouseDown={(e) => e.stopPropagation()}>
+        {head}
+        <div className="px-5 py-4">{children}</div>
       </div>
     </div>
   );
@@ -77,5 +103,5 @@ export function Select({ value, onChange, options, placeholder = "-- Select --",
 
 export function Flash({ msg }: { msg: { ok: boolean; message: string } | null }) {
   if (!msg) return null;
-  return <div role={msg.ok ? "status" : "alert"} className={`mb-3 rounded px-3 py-2 text-sm ${msg.ok ? "bg-green-50 text-green-800" : "bg-red-50 text-red-700"}`}>{msg.message}</div>;
+  return <div role={msg.ok ? "status" : "alert"} className={`mb-3 rounded-lg px-3 py-2 text-sm ring-1 ring-inset ${msg.ok ? "bg-emerald-50 text-emerald-800 ring-emerald-200" : "bg-red-50 text-red-700 ring-red-200"}`}>{msg.message}</div>;
 }

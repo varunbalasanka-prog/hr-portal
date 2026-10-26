@@ -53,25 +53,25 @@ export function CandidatePanel({ me, c, cat, branches, appUrl, onClose }: {
   if (selected && !store) tabs.push(["documents", "Onboarding & letters"]);
 
   return (
-    <Modal open onClose={onClose} title={`${c.name} · ${c.mobile}`} wide>
+    <Modal open side onClose={onClose} title={c.name} subtitle={<>{c.mobile} · {c.designation || c.posts.join(", ") || "-"}{branch ? ` · ${branch.name}` : ""}</>}>
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <Badge tone={cat.tone}>{cat.label}</Badge>
+        <Badge tone={cat.tone} dot>{cat.label}</Badge>
         <Badge tone={c.source === "walkin" ? "purple" : "sky"}>{c.source === "walkin" ? "Walk-in" : "Online"}</Badge>
         {!store && c.aadhaar_check && <Badge tone="green">Aadhaar ✓ {c.aadhaar_check.method === "in person" ? "seen" : "UIDAI"}</Badge>}
         <span className="text-xs text-slate-500">HR: {c.assigned_hr}</span>
-        <a className="btn-outline ml-auto !py-1 text-xs" href={`tel:+91${c.mobile}`}>Call</a>
+        <a className="btn-outline ml-auto" href={`tel:+91${c.mobile}`}>Call</a>
         {details ? (
           <WaComposer candidateId={c.id} mobile={c.mobile} apiEnabled={details.whatsappApi} onSent={refresh}
             ctx={{ name: c.name, post: c.designation ?? c.posts[0] ?? "", branch: branch?.name ?? c.applied_locations[0] ?? "Balasanka Group", address: branch?.address ?? branch?.name ?? "", hr: me.full_name }}
             links={{ offer: offerUrl, onboarding: onboardUrl, appointment: c.pipeline_status === "Joined" ? apptUrl : "" }} />
-        ) : <a className="btn-outline !py-1 text-xs" target="_blank" rel="noreferrer" href={`https://wa.me/91${c.mobile}`}>WhatsApp</a>}
+        ) : <a className="btn-success" target="_blank" rel="noreferrer" href={`https://wa.me/91${c.mobile}`}>WhatsApp</a>}
       </div>
       {admin && c.salary_status === "proposed" && <SalaryBox c={c} onSaved={refresh} />}
       {cat.category === "reapply" && admin && <ReapplyBox c={c} branch={branch?.name} onDone={refresh} />}
       {c.pipeline_status === "Joined" && <JoiningBox c={c} canComplete={!store} onSaved={refresh} />}
-      <div className="mb-4 flex flex-wrap gap-1 border-b border-slate-200">
+      <div className="scroll-thin -mx-5 mb-4 flex gap-1 overflow-x-auto border-b border-slate-200 px-5" role="tablist">
         {tabs.map(([k, label]) => (
-          <button key={k} onClick={() => setTab(k)} className={`-mb-px border-b-2 px-3 py-1.5 text-sm font-semibold ${tab === k ? "border-sky-600 text-sky-700" : "border-transparent text-slate-500 hover:text-slate-800"}`}>{label}</button>
+          <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={`-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm font-semibold transition ${tab === k ? "border-brand text-brand" : "border-transparent text-slate-500 hover:text-slate-800"}`}>{label}</button>
         ))}
       </div>
 

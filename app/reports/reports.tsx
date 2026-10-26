@@ -64,7 +64,7 @@ export function Reports({ rows, branches, hrs }: { rows: ReportRow[]; branches: 
   const exportHref = `/api/export?${new URLSearchParams({ from: f.from, to: f.to }).toString()}`;
 
   return (
-    <div className="space-y-4 p-4">
+    <div className="space-y-4 px-4 sm:px-6">
       <div className="flex justify-end"><a className="btn-outline" href={exportHref}>⬇ Download for Excel (CSV)</a></div>
       <div className="card grid grid-cols-2 gap-3 p-3 md:grid-cols-6">
         <label><span className="label">From</span><input type="date" className="input" value={f.from} onChange={set("from")} /></label>

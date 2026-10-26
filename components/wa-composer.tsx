@@ -22,7 +22,7 @@ export function WaComposer({ candidateId, mobile, ctx, links, apiEnabled, onSent
 
   return (
     <>
-      <button className="btn-outline !py-1 text-xs" onClick={() => setOpen(true)}>WhatsApp ▾</button>
+      <button className="btn-success" onClick={() => setOpen(true)}>WhatsApp ▾</button>
       <Modal open={open} onClose={() => setOpen(false)} title="WhatsApp message">
         <div className="space-y-3 text-sm">
           <label className="block"><span className="label">Message</span>

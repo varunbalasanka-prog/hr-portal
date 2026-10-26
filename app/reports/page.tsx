@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { StaffPage } from "@/components/staff-page";
 import { requireAdmin } from "@/lib/auth";
 import { ONBOARDING_CATEGORIES, categorize } from "@/lib/categorize";
 import { fetchAll } from "@/lib/fetch-all";
@@ -11,7 +11,7 @@ import { MissingWork, type MissedRow } from "./missing-work";
 export const dynamic = "force-dynamic";
 
 export default async function ReportsPage() {
-  const { supabase } = await requireAdmin();
+  const { supabase, profile } = await requireAdmin();
   const since = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
   const [cands, { data: branches }, { data: hrs }, { data: missed }, { data: overdue }] = await Promise.all([
     fetchAll<Candidate>((f, t) => supabase.from("candidates").select(CANDIDATE_COLUMNS).order("id").range(f, t).returns<Candidate[]>()),
@@ -26,23 +26,24 @@ export default async function ReportsPage() {
   const rows = cands.map((c) => {
     const cat = categorize(c);
     const bucket: ReportRow["bucket"] = cat.active ? "in_followup" : cat.category.endsWith("joined_list") || ONBOARDING_CATEGORIES.includes(cat.category) ? "completed" : "dropped";
+    // Each funnel step includes everyone who got further, so a walk-in hired on the spot still counts as contacted,
+    // interviewed and offered (otherwise "Joined" could be more than 100% of "Offered").
+    const joined = c.actual_joining_date?.slice(0, 10) ?? null;
+    const offered = !!c.expected_joining_date || !!c.offer_response || !!joined;
+    const interviewed = !!c.interview_at || offered;
+    const contacted = !!c.first_call_at || c.calling_status === "Contacted" || interviewed;
     return {
       name: c.name, mobile: c.mobile, hr: c.assigned_hr, source: c.source, received: c.received_at.slice(0, 10),
       location: (c.branch_id && bName.get(c.branch_id)) || c.applied_locations[0] || "Unassigned",
       status: c.pipeline_status, reason: c.rejection_reason ?? "", bucket,
       channel: c.source === "walkin" ? "Walk-in" : sourceLabel(c.source_channel), referred: !!c.referred_by,
-      contacted: !!c.first_call_at || c.calling_status === "Contacted", interviewed: !!c.interview_at,
-      offered: !!c.expected_joining_date || !!c.offer_response, joined: c.actual_joining_date?.slice(0, 10) ?? null, offer: c.offer_response,
+      contacted, interviewed, offered, joined, offer: c.offer_response,
     };
   });
   return (
-    <div>
-      <header className="flex items-center justify-between bg-brand px-4 py-3 text-white">
-        <h1 className="font-bold">Reports &amp; analytics</h1>
-        <Link href="/dashboard" className="btn-outline !py-1">← Dashboard</Link>
-      </header>
+    <StaffPage me={profile} active="reports" title="Reports" subtitle="Hiring numbers, sources and missed follow-ups. Filters apply to everything below them.">
       <MissingWork rows={(missed as MissedRow[]) ?? []} now={overdueRows} hrs={(hrs ?? []).map((h) => h.username)} />
       <Reports rows={rows} branches={(branches as Branch[] ?? []).map((b) => b.name)} hrs={(hrs ?? []).map((h) => h.username)} />
-    </div>
+    </StaffPage>
   );
 }

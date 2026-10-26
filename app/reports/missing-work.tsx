@@ -15,7 +15,7 @@ export function MissingWork({ rows, now, hrs }: { rows: MissedRow[]; now: Missed
     return [...m.entries()].sort((a, b) => b[1] - a[1]);
   }, [rows]);
   return (
-    <section className="card m-3 p-3 sm:m-4">
+    <section className="card mx-4 mb-4 p-4 sm:mx-6 sm:p-5">
       <h2 className="text-sm font-bold">Missing work</h2>
       <p className="mb-2 text-xs text-slate-600">Tasks from Today&apos;s Work that were still not updated at the end of their due day. Last 90 days.</p>
       <div className="mb-2 flex flex-wrap gap-2 text-xs">

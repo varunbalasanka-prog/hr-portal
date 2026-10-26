@@ -19,7 +19,7 @@ export function QuestionsAdmin({ questions, posts }: { questions: AdminQuestion[
   const run = (fn: () => Promise<Msg>) => start(async () => { const r = await fn(); if (r?.message) setMsg(r); });
 
   return (
-    <section className="card p-3 lg:col-span-2">
+    <section className="card p-4 sm:p-5">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-bold">Application form (hr.balasanka.in/apply)</h2>
         <div className="flex gap-2">

@@ -2,11 +2,13 @@ import type { NextConfig } from "next";
 
 const supabase = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const turnstile = "https://challenges.cloudflare.com";
+// `next dev` evaluates code at runtime; production builds don't need 'unsafe-eval'.
+const devEval = process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : "";
 // 'unsafe-inline' scripts are needed by Next.js without per-request nonces; everything else is locked to this site,
 // Supabase and Cloudflare's human check. vercel.live is the preview-deployment comment toolbar.
 const csp = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline' ${turnstile} https://vercel.live`,
+  `script-src 'self' 'unsafe-inline'${devEval} ${turnstile} https://vercel.live`,
   "style-src 'self' 'unsafe-inline'",
   `img-src 'self' data: blob: ${supabase}`,
   "font-src 'self' data:",

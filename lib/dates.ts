@@ -90,3 +90,31 @@ export function addDays(date: string, days: number): string {
   const [y, m, d] = date.slice(0, 10).split("-").map(Number);
   return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
 }
+
+/** Short, human date for lists: "Today, 4:30 pm", "Tomorrow", "Mon, 3 Nov", "2 days overdue".
+ *  `dateOnly` drops the time (joining dates carry a meaningless midnight time). */
+export function friendlyWhen(iso: string | null | undefined, opts: { dateOnly?: boolean; now?: Date } = {}): { text: string; overdue: boolean; soon: boolean } {
+  if (!iso) return { text: "-", overdue: false, soon: false };
+  const now = opts.now ?? new Date();
+  const day = isoToIstDate(iso)!;
+  const today = todayIst(now);
+  const days = Math.round((Date.parse(day) - Date.parse(today)) / 86_400_000);
+  const time = new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", hour: "numeric", minute: "2-digit", hour12: true }).format(new Date(iso)).toLowerCase();
+  const withTime = (s: string) => (opts.dateOnly ? s : `${s}, ${time}`);
+  if (days < 0) return { text: days === -1 ? "Yesterday (overdue)" : `${-days} days overdue`, overdue: true, soon: false };
+  if (days === 0) return { text: withTime("Today"), overdue: false, soon: true };
+  if (days === 1) return { text: withTime("Tomorrow"), overdue: false, soon: true };
+  const label = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Kolkata", weekday: "short", day: "numeric", month: "short" }).format(new Date(iso));
+  return { text: withTime(label), overdue: false, soon: false };
+}
+
+/** "3 h ago", "2 d ago" for received times. */
+export function ago(iso: string | null | undefined, now: Date = new Date()): string {
+  if (!iso) return "-";
+  const mins = Math.max(0, Math.round((now.getTime() - Date.parse(iso)) / 60000));
+  if (mins < 60) return `${mins} min ago`;
+  const h = Math.round(mins / 60);
+  if (h < 24) return `${h} h ago`;
+  const d = Math.round(h / 24);
+  return d < 60 ? `${d} d ago` : formatDate(iso);
+}

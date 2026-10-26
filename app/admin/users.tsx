@@ -20,7 +20,7 @@ export function UsersAdmin({ me, people, branches }: { me: Profile; people: Prof
   const branchName = new Map(branches.map((b) => [b.id, b.name]));
 
   return (
-    <section className="card p-3">
+    <section className="card p-4 sm:p-5">
       <h2 className="mb-1 text-sm font-bold">Logins</h2>
       <p className="mb-2 text-xs text-slate-500">
         {isSuper ? "You are the super admin: you can add, remove, reset and change any login." : "You can add, remove and reset HR and store logins. Admin logins are managed by the super admin."}
