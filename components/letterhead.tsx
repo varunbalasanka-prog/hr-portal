@@ -25,7 +25,13 @@ export function Tamil({ children }: { children: React.ReactNode }) {
   return <div className="mb-2 font-sans text-[9pt] italic text-slate-700">{children}</div>;
 }
 
-export function Addresses({ from, name, address, phone }: { from: string; name: string; address: string | null; phone: string }) {
+export function Addresses({ from, name, address, phone, stacked }: { from: string; name: string; address: string | null; phone: string; stacked?: boolean }) {
+  if (stacked) return (
+    <div className="mb-3">
+      <p className="mb-3"><b>FROM:</b><br />{from.split(", ").map((l, i) => <span key={i}>{l}<br /></span>)}</p>
+      <p><b>TO:</b><br />Mr / Ms. {name},<br />{address || "Tamil Nadu"}<br />Phone: {phone}</p>
+    </div>
+  );
   return (
     <table className="mb-3 w-full"><tbody><tr className="align-top">
       <td className="w-1/2 pr-4"><b>FROM:</b><br />{from.split(", ").map((l, i) => <span key={i}>{l}<br /></span>)}</td>
