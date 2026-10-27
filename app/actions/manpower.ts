@@ -2,6 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { requireProfile } from "@/lib/auth";
 import { isAdminRole } from "@/lib/types";
+import { cleanTempRoles, type TempRole } from "@/lib/manpower";
 
 type Result = { ok: boolean; message: string };
 
@@ -26,13 +27,78 @@ export async function requestManpower(input: { branch_id: string; post: string; 
   return { ok: true, message: "Request sent to admin." };
 }
 
+/** Festival help (0021): several roles with a headcount each, for fixed dates. The store's HR and admins are told by the database. */
+export async function requestTemporaryStaff(input: { branch_id: string; roles: TempRole[]; start_date: string; end_date: string; reason: string }): Promise<Result> {
+  const { profile, supabase } = await requireProfile();
+  const branchId = profile.role === "branch" ? profile.branch_id : input.branch_id;
+  if (!branchId) return { ok: false, message: "Choose the branch." };
+  const roles = cleanTempRoles(input.roles);
+  if (typeof roles === "string") return { ok: false, message: roles };
+  const { start_date: from, end_date: to } = input;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) return { ok: false, message: "Choose the from and to dates." };
+  if (to < from) return { ok: false, message: "The last day must be on or after the first day." };
+  const total = roles.reduce((n, r) => n + r.headcount, 0);
+  const { error } = await supabase.from("manpower_requests").insert({
+    branch_id: branchId, kind: "temporary", roles, start_date: from, end_date: to, needed_by: from,
+    post: roles.map((r) => `${r.headcount} × ${r.post}`).join(", ").slice(0, 120), headcount: total,
+    reason: input.reason.trim().slice(0, 500) || null,
+  });
+  if (error) return { ok: false, message: error.message.includes("manpower_temporary_shape") || error.message.includes("kind") ? "Temporary requests aren't set up yet. An admin needs to run 0021_temporary_staff.sql." : error.message };
+  revalidatePath("/manpower");
+  return { ok: true, message: "Request sent to HR." };
+}
+
 export async function setManpowerStatus(id: string, status: "approved" | "filled" | "cancelled"): Promise<Result> {
   const { profile, supabase } = await requireProfile();
   if (status !== "cancelled" && !isAdminRole(profile.role)) return { ok: false, message: "Only an admin can approve or close requests." };
+  if (status === "cancelled") {
+    const { count } = await supabase.from("manpower_requests").select("id", { count: "exact", head: true }).eq("id", id).eq("kind", "temporary").neq("status", "requested");
+    if (count) {
+      const { data: loans } = await supabase.rpc("staff_loans_list", { p_request: id });
+      if (Array.isArray(loans) && loans.length) return { ok: false, message: "People are already assigned. Send them back first, then cancel." };
+    }
+  }
   const { error } = await supabase.from("manpower_requests")
     .update({ status, decided_by: isAdminRole(profile.role) ? profile.username : null, updated_at: new Date().toISOString() }).eq("id", id);
   if (error) return { ok: false, message: error.message };
   revalidatePath("/manpower");
   revalidatePath("/careers");
   return { ok: true, message: status === "approved" ? "Approved. It now shows as urgent on the careers page." : "Updated." };
+}
+
+async function rpc(fn: string, args: Record<string, unknown>, done: string): Promise<Result> {
+  const { supabase } = await requireProfile();
+  const { error } = await supabase.rpc(fn, args);
+  if (error) return { ok: false, message: error.message };
+  revalidatePath("/manpower");
+  return { ok: true, message: done };
+}
+
+export async function decideTempRequest(id: string, approve: boolean, note: string): Promise<Result> {
+  return rpc("decide_temp_request", { p_request: id, p_approve: approve, p_note: note.trim().slice(0, 300) || null },
+    approve ? "Approved. Now pick the people to send." : "Request turned down. The store has been told.");
+}
+
+export type PoolPerson = {
+  employment_id: string; name: string; employee_code: string | null; designation: string | null; branch_id: string;
+  busy: { to_branch_id: string; start_date: string; end_date: string }[] | null;
+};
+
+/** Staff working at other stores today, for HR to pick from. */
+export async function loanPool(id: string): Promise<{ ok: boolean; message: string; people: PoolPerson[] }> {
+  const { supabase } = await requireProfile();
+  const { data, error } = await supabase.rpc("loan_pool", { p_request: id });
+  if (error) return { ok: false, message: error.message, people: [] };
+  return { ok: true, message: "", people: (data as PoolPerson[]) ?? [] };
+}
+
+export async function assignTempStaff(id: string, people: { employment_id: string; post: string }[]): Promise<Result> {
+  if (!people.length) return { ok: false, message: "Tick at least one person." };
+  return rpc("assign_temp_staff", { p_request: id, p_people: people },
+    `${people.length === 1 ? "1 person" : `${people.length} people`} sent. Both stores have been told.`);
+}
+
+/** Before the loan starts this removes the person; after, their last day at the borrowing store becomes today. */
+export async function endStaffLoan(loanId: string): Promise<Result> {
+  return rpc("end_staff_loan", { p_loan: loanId, p_last_day: null }, "Done. Both stores have been told.");
 }
