@@ -27,6 +27,7 @@ export function staffSections(role: Role, counts: NavCounts = {}): NavSection[] 
       ...(admin ? [item("reapply", "Re-Apply folder", "refresh", true)] : []),
     ] },
     { title: "More", items: [
+      { key: "staff", label: "Staff", icon: "briefcase", href: "/staff" },
       { key: "manpower", label: "Manpower requests", icon: "store", href: "/manpower" },
       ...(admin ? [
         { key: "reports", label: "Reports", icon: "chart", href: "/reports" } as NavItem,
