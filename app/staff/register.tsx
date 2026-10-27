@@ -5,8 +5,9 @@ import { addDays, formatDate } from "@/lib/dates";
 import { CHANGE_LABEL, EXIT_LABEL, divisionOf, placement, tenureLabel, type BranchLite, type Placement, type Scope, type StaffStint } from "@/lib/staff";
 import type { Branch, Profile } from "@/lib/types";
 import { Badge, Flash, Modal } from "@/components/ui";
-import { formFor, type Appraisal } from "@/lib/appraisal";
+import { kindFor, type Appraisal, type AppraisalForm, type FormKind } from "@/lib/appraisal";
 import { AppraisalSheet, AppraisalsBlock, PendingAppraisals, type SheetTarget } from "./appraisals";
+import { FormEditor } from "./form-editor";
 
 type Tab = Placement["tab"];
 type Row = { s: StaffStint; p: Placement };
@@ -14,8 +15,8 @@ type Row = { s: StaffStint; p: Placement };
 const money = (n: number | null) => (n == null ? null : `₹${Number(n).toLocaleString("en-IN")}`);
 
 /** Current, past and moved-out staff of a store (or a division, or every store), from the dated staff register. */
-export function StaffRegister({ me, admin, stints, appraisals, branches, today }: {
-  me: Profile; admin: boolean; stints: StaffStint[]; appraisals: Appraisal[] | null; branches: Branch[]; today: string;
+export function StaffRegister({ me, admin, stints, appraisals, forms, branches, today }: {
+  me: Profile; admin: boolean; stints: StaffStint[]; appraisals: Appraisal[] | null; forms: Record<FormKind, AppraisalForm>; branches: Branch[]; today: string;
 }) {
   const store = me.role === "branch";
   const byId = useMemo(() => new Map<string, BranchLite>(branches.map((b) => [b.id, b])), [branches]);
@@ -26,6 +27,7 @@ export function StaffRegister({ me, admin, stints, appraisals, branches, today }
   const [open, setOpen] = useState<StaffStint | null>(null);
   const [editDivisions, setEditDivisions] = useState(false);
   const [sheet, setSheet] = useState<SheetTarget | null>(null);
+  const [editForms, setEditForms] = useState(false);
   const branchOf = (s: StaffStint) => branches.find((b) => b.id === s.positions.find((p) => p.to_date === null)?.branch_id);
 
   const scope: Scope = scopeKey.startsWith("b:") ? { kind: "branch", id: scopeKey.slice(2) }
@@ -80,6 +82,7 @@ export function StaffRegister({ me, admin, stints, appraisals, branches, today }
           <input className="input mt-1" placeholder="Name, employee code or mobile" value={q} onChange={(e) => setQ(e.target.value)} />
         </label>
         {admin && <button className="btn-outline" onClick={() => setEditDivisions(true)}>Divisions</button>}
+        {admin && appraisals && <button className="btn-outline" onClick={() => setEditForms(true)}>Appraisal forms</button>}
       </div>
 
       {admin && appraisals && <PendingAppraisals list={appraisals} stints={stints} bName={(s) => branchOf(s)?.name ?? "-"} onOpen={setSheet} />}
@@ -158,10 +161,11 @@ export function StaffRegister({ me, admin, stints, appraisals, branches, today }
         {open && <Timeline s={open} bName={bName} today={today} />}
         {open && appraisals && (
           <div className="mt-5 border-t pt-4">
-            <AppraisalsBlock s={open} list={appraisals} form={formFor(branchOf(open)?.business_type)} today={today} onOpen={(t) => { setOpen(null); setSheet(t); }} />
+            <AppraisalsBlock s={open} list={appraisals} form={(() => { const k = kindFor(branchOf(open)?.business_type); return k ? forms[k] : null; })()} today={today} onOpen={(t) => { setOpen(null); setSheet(t); }} />
           </div>
         )}
       </Modal>
+      {admin && appraisals && <FormEditor open={editForms} onClose={() => setEditForms(false)} forms={forms} />}
       <AppraisalSheet target={sheet} admin={admin} today={today} onClose={() => setSheet(null)} />
       {admin && <DivisionsEditor open={editDivisions} onClose={() => setEditDivisions(false)} branches={branches} />}
     </div>

@@ -1,7 +1,7 @@
 "use server";
 import { revalidatePath } from "next/cache";
 import { requireProfile } from "@/lib/auth";
-import { FORMS, cleanAnswers, type Answers, type Appraisal, type FormKind } from "@/lib/appraisal";
+import { DEFAULT_FORMS, cleanAnswers, sanitizeForm, type AppraisalForm, type Answers, type Appraisal, type FormKind } from "@/lib/appraisal";
 import { isAdminRole } from "@/lib/types";
 
 type Result = { ok: boolean; message: string; id?: string };
@@ -14,7 +14,11 @@ const validDate = (d: string | null | undefined) => (d && /^\d{4}-\d{2}-\d{2}$/.
 export async function saveAppraisalInterview(input: { id: string | null; employment_id: string; cycle: string; kind: FormKind; interview_on: string | null; answers: Answers }): Promise<Result> {
   const { profile, supabase } = await requireProfile();
   if (!canAppraise(profile.role)) return { ok: false, message: "Only HR or an admin can take an appraisal interview." };
-  let form = FORMS[input.kind];
+  let form: AppraisalForm | undefined = DEFAULT_FORMS[input.kind];
+  if (!input.id && form) {
+    const { data: saved } = await supabase.from("appraisal_forms").select("form").eq("kind", input.kind).maybeSingle();
+    if (saved) form = saved.form as AppraisalForm;
+  }
   let cycle = input.cycle;
   if (input.id) {
     const { data, error } = await supabase.rpc("appraisal_list").eq("id", input.id).single();
@@ -58,4 +62,18 @@ export async function decideAppraisal(id: string, approve: boolean, note: string
   if (error) return { ok: false, message: error.message };
   revalidatePath("/staff");
   return { ok: true, message: approve ? "Approved. The new salary is on the staff timeline." : "Marked as not approved." };
+}
+
+/** Admin edits an appraisal form. Interviews started after this use the new version; earlier ones keep theirs. */
+export async function saveAppraisalForm(kind: FormKind, input: AppraisalForm): Promise<Result> {
+  const { profile, supabase } = await requireProfile();
+  if (!isAdminRole(profile.role)) return { ok: false, message: "Only an admin can change the appraisal forms." };
+  if (!(kind in DEFAULT_FORMS)) return { ok: false, message: "Unknown form." };
+  const { form, error } = sanitizeForm(kind, input, new Date().toISOString().slice(0, 19));
+  if (!form) return { ok: false, message: error ?? "The form is not valid." };
+  const { error: dbError } = await supabase.from("appraisal_forms")
+    .upsert({ kind, form, updated_by: profile.username, updated_at: new Date().toISOString() });
+  if (dbError) return { ok: false, message: dbError.message };
+  revalidatePath("/staff");
+  return { ok: true, message: "Form saved. New interviews use it; past appraisals keep the form they were filled on." };
 }

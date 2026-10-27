@@ -193,7 +193,9 @@ function FormSection({ sec, cycle, answers, set, disabled }: { sec: AppraisalSec
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead><tr className="border-b text-left text-xs text-slate-500"><th className="py-1.5 pr-2" />{years.map((y) => <th key={y} className="px-1">{y}</th>)}</tr></thead>
-            <tbody>{sec.fields.map((f) => (
+            <tbody>{sec.fields.map((f) => f.type === "heading" ? (
+              <tr key={f.key} className="border-b bg-slate-50"><td colSpan={3} className="py-1 pl-1 text-xs font-semibold uppercase tracking-wide text-slate-600">{f.label}</td></tr>
+            ) : (
               <tr key={f.key} className="border-b last:border-0">
                 <td className="py-1 pr-2">{f.label}</td>
                 {years.map((y) => <td key={y} className="min-w-[9rem] px-1 py-1"><FieldInput f={f} k={answerKey(sec, f, y)} answers={answers} set={set} disabled={disabled} label={`${f.label}, ${y}`} /></td>)}
@@ -209,7 +211,9 @@ function FormSection({ sec, cycle, answers, set, disabled }: { sec: AppraisalSec
     <section>
       <h3 className="section-title mb-1">{title}</h3>
       <div className="grid gap-2 sm:grid-cols-2">
-        {sec.fields.map((f) => (
+        {sec.fields.map((f) => f.type === "heading" ? (
+          <div key={f.key} className="pt-1 text-xs font-semibold uppercase tracking-wide text-slate-600 sm:col-span-2">{f.label}</div>
+        ) : (
           <label key={f.key} className={f.type === "check" ? "flex items-start gap-2 text-sm sm:col-span-2" : f.type === "text" ? "text-sm sm:col-span-2" : "text-sm"}>
             {f.type !== "check" && <span className="text-slate-700">{f.label}</span>}
             <FieldInput f={f} k={answerKey(sec, f)} answers={answers} set={set} disabled={disabled} label={f.label} />
