@@ -3,9 +3,15 @@
 // dated line in the staff register. Each appraisal keeps a copy of the form it was filled on, so changing the form
 // later never changes past appraisals.
 // The form follows the store's business type. The jewellery form is the branches' paper "Appraisal form 2026"
-// (Akshaya Velli Theni). Automobile stores get theirs once varun approves its draft.
+// (Akshaya Velli Theni); the automobile form is the draft varun approved on 27 Oct 2026. Admins can edit both on the
+// Staff page (saved in appraisal_forms, 0022); the forms below are the starting versions.
 
-export type FieldType = "number" | "text" | "grade" | "check";
+/** "heading" is a sub-title inside a section; it holds no answer. */
+export type FieldType = "number" | "text" | "grade" | "check" | "heading";
+export const FIELD_TYPES: { value: FieldType; label: string }[] = [
+  { value: "number", label: "Number" }, { value: "text", label: "Text" }, { value: "grade", label: "Good / Average / Poor" },
+  { value: "check", label: "Tick box" }, { value: "heading", label: "Sub-heading" },
+];
 export interface AppraisalField { key: string; label: string; type: FieldType; hint?: string }
 export interface AppraisalSection {
   key: string;
@@ -79,12 +85,128 @@ export const JEWELLERY_FORM: AppraisalForm = {
   ],
 };
 
-/** Forms in use. A business type with no form here has no appraisals (its salaries change the old way). */
-export const FORMS: Partial<Record<FormKind, AppraisalForm>> = { jewellery: JEWELLERY_FORM };
+const AUTO_FIGURES: AppraisalField[] = [
+  { key: "late", label: "Late (days)", type: "number" },
+  { key: "leave", label: "Leave (days)", type: "number" },
+  { key: "h_sales", label: "Sales staff", type: "heading" },
+  { key: "vehicles_sold", label: "Vehicles sold (units)", type: "number" },
+  { key: "enquiries", label: "Enquiries handled", type: "number" },
+  { key: "enquiry_booking_pct", label: "Enquiry to booking %", type: "number" },
+  { key: "test_rides", label: "Test rides given", type: "number" },
+  { key: "finance_pct", label: "Finance cases %", type: "number" },
+  { key: "insurance_pct", label: "Insurance sold with vehicle %", type: "number" },
+  { key: "accessories_sales", label: "Accessories sales (₹)", type: "number" },
+  { key: "warranty_amc", label: "Extended warranty / AMC sold", type: "number" },
+  { key: "exchange_vehicles", label: "Exchange vehicles taken", type: "number" },
+  { key: "h_service", label: "Service staff", type: "heading" },
+  { key: "job_cards", label: "Vehicles serviced (job cards)", type: "number" },
+  { key: "repeat_repairs", label: "Repeat repairs (came back within 30 days)", type: "number" },
+  { key: "labour_revenue", label: "Labour revenue (₹)", type: "number" },
+  { key: "spares_sales", label: "Spares and oil sales (₹)", type: "number" },
+  { key: "service_hours", label: "Average service time (hours)", type: "number" },
+  { key: "h_all", label: "All staff", type: "heading" },
+  { key: "complaints", label: "Customer complaints", type: "number" },
+];
 
-/** Same mapping as appraisal_kind() in 0020_appraisals.sql. */
-export function formFor(businessType: string | null | undefined): AppraisalForm | null {
-  return businessType === "Jewellery" ? JEWELLERY_FORM : null;
+export const AUTOMOBILE_FORM: AppraisalForm = {
+  kind: "automobile",
+  version: "2026-1",
+  title: "Automobile appraisal form",
+  sections: [
+    {
+      key: "interview", title: "Interview",
+      fields: [
+        { key: "presentation_done", label: "Gave the 2-minute talk: why they deserve the appraisal, and how they will improve next year", type: "check" },
+        { key: "role", label: "Role (Sales / Service / Office)", type: "text" },
+        { key: "expected_salary", label: "Expected salary (₹ per month)", type: "number" },
+        { key: "incharge_name", label: "Store in-charge", type: "text" },
+      ],
+    },
+    {
+      key: "past", title: "Last two years", years: "past",
+      fields: [
+        { key: "salary", label: "Salary (₹ per month)", type: "number" },
+        ...AUTO_FIGURES,
+        { key: "knowledge", label: "Knowledge of the job (by in-charge)", type: "grade" },
+        { key: "customer_satisfaction", label: "Customer satisfaction (by in-charge)", type: "grade" },
+        { key: "team_work", label: "Team work (by in-charge)", type: "grade" },
+        { key: "grooming", label: "Grooming (by in-charge)", type: "grade" },
+        { key: "unique_done", label: "What unique thing they did to improve sales / service", type: "text" },
+      ],
+    },
+    {
+      key: "next", title: "Targets for next year", years: "next",
+      fields: [
+        ...AUTO_FIGURES,
+        { key: "did_for_salary", label: "What I did for salary", type: "text" },
+        { key: "did_for_incentive", label: "What I did for incentive", type: "text" },
+        { key: "improvement_areas", label: "Improvement areas", type: "text" },
+        { key: "unique_plan", label: "What unique thing they will do to improve sales / service", type: "text" },
+        { key: "company_ideas", label: "Ideas for improving the company", type: "text" },
+      ],
+    },
+    {
+      key: "signoff", title: "Sign-off",
+      fields: [
+        { key: "staff_signed", label: "Staff signed the form", type: "check" },
+        { key: "incharge_signed", label: "In-charge signed the form", type: "check" },
+      ],
+    },
+  ],
+};
+
+/** The starting forms. A business type with no form has no appraisals (its salaries change the old way). */
+export const DEFAULT_FORMS: Record<FormKind, AppraisalForm> = { jewellery: JEWELLERY_FORM, automobile: AUTOMOBILE_FORM };
+
+/** The forms in use: an admin's saved version (appraisal_forms) over the starting one. */
+export function currentForms(saved: { kind: string; form: AppraisalForm }[] | null | undefined): Record<FormKind, AppraisalForm> {
+  const out = { ...DEFAULT_FORMS };
+  for (const r of saved ?? []) if (r.kind in out) out[r.kind as FormKind] = r.form;
+  return out;
+}
+
+/** Same mapping as appraisal_kind() in 0022_appraisal_forms.sql. */
+export function kindFor(businessType: string | null | undefined): FormKind | null {
+  return businessType === "Jewellery" ? "jewellery" : businessType === "Automobiles" ? "automobile" : null;
+}
+
+/** Fields the approval steps rely on. Admins can reword them but not remove them or change their type. */
+export const LOCKED_FIELDS: Record<string, FieldType> = {
+  "interview.presentation_done": "check", "signoff.staff_signed": "check", "signoff.incharge_signed": "check",
+};
+
+/** Checks an edited form and tidies it. New fields get a key; existing keys never change, so answers stay matched. */
+export function sanitizeForm(kind: FormKind, input: AppraisalForm, version: string): { form?: AppraisalForm; error?: string } {
+  const types = new Set(FIELD_TYPES.map((t) => t.value));
+  const sections: AppraisalSection[] = [];
+  const sectionKeys = new Set<string>();
+  for (const [si, sec] of (input.sections ?? []).entries()) {
+    const title = String(sec.title ?? "").trim().slice(0, 120);
+    if (!title) return { error: `Section ${si + 1} needs a title.` };
+    const key = /^[a-z][a-z0-9_]{0,39}$/.test(sec.key ?? "") ? sec.key : `s${si + 1}_${Math.random().toString(36).slice(2, 7)}`;
+    if (sectionKeys.has(key)) return { error: `Two sections share the key ${key}.` };
+    sectionKeys.add(key);
+    const fieldKeys = new Set<string>();
+    const fields: AppraisalField[] = [];
+    for (const f of sec.fields ?? []) {
+      const label = String(f.label ?? "").trim().slice(0, 300);
+      if (!label) return { error: `A question in “${title}” has no wording.` };
+      if (!types.has(f.type)) return { error: `“${label}” has an unknown answer type.` };
+      let fk = /^[a-z][a-z0-9_]{0,39}$/.test(f.key ?? "") ? f.key : "";
+      while (!fk || fieldKeys.has(fk)) fk = `q_${Math.random().toString(36).slice(2, 8)}`;
+      fieldKeys.add(fk);
+      fields.push({ key: fk, label, type: f.type });
+    }
+    const years = sec.years === "past" || sec.years === "next" ? sec.years : undefined;
+    sections.push({ key, title, ...(years ? { years } : {}), fields });
+  }
+  for (const [k, type] of Object.entries(LOCKED_FIELDS)) {
+    const [sk, fk] = k.split(".");
+    const f = sections.find((s) => s.key === sk)?.fields.find((x) => x.key === fk);
+    if (!f || f.type !== type) return { error: "The 2-minute talk and both signature tick boxes must stay on the form." };
+  }
+  const title = String(input.title ?? "").trim().slice(0, 120) || DEFAULT_FORMS[kind].title;
+  return { form: { kind, version, title, sections } };
 }
 
 /** Appraisal year for a date: April to March, e.g. 27 Oct 2026 -> "2026-27". */
@@ -113,6 +235,7 @@ export function cleanAnswers(form: AppraisalForm, cycle: string, raw: Answers): 
   for (const s of form.sections) {
     const years = s.years === "past" ? pastYears(cycle) : [undefined];
     for (const y of years) for (const f of s.fields) {
+      if (f.type === "heading") continue;
       const k = answerKey(s, f, y);
       const v = raw[k];
       if (v === undefined || v === null || v === "") continue;
