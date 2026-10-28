@@ -3,6 +3,7 @@ import QRCode from "qrcode";
 import { requireProfile } from "@/lib/auth";
 import { loadCareers, siteUrl } from "@/lib/careers";
 import { PrintButton } from "@/components/print-button";
+import { shortCode } from "@/lib/short-link";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Hiring posters · Balasanka HR", robots: { index: false } };
@@ -10,13 +11,13 @@ export const metadata: Metadata = { title: "Hiring posters · Balasanka HR", rob
 type Props = { searchParams: Promise<{ branch?: string }> };
 
 /** One A4 "We are hiring" poster per branch, with a QR code that opens the apply page for that branch.
- *  Scans are counted as source "poster" in Reports. */
+ *  The QR holds the short /j/<code> link (fewer dots, easier to scan and type); scans are counted as source "poster" in Reports. */
 export default async function PosterPage({ searchParams }: Props) {
   await requireProfile();
   const [{ branch }, branches] = await Promise.all([searchParams, loadCareers()]);
   const list = (branches ?? []).filter((b) => !branch || b.id === branch);
   const posters = await Promise.all(list.map(async (b) => {
-    const url = `${siteUrl()}/apply?branch=${b.id}&src=poster`;
+    const url = `${siteUrl()}/j/${shortCode(b.id)}`;
     return { b, url, qr: await QRCode.toDataURL(url, { margin: 1, width: 600, errorCorrectionLevel: "M" }) };
   }));
 
@@ -44,7 +45,7 @@ export default async function PosterPage({ searchParams }: Props) {
           <img src={qr} alt={`QR code to apply at ${b.name}`} className="mt-10 h-[70mm] w-[70mm]" />
           <p className="mt-4 text-2xl font-bold">Scan to apply in 5 minutes</p>
           <p className="text-xl">ஸ்கேன் செய்து 5 நிமிடத்தில் விண்ணப்பிக்கவும்</p>
-          <p className="mt-6 break-all text-sm text-slate-600">{url}</p>
+          <p className="mt-6 break-all text-xl font-semibold text-slate-700">{url.replace(/^https?:\/\//, "")}</p>
         </section>
       ))}
       <PrintButton />
