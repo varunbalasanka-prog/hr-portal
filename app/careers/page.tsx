@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { jobPostings, loadCareerListing } from "@/lib/careers";
+import { jobPostings, loadCareerListing, SITE_NAME, siteSchema } from "@/lib/careers";
 
 export const revalidate = 300;
 export const metadata: Metadata = {
   title: "Careers · Balasanka Group of Companies",
   description: "Open jobs at Balasanka Group showrooms across South Tamil Nadu. Apply online in 5 minutes. / வேலைவாய்ப்புகள்.",
-  openGraph: { title: "Careers at Balasanka Group · வேலைவாய்ப்புகள்", description: "Open jobs at our showrooms. Apply online in 5 minutes.", images: ["/balasanka_logo.png"], locale: "en_IN" },
+  openGraph: { title: "Careers at Balasanka Group · வேலைவாய்ப்புகள்", description: "Open jobs at our showrooms. Apply online in 5 minutes.", images: ["/balasanka_logo.png"], locale: "en_IN", siteName: SITE_NAME },
   alternates: { canonical: "/careers" },
 };
 
@@ -17,6 +17,7 @@ export default async function CareersPage() {
   const towns = [...new Set((branches ?? []).map((b) => b.town))];
   return (
     <main className="mx-auto max-w-4xl p-3 sm:p-6">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(siteSchema()).replace(/</g, "\\u003c") }} />
       {postings.length > 0 && (
         // Escaped so a branch or post name can never close the script tag.
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(postings).replace(/</g, "\\u003c") }} />

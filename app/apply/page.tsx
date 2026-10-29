@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { loadApplyConfig } from "./config";
 import { ApplyForm } from "./form";
 import { cleanSource } from "@/lib/sources";
+import { SITE_NAME } from "@/lib/careers";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -10,7 +11,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Jobs at Balasanka Group · வேலைவாய்ப்பு",
     description: "Apply online in 5 minutes for jobs at our showrooms across South Tamil Nadu.",
-    images: ["/balasanka_logo.png"], locale: "en_IN", type: "website",
+    images: ["/balasanka_logo.png"], locale: "en_IN", type: "website", siteName: SITE_NAME,
   },
 };
 

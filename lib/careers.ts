@@ -28,6 +28,24 @@ export const siteUrl = () => (process.env.NEXT_PUBLIC_APP_URL || "https://hr.bal
 
 const REGION = "Tamil Nadu";
 
+/** The name Google shows above our search results. Without it Google guesses one for the whole domain. */
+export const SITE_NAME = "Balasanka Group";
+
+/** schema.org WebSite + Organization for the careers page, which is what the bare domain opens. */
+export function siteSchema() {
+  const base = siteUrl();
+  return [
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: SITE_NAME,
+      alternateName: ["Balasanka Group of Companies", "Balasanka Careers", "பாலசங்கா குழுமம்"],
+      url: `${base}/`,
+    },
+    { "@context": "https://schema.org", "@type": "Organization", name: "Balasanka Group of Companies", url: `${base}/`, logo: `${base}/balasanka_logo.png` },
+  ];
+}
+
 /** schema.org JobPosting entries, one per open post per branch, so Google for Jobs and AI assistants can list them.
  *  Left out until posted_at is known: Google requires a real posting date. */
 export function jobPostings({ branches, postedAt }: CareerListing) {
