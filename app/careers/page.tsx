@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { jobPostings, loadCareerListing, SITE_NAME, siteSchema } from "@/lib/careers";
+import { loadCareerListing, SITE_NAME, siteSchema } from "@/lib/careers";
+import { jobPath, loadJobs } from "@/lib/jobs";
 
 export const revalidate = 300;
 export const metadata: Metadata = {
@@ -11,17 +12,14 @@ export const metadata: Metadata = {
 };
 
 export default async function CareersPage() {
-  const listing = await loadCareerListing();
+  const [listing, jobs] = await Promise.all([loadCareerListing(), loadJobs()]);
   const branches = listing?.branches ?? null;
-  const postings = listing ? jobPostings(listing) : [];
+  // Each open post links to its own job page, which carries the Google for Jobs listing (none on this page).
+  const pathOf = (branchId: string, post: string) => { const j = jobs?.find((x) => x.branch.id === branchId && x.post === post); return j ? jobPath(j) : null; };
   const towns = [...new Set((branches ?? []).map((b) => b.town))];
   return (
     <main className="mx-auto max-w-4xl p-3 sm:p-6">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(siteSchema()).replace(/</g, "\\u003c") }} />
-      {postings.length > 0 && (
-        // Escaped so a branch or post name can never close the script tag.
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(postings).replace(/</g, "\\u003c") }} />
-      )}
       <header className="mb-4 rounded-lg bg-brand px-4 py-6 text-center text-white">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/balasanka_logo.png" alt="" className="mx-auto mb-2 h-14 w-auto rounded bg-white p-1" />
@@ -47,7 +45,12 @@ export default async function CareersPage() {
                   </p>
                 )}
                 <ul className="mb-3 flex flex-wrap gap-1.5 text-xs">
-                  {b.posts.map((p) => <li key={p} className="rounded border border-slate-200 bg-slate-50 px-2 py-0.5">{p}</li>)}
+                  {b.posts.map((p) => {
+                    const href = pathOf(b.id, p);
+                    return <li key={p}>{href
+                      ? <Link href={href} className="block rounded border border-sky-200 bg-sky-50 px-2 py-0.5 text-sky-900 hover:bg-sky-100">{p}</Link>
+                      : <span className="block rounded border border-slate-200 bg-slate-50 px-2 py-0.5">{p}</span>}</li>;
+                  })}
                 </ul>
                 <Link href={`/apply?branch=${b.id}&src=careers`} className="btn-primary mt-auto self-start">Apply at this branch</Link>
               </article>

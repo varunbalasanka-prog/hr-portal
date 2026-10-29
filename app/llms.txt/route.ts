@@ -1,11 +1,12 @@
 import { loadCareers, siteUrl } from "@/lib/careers";
+import { jobPath, loadJobs } from "@/lib/jobs";
 
 export const revalidate = 300;
 
 /** Plain-text list of open jobs for AI assistants (the llms.txt convention). */
 export async function GET() {
   const base = siteUrl();
-  const loaded = await loadCareers().catch(() => null);
+  const [loaded, jobs] = await Promise.all([loadCareers().catch(() => null), loadJobs().catch(() => null)]);
   const branches = loaded ?? [];
   const towns = [...new Set(branches.map((b) => b.town))];
   const lines = [
@@ -22,7 +23,10 @@ export async function GET() {
       `## ${town}`,
       "",
       ...branches.filter((b) => b.town === town).map((b) =>
-        `- [${b.name}](${base}/apply?branch=${b.id}) (${b.business_type}): ${b.posts.join(", ")}`
+        `- [${b.name}](${base}/apply?branch=${b.id}) (${b.business_type}): ${b.posts.map((p) => {
+          const j = jobs?.find((x) => x.branch.id === b.id && x.post === p);
+          return j ? `[${p}](${base}${jobPath(j)})` : p;
+        }).join(", ")}`
         + (b.urgent.length ? `. Urgently hiring: ${b.urgent.map((u) => `${u.post} (${u.headcount})`).join(", ")}` : "")),
       "",
     ]),

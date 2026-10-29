@@ -7,7 +7,7 @@ const PRIVATE = ["/dashboard", "/admin", "/reports", "/manpower", "/documents", 
 
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: [{ userAgent: "*", allow: ["/careers", "/apply", "/privacy", "/llms.txt"], disallow: PRIVATE }],
+    rules: [{ userAgent: "*", allow: ["/careers", "/jobs/", "/apply", "/privacy", "/llms.txt"], disallow: PRIVATE }],
     sitemap: `${siteUrl()}/sitemap.xml`,
     host: siteUrl(),
   };

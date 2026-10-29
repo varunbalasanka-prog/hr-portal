@@ -6,6 +6,7 @@ import type { AdminQuestion } from "@/lib/apply-questions";
 import { QuestionsAdmin } from "./questions";
 import { BranchPostsAdmin } from "./branch-posts";
 import { StoreHrAdmin } from "./store-hr";
+import { JobListingsAdmin, type OpeningRow, type RoleRow } from "./job-listings";
 import { UsersAdmin } from "./users";
 import { ChangeHistory, type AuditRow } from "./history";
 import { PrivacyAdmin } from "./privacy";
@@ -13,13 +14,14 @@ import { WalkinAgeWarning, WalkinApprovals, type WalkinRequestRow } from "./walk
 import type { PrivacyContact } from "@/lib/privacy";
 import type { Branch } from "@/lib/types";
 
-export function AdminPanel({ warnAge, walkins, me, people, log, questions, posts, branches, branchPosts, history, privacyContact, retentionMonths }: {
+export function AdminPanel({ warnAge, walkins, me, people, log, questions, posts, branches, branchPosts, jobs, history, privacyContact, retentionMonths }: {
   privacyContact: PrivacyContact; retentionMonths: number | null; walkins: WalkinRequestRow[]; warnAge: number | null;
   me: Profile; history: AuditRow[] | null; people: Profile[]; log: NotificationRow[]; questions: AdminQuestion[]; posts: string[]; branches: Branch[]; branchPosts: Record<string, string[]>;
+  jobs: { ready: boolean; openings: OpeningRow[]; roles: RoleRow[] };
 }) {
   const pending = walkins.filter((w) => w.status === "pending").length;
   const tabs: [string, string][] = [
-    ["walkins", `Walk-in approvals${pending ? ` (${pending})` : ""}`], ["posts", "Store posts"], ["storehr", "Store HR"], ["form", "Application form"],
+    ["walkins", `Walk-in approvals${pending ? ` (${pending})` : ""}`], ["posts", "Store posts"], ["storehr", "Store HR"], ["jobs", "Job listings"], ["form", "Application form"],
     ["users", "Logins"], ["privacy", "Privacy"], ["log", "Notification log"], ...(history ? [["history", "Change history"] as [string, string]] : []),
   ];
   const [tab, setTab] = useState(pending ? "walkins" : "posts");
@@ -35,6 +37,7 @@ export function AdminPanel({ warnAge, walkins, me, people, log, questions, posts
       {tab === "history" && history && <ChangeHistory rows={history} />}
       {tab === "posts" && <BranchPostsAdmin branches={branches} posts={posts} open={branchPosts} />}
       {tab === "storehr" && <StoreHrAdmin branches={branches} people={people} />}
+      {tab === "jobs" && <JobListingsAdmin {...jobs} branches={branches} posts={posts} />}
       {tab === "form" && <QuestionsAdmin questions={questions} posts={posts} />}
       {tab === "users" && <UsersAdmin me={me} people={people} branches={branches} />}
       {tab === "privacy" && <PrivacyAdmin contact={privacyContact} months={retentionMonths} />}
