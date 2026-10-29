@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import type { Branch, Profile } from "@/lib/types";
 import { addWalkin, requestWalkinApproval, type WalkinInput } from "@/app/actions/candidates";
 import { todayIst } from "@/lib/dates";
-import { checkWalkin, type DobRule } from "@/lib/walkin";
+import { checkWalkin, overAgeNote, type DobRule } from "@/lib/walkin";
 import { latestDate } from "@/lib/apply-questions";
 import { Field, Flash, Modal, Select } from "./ui";
 
@@ -27,6 +27,7 @@ export function WalkinForm({ me, branches, posts, dobRule, onClose }: { me: Prof
   // Posts open at the chosen store; a store with none open still gets the full list.
   const open = posts.byBranch[f.branchId]?.length ? posts.byBranch[f.branchId] : posts.all;
   const postOptions = f.post && !open.includes(f.post) ? [...open, f.post] : open;
+  const ageNote = overAgeNote(f.dateOfBirth, dobRule, today);
 
   const save = () => {
     const v = checkWalkin(f, dobRule);
@@ -44,7 +45,8 @@ export function WalkinForm({ me, branches, posts, dobRule, onClose }: { me: Prof
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Field label="Applicant name *"><input className="input" value={f.name} onChange={(e) => set("name")(e.target.value)} /></Field>
         <Field label="Mobile number *"><input className="input" type="tel" inputMode="tel" autoComplete="off" maxLength={16} placeholder="10 digits" value={f.mobile} onChange={(e) => set("mobile")(e.target.value)} /></Field>
-        <Field label="Date of birth *"><input type="date" className="input" min={latestDate(100, today)} max={dobRule.minAge ? latestDate(dobRule.minAge, today) : today} value={f.dateOfBirth ?? ""} onChange={(e) => set("dateOfBirth")(e.target.value)} /></Field>
+        <Field label="Date of birth *"><input type="date" className="input" min={latestDate(100, today)} max={dobRule.minAge ? latestDate(dobRule.minAge, today) : today} value={f.dateOfBirth ?? ""} onChange={(e) => set("dateOfBirth")(e.target.value)} />
+          {ageNote && <span role="status" className="mt-1 block rounded bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-800 ring-1 ring-inset ring-amber-200">⚠ {ageNote} You can still save; HR will see this.</span>}</Field>
         <Field label="Marital status"><Select value={f.maritalStatus} onChange={set("maritalStatus")} options={["Married", "Unmarried"]} /></Field>
         {me.role === "branch" ? (
           <Field label="Branch"><input className="input bg-slate-50" value={store?.name ?? "Your store"} readOnly aria-readonly /></Field>

@@ -30,9 +30,34 @@ export interface WalkinFields {
   expectedJoiningDate?: string;
 }
 
-/** The apply page's date-of-birth question: walk-ins save under the same label and follow the same minimum age. */
-export type DobRule = { label: string; minAge: number | null };
-export const DEFAULT_DOB: DobRule = { label: "Date of birth", minAge: 18 };
+/** The apply page's date-of-birth question: walk-ins save under the same label and follow the same minimum age.
+ *  `warnAge`: above this age the store is warned (it can still save) and HR is told. */
+export type DobRule = { label: string; minAge: number | null; warnAge: number | null };
+/** Used until an admin sets the walk-in age warning (app_settings 'walkin_warn_age'); null there switches it off. */
+export const DEFAULT_WARN_AGE: number | null = 40;
+export const DEFAULT_DOB: DobRule = { label: "Date of birth", minAge: 18, warnAge: DEFAULT_WARN_AGE };
+
+/** Completed years on `today` (both YYYY-MM-DD). */
+export function ageOn(dob: string, today: string): number {
+  const [y, m, d] = dob.split("-").map(Number);
+  const [ty, tm, td] = today.split("-").map(Number);
+  return ty - y - (tm < m || (tm === m && td < d) ? 1 : 0);
+}
+
+/** "Age 47: above the usual walk-in limit of 40." when the person is older than the warning age, else null. */
+export function overAgeNote(dob: string | undefined, rule: DobRule, today: string): string | null {
+  if (!rule.warnAge || !/^\d{4}-\d{2}-\d{2}$/.test(dob ?? "")) return null;
+  const age = ageOn(dob!, today);
+  return age > rule.warnAge ? `Age ${age}: above the usual walk-in limit of ${rule.warnAge}.` : null;
+}
+
+/** An admin's typed warning age: a whole number from 18 to 80, or blank for no warning. */
+export function cleanWarnAge(raw: string): number | null | undefined {
+  const v = raw.trim();
+  if (!v) return null;
+  const n = Number(v);
+  return Number.isInteger(n) && n >= 18 && n <= 80 ? n : undefined;
+}
 
 export type WalkinCheck =
   | { error: string }

@@ -5,7 +5,7 @@ import { pushTo } from "@/lib/push";
 import { applyStage, isBlacklisted, reactivate, stageFor, walkinBlocked, type StageInput } from "@/lib/pipeline";
 import { formatDateTime, dateToIso, todayIst, tomorrowIstIso } from "@/lib/dates";
 import { CANDIDATE_COLUMNS, type Branch, type Candidate, type Profile } from "@/lib/types";
-import { checkWalkin } from "@/lib/walkin";
+import { checkWalkin, overAgeNote } from "@/lib/walkin";
 import { dobRule } from "@/lib/walkin-server";
 
 type Result = { ok: true; message: string } | { ok: false; message: string; blocked?: string };
@@ -179,11 +179,13 @@ export async function addWalkin(input: WalkinInput): Promise<Result> {
     return { ok: false, message: `Could not save: ${error.message}` };
   }
 
-  if (input.remark?.trim()) {
-    await supabase.from("candidate_events").insert({ candidate_id: inserted.id, actor: profile.username, stage: "walkin", remark: input.remark.trim() });
+  const ageNote = overAgeNote(v.dob, rule, todayIst());
+  const remark = [ageNote, input.remark?.trim()].filter(Boolean).join(" ");
+  if (remark) {
+    await supabase.from("candidate_events").insert({ candidate_id: inserted.id, actor: profile.username, stage: "walkin", remark });
   }
   if (branch.hr_username !== profile.username) {
-    const text = `New walk-in candidate: ${v.name} (${mobile}) at ${branch.name}.`;
+    const text = `New walk-in candidate: ${v.name} (${mobile}) at ${branch.name}.${ageNote ? ` ${ageNote}` : ""}`;
     await supabase.from("notifications").insert({ sender: profile.username, recipient: branch.hr_username, message: text });
     await pushTo(branch.hr_username, { title: "New walk-in", body: text, url: "/dashboard" });
   }
