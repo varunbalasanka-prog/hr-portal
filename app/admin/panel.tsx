@@ -8,12 +8,12 @@ import { BranchPostsAdmin } from "./branch-posts";
 import { UsersAdmin } from "./users";
 import { ChangeHistory, type AuditRow } from "./history";
 import { PrivacyAdmin } from "./privacy";
-import { WalkinApprovals, type WalkinRequestRow } from "./walkins";
+import { WalkinAgeWarning, WalkinApprovals, type WalkinRequestRow } from "./walkins";
 import type { PrivacyContact } from "@/lib/privacy";
 import type { Branch } from "@/lib/types";
 
-export function AdminPanel({ walkins, me, people, log, questions, posts, branches, branchPosts, history, privacyContact, retentionMonths }: {
-  privacyContact: PrivacyContact; retentionMonths: number | null; walkins: WalkinRequestRow[];
+export function AdminPanel({ warnAge, walkins, me, people, log, questions, posts, branches, branchPosts, history, privacyContact, retentionMonths }: {
+  privacyContact: PrivacyContact; retentionMonths: number | null; walkins: WalkinRequestRow[]; warnAge: number | null;
   me: Profile; history: AuditRow[] | null; people: Profile[]; log: NotificationRow[]; questions: AdminQuestion[]; posts: string[]; branches: Branch[]; branchPosts: Record<string, string[]>;
 }) {
   const pending = walkins.filter((w) => w.status === "pending").length;
@@ -30,7 +30,7 @@ export function AdminPanel({ walkins, me, people, log, questions, posts, branche
             className={`-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm font-semibold transition ${tab === k ? "border-brand text-brand" : "border-transparent text-slate-500 hover:text-slate-800"}`}>{label}</button>
         ))}
       </div>
-      {tab === "walkins" && <WalkinApprovals rows={walkins} />}
+      {tab === "walkins" && <><WalkinAgeWarning age={warnAge} /><WalkinApprovals rows={walkins} /></>}
       {tab === "history" && history && <ChangeHistory rows={history} />}
       {tab === "posts" && <BranchPostsAdmin branches={branches} posts={posts} open={branchPosts} />}
       {tab === "form" && <QuestionsAdmin questions={questions} posts={posts} />}

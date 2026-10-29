@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/auth";
 import { pushTo } from "@/lib/push";
 import { dateToIso, localInputToIso, tomorrowIstIso } from "@/lib/dates";
 import type { Branch } from "@/lib/types";
-import { parseRupees } from "@/lib/walkin";
+import { cleanWarnAge, parseRupees } from "@/lib/walkin";
 import { dobRule } from "@/lib/walkin-server";
 import type { WalkinInput } from "./candidates";
 
@@ -51,6 +51,18 @@ export async function sendToReapply(candidateId: string): Promise<Result> {
   if (error) return { ok: false, message: error.message };
   revalidatePath("/dashboard");
   return { ok: true, message: "Moved to the Re-Apply folder." };
+}
+
+/** Above this age the walk-in form warns the store (it can still save) and tells HR. Blank switches the warning off (saved as 0). */
+export async function saveWalkinWarnAge(raw: string): Promise<Result> {
+  const { supabase } = await requireAdmin();
+  const age = cleanWarnAge(raw);
+  if (age === undefined) return { ok: false, message: "Enter a whole number from 18 to 80, or leave it blank for no warning." };
+  const { error } = await supabase.from("app_settings").upsert({ key: "walkin_warn_age", value: age ?? 0, updated_at: new Date().toISOString() });
+  if (error) return { ok: false, message: error.message };
+  revalidatePath("/admin");
+  revalidatePath("/dashboard");
+  return { ok: true, message: age ? `Saved. Stores are warned when a walk-in is older than ${age}.` : "Saved. No age warning on walk-ins." };
 }
 
 /** Admin decides a store's request to add a blocked person as a walk-in. Approving starts them over as a walk-in at that store. */

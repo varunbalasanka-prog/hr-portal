@@ -2,13 +2,32 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { formatDateTime } from "@/lib/dates";
-import { decideWalkin } from "@/app/actions/workflow";
+import { decideWalkin, saveWalkinWarnAge } from "@/app/actions/workflow";
 import { Flash } from "@/components/ui";
 
 export type WalkinRequestRow = {
   id: string; status: string; reason: string; requested_by: string; created_at: string; decided_by: string | null;
   candidate: { name: string; mobile: string } | null; branch: { name: string } | null; payload: { post?: string; interviewNeeded?: string; remark?: string };
 };
+
+/** Walk-ins older than this get a warning on the store's form (they can still save) and a note to HR. */
+export function WalkinAgeWarning({ age }: { age: number | null }) {
+  const [value, setValue] = useState(age ? String(age) : "");
+  const [pending, start] = useTransition();
+  const [msg, setMsg] = useState<{ ok: boolean; message: string } | null>(null);
+  return (
+    <section className="card mb-4 p-4 sm:p-5">
+      <h2 className="mb-1 text-sm font-bold">Walk-in age warning</h2>
+      <p className="mb-2 text-xs text-slate-500">Stores see a warning when the walk-in is older than this, but can still save. HR is told the age. Leave blank for no warning.</p>
+      <Flash msg={msg} />
+      <div className="flex items-center gap-2">
+        <input className="input w-24" inputMode="numeric" value={value} onChange={(e) => setValue(e.target.value)} aria-label="Warning age in years" />
+        <span className="text-sm text-slate-600">years</span>
+        <button className="btn-primary !py-1.5 text-sm" disabled={pending} onClick={() => start(async () => setMsg(await saveWalkinWarnAge(value)))}>Save</button>
+      </div>
+    </section>
+  );
+}
 
 /** Stores ask here to add a blacklisted, underage or absconding person as a walk-in. */
 export function WalkinApprovals({ rows }: { rows: WalkinRequestRow[] }) {

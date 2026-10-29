@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkWalkin, normalizeMobile, parseRupees, type WalkinFields } from "../lib/walkin";
+import { ageOn, checkWalkin, cleanWarnAge, normalizeMobile, overAgeNote, parseRupees, type WalkinFields } from "../lib/walkin";
 
 const now = new Date("2026-10-29T06:00:00Z"); // 11:30 am IST
 const ok: WalkinFields = { name: "Priya", mobile: "98765 43210", dateOfBirth: "2000-05-01", post: "Sales", interviewNeeded: "Yes", interviewAt: "2026-10-30T11:00" };
@@ -56,6 +56,25 @@ describe("walk-in date of birth", () => {
     expect(checkWalkin({ ...ok, dateOfBirth: "1900-01-01" }, undefined, now).error).toMatch(/year/);
     expect(checkWalkin({ ...ok, dateOfBirth: "2008-10-29" }, undefined, now).error).toBeUndefined(); // 18 today
     expect(checkWalkin({ ...ok, dateOfBirth: "2008-10-30" }, undefined, now).error).toMatch(/at least 18/);
-    expect(checkWalkin({ ...ok, dateOfBirth: "2010-01-01" }, { label: "DOB", minAge: null }, now).error).toBeUndefined();
+    expect(checkWalkin({ ...ok, dateOfBirth: "2010-01-01" }, { label: "DOB", minAge: null, warnAge: null }, now).error).toBeUndefined();
+  });
+});
+
+describe("walk-in age warning", () => {
+  const rule = { label: "DOB", minAge: 18, warnAge: 40 };
+  it("counts completed years", () => {
+    expect(ageOn("1986-10-29", "2026-10-29")).toBe(40);
+    expect(ageOn("1986-10-30", "2026-10-29")).toBe(39);
+  });
+  it("warns only above the limit, and not when switched off", () => {
+    expect(overAgeNote("1986-01-01", rule, "2026-10-29")).toBeNull(); // 40
+    expect(overAgeNote("1985-01-01", rule, "2026-10-29")).toMatch(/Age 41: above the usual walk-in limit of 40/);
+    expect(overAgeNote("1960-01-01", { ...rule, warnAge: null }, "2026-10-29")).toBeNull();
+  });
+  it("reads the admin's typed age", () => {
+    expect(cleanWarnAge(" 45 ")).toBe(45);
+    expect(cleanWarnAge("")).toBeNull();
+    expect(cleanWarnAge("12")).toBeUndefined();
+    expect(cleanWarnAge("forty")).toBeUndefined();
   });
 });
