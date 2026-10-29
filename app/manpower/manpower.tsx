@@ -176,6 +176,7 @@ function TemporaryForm({ me, branches, posts, today, pending, onSend }: {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [reason, setReason] = useState("");
+  const [other, setOther] = useState<Set<number>>(new Set()); // rows where the role is typed instead of picked
   // Any role used at any store: a jewellery store may borrow from an automobile showroom and the other way round.
   const allPosts = useMemo(() => [...new Set(Object.values(posts).flat())].sort(), [posts]);
   const set = (i: number, patch: Partial<TempRole>) => setRoles(roles.map((r, j) => (j === i ? { ...r, ...patch } : r)));
@@ -183,18 +184,38 @@ function TemporaryForm({ me, branches, posts, today, pending, onSend }: {
   return (
     <>
       <BranchPicker me={me} branches={branches} value={branch} onChange={setBranch} />
-      <datalist id="temp-posts">{allPosts.map((p) => <option key={p} value={p} />)}</datalist>
       <div className="space-y-2">
         <span className="label">Roles and number of people *</span>
-        {roles.map((r, i) => (
-          <div key={i} className="flex gap-2">
-            <input className="input min-w-0 flex-1" list="temp-posts" placeholder="Role, e.g. Sales Executive" aria-label={`Role ${i + 1}`}
-              value={r.post} onChange={(e) => set(i, { post: e.target.value })} />
-            <input className="input w-20" type="number" min={1} max={50} aria-label={`People for role ${i + 1}`}
-              value={r.headcount} onChange={(e) => set(i, { headcount: Number(e.target.value) })} />
-            {roles.length > 1 && <button className="btn-outline !px-2" aria-label={`Remove role ${i + 1}`} onClick={() => setRoles(roles.filter((_, j) => j !== i))}>✕</button>}
-          </div>
-        ))}
+        {roles.map((r, i) => {
+          const typing = other.has(i) || (!!r.post && !allPosts.includes(r.post));
+          // Grid, not flex: .input sets width:100% outside Tailwind's layers, so flex widths on it are ignored.
+          return (
+            <div key={i} className="grid grid-cols-[minmax(0,1fr)_4.5rem_auto] items-start gap-2">
+              <div className="min-w-0 space-y-1">
+                <select className="input" aria-label={`Role ${i + 1}`} value={typing ? "__other" : r.post}
+                  onChange={(e) => {
+                    const next = new Set(other);
+                    if (e.target.value === "__other") { next.add(i); set(i, { post: "" }); } else { next.delete(i); set(i, { post: e.target.value }); }
+                    setOther(next);
+                  }}>
+                  <option value="">-- Select role --</option>
+                  {allPosts.map((p) => <option key={p} value={p}>{p}</option>)}
+                  <option value="__other">Other (type it)</option>
+                </select>
+                {typing && <input className="input" placeholder="Type the role" aria-label={`Role ${i + 1} name`} autoFocus
+                  value={r.post} onChange={(e) => set(i, { post: e.target.value })} />}
+              </div>
+              <input className="input" type="number" inputMode="numeric" min={1} max={50} aria-label={`People for role ${i + 1}`}
+                value={r.headcount} onChange={(e) => set(i, { headcount: Number(e.target.value) })} />
+              {roles.length > 1
+                ? <button className="btn-outline !px-2" aria-label={`Remove role ${i + 1}`} onClick={() => {
+                    setRoles(roles.filter((_, j) => j !== i));
+                    setOther(new Set([...other].filter((j) => j !== i).map((j) => (j > i ? j - 1 : j))));
+                  }}>✕</button>
+                : <span />}
+            </div>
+          );
+        })}
         <button className="btn-outline !py-0.5 text-xs" onClick={() => setRoles([...roles, { post: "", headcount: 1 }])}>+ Add another role</button>
       </div>
       <div className="grid grid-cols-2 gap-2">
@@ -205,7 +226,7 @@ function TemporaryForm({ me, branches, posts, today, pending, onSend }: {
       <p className="text-xs text-slate-500">They go back automatically after the last day. If you need help for longer, send a new request.</p>
       <button className="btn-primary" disabled={pending || !ready} onClick={() => {
         onSend({ branch_id: branch, roles, start_date: from, end_date: to, reason });
-        setRoles([{ post: "", headcount: 1 }]); setFrom(""); setTo(""); setReason("");
+        setRoles([{ post: "", headcount: 1 }]); setOther(new Set()); setFrom(""); setTo(""); setReason("");
       }}>Send request</button>
     </>
   );
