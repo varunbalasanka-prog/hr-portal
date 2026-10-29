@@ -4,12 +4,13 @@ import { useRouter } from "next/navigation";
 import type { Branch, Profile } from "@/lib/types";
 import { addWalkin, requestWalkinApproval, type WalkinInput } from "@/app/actions/candidates";
 import { todayIst } from "@/lib/dates";
-import { checkWalkin } from "@/lib/walkin";
+import { checkWalkin, type DobRule } from "@/lib/walkin";
+import { latestDate } from "@/lib/apply-questions";
 import { Field, Flash, Modal, Select } from "./ui";
 
 export type WalkinPosts = { all: string[]; byBranch: Record<string, string[]> };
 
-export function WalkinForm({ me, branches, posts, onClose }: { me: Profile; branches: Branch[]; posts: WalkinPosts; onClose: () => void }) {
+export function WalkinForm({ me, branches, posts, dobRule, onClose }: { me: Profile; branches: Branch[]; posts: WalkinPosts; dobRule: DobRule; onClose: () => void }) {
   const router = useRouter();
   const [f, setF] = useState<WalkinInput>({
     name: "", mobile: "", maritalStatus: "", address: "", post: "", interviewNeeded: "Yes",
@@ -28,7 +29,7 @@ export function WalkinForm({ me, branches, posts, onClose }: { me: Profile; bran
   const postOptions = f.post && !open.includes(f.post) ? [...open, f.post] : open;
 
   const save = () => {
-    const v = checkWalkin(f);
+    const v = checkWalkin(f, dobRule);
     if (v.error !== undefined) { setMsg({ ok: false, message: v.error }); return; }
     start(async () => {
       const r = await addWalkin(f);
@@ -43,6 +44,7 @@ export function WalkinForm({ me, branches, posts, onClose }: { me: Profile; bran
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Field label="Applicant name *"><input className="input" value={f.name} onChange={(e) => set("name")(e.target.value)} /></Field>
         <Field label="Mobile number *"><input className="input" type="tel" inputMode="tel" autoComplete="off" maxLength={16} placeholder="10 digits" value={f.mobile} onChange={(e) => set("mobile")(e.target.value)} /></Field>
+        <Field label="Date of birth *"><input type="date" className="input" min={latestDate(100, today)} max={dobRule.minAge ? latestDate(dobRule.minAge, today) : today} value={f.dateOfBirth ?? ""} onChange={(e) => set("dateOfBirth")(e.target.value)} /></Field>
         <Field label="Marital status"><Select value={f.maritalStatus} onChange={set("maritalStatus")} options={["Married", "Unmarried"]} /></Field>
         {me.role === "branch" ? (
           <Field label="Branch"><input className="input bg-slate-50" value={store?.name ?? "Your store"} readOnly aria-readonly /></Field>

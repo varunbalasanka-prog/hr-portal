@@ -5,6 +5,7 @@ import { pushTo } from "@/lib/push";
 import { dateToIso, localInputToIso, tomorrowIstIso } from "@/lib/dates";
 import type { Branch } from "@/lib/types";
 import { parseRupees } from "@/lib/walkin";
+import { dobRule } from "@/lib/walkin-server";
 import type { WalkinInput } from "./candidates";
 
 type Result = { ok: boolean; message: string };
@@ -79,6 +80,14 @@ export async function decideWalkin(requestId: string, approve: boolean): Promise
       },
     });
     if (error) return { ok: false, message: error.message };
+    // Keep the date of birth the store typed, under the apply page's label.
+    if (p.dateOfBirth) {
+      const [{ data: row }, rule] = await Promise.all([
+        supabase.from("candidates").select("form_data").eq("id", c.id).single<{ form_data: Record<string, string> | null }>(),
+        dobRule(supabase),
+      ]);
+      await supabase.from("candidates").update({ form_data: { ...(row?.form_data ?? {}), [rule.label]: p.dateOfBirth } }).eq("id", c.id);
+    }
   }
   const { error } = await supabase.from("walkin_requests").update({ status: approve ? "approved" : "refused", decided_by: profile.username, decided_at: new Date().toISOString() }).eq("id", r.id);
   if (error) return { ok: false, message: error.message };

@@ -11,6 +11,7 @@ import { confirmationDate, confirmationState } from "@/lib/confirmation";
 import { AppShell, Avatar, staffSections, type NavCounts } from "./app-shell";
 import { CandidatePanel } from "./candidate-panel";
 import { WalkinForm, type WalkinPosts } from "./walkin-form";
+import type { DobRule } from "@/lib/walkin";
 import { NotificationBell, SendNotification } from "./notifications";
 import { Icon, type IconName } from "./icons";
 import { Badge, Field, Flash, Modal } from "./ui";
@@ -102,9 +103,9 @@ function parseKey(key: string | undefined): { group: Group; sub?: string } {
   return GROUPS.includes(g as Group) ? { group: g as Group, sub } : { group: "followup" };
 }
 
-export function Dashboard({ me, photoUrl, rows, branches, people, notifications, appUrl, letterTokens, initialList, posts }: {
+export function Dashboard({ me, photoUrl, rows, branches, people, notifications, appUrl, letterTokens, initialList, posts, dobRule }: {
   me: Profile; photoUrl: string | null; rows: Row[]; branches: Branch[]; people: Profile[]; notifications: NotificationRow[]; appUrl: string;
-  letterTokens: Record<string, string>; initialList?: string; posts: WalkinPosts;
+  letterTokens: Record<string, string>; initialList?: string; posts: WalkinPosts; dobRule: DobRule;
 }) {
   const admin = isAdminRole(me.role);
   const store = me.role === "branch";
@@ -238,7 +239,7 @@ export function Dashboard({ me, photoUrl, rows, branches, people, notifications,
 
       {needStoreDetails.length > 0 && <StoreJoiningPopup people={needStoreDetails} />}
       {open && <CandidatePanel key={open.c.id} me={me} c={open.c} cat={open.cat} branches={branches} appUrl={appUrl} onClose={() => setOpenId(null)} />}
-      {modal === "walkin" && <WalkinForm me={me} branches={branches} posts={posts} onClose={() => setModal(null)} />}
+      {modal === "walkin" && <WalkinForm me={me} branches={branches} posts={posts} dobRule={dobRule} onClose={() => setModal(null)} />}
       {modal === "notify" && <SendNotification me={me} people={people} onClose={() => setModal(null)} />}
     </AppShell>
   );

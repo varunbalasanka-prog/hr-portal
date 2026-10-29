@@ -6,6 +6,7 @@ import { applyStage, isBlacklisted, reactivate, stageFor, walkinBlocked, type St
 import { formatDateTime, dateToIso, todayIst, tomorrowIstIso } from "@/lib/dates";
 import { CANDIDATE_COLUMNS, type Branch, type Candidate, type Profile } from "@/lib/types";
 import { checkWalkin } from "@/lib/walkin";
+import { dobRule } from "@/lib/walkin-server";
 
 type Result = { ok: true; message: string } | { ok: false; message: string; blocked?: string };
 
@@ -102,6 +103,7 @@ export async function reactivateCandidate(candidateId: string): Promise<Result> 
 export interface WalkinInput {
   name: string;
   mobile: string;
+  dateOfBirth?: string;
   maritalStatus: string;
   address: string;
   branchId: string;
@@ -126,7 +128,8 @@ async function walkinBranch(supabase: Awaited<ReturnType<typeof requireProfile>>
 
 export async function addWalkin(input: WalkinInput): Promise<Result> {
   const { profile, supabase } = await requireProfile();
-  const v = checkWalkin(input);
+  const rule = await dobRule(supabase);
+  const v = checkWalkin(input, rule);
   if (v.error !== undefined) return { ok: false, message: v.error };
   const { mobile } = v;
   const branch = await walkinBranch(supabase, profile, input.branchId);
@@ -158,7 +161,7 @@ export async function addWalkin(input: WalkinInput): Promise<Result> {
   const { interviewAt, joining } = v;
 
   const { data: inserted, error } = await supabase.from("candidates").insert({
-    source: "walkin", name: v.name, mobile, marital_status: input.maritalStatus || null, address: input.address.trim() || null,
+    source: "walkin", name: v.name, mobile, form_data: { [rule.label]: v.dob }, marital_status: input.maritalStatus || null, address: input.address.trim() || null,
     posts: [v.post], applied_locations: [branch.name], branch_id: interview ? null : branch.id,
     designation: interview ? null : v.post, assigned_hr: branch.hr_username, entry_by: profile.username,
     interview_needed: interview,
@@ -318,7 +321,7 @@ export async function markSmsSent(candidateId: string, key: string, label: strin
 /** The store asks an admin to allow a walk-in for a blocked person. */
 export async function requestWalkinApproval(input: WalkinInput): Promise<Result> {
   const { profile, supabase } = await requireProfile();
-  const v = checkWalkin(input);
+  const v = checkWalkin(input, await dobRule(supabase));
   if (v.error !== undefined) return { ok: false, message: v.error };
   const branch = await walkinBranch(supabase, profile, input.branchId);
   if (typeof branch === "string") return { ok: false, message: branch };
