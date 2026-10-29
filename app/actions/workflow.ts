@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/auth";
 import { pushTo } from "@/lib/push";
 import { dateToIso, localInputToIso, tomorrowIstIso } from "@/lib/dates";
 import type { Branch } from "@/lib/types";
+import { parseRupees } from "@/lib/walkin";
 import type { WalkinInput } from "./candidates";
 
 type Result = { ok: boolean; message: string };
@@ -71,7 +72,7 @@ export async function decideWalkin(requestId: string, approve: boolean): Promise
         source: "walkin", entry_by: r.requested_by, post: p.post, branch_name: b.name, branch_id: interview ? "" : b.id,
         assigned_hr: b.hr_username, interview_needed: interview, interview_at: interviewAt,
         expected_joining_date: interview ? null : p.expectedJoiningDate || null, designation: interview ? null : p.post,
-        proposed_basic: Number(p.basicSalary || 0), proposed_allowances: Number(p.allowances || 0),
+        proposed_basic: parseRupees(p.basicSalary) ?? 0, proposed_allowances: parseRupees(p.allowances) ?? 0,
         pipeline_status: interview ? "Interview Scheduled" : "Expected Joining",
         next_action: interview ? "Check interview attendance" : `Check joining status (${p.expectedJoiningDate})`,
         next_action_at: interview ? interviewAt : dateToIso(p.expectedJoiningDate) ?? tomorrowIstIso(),
