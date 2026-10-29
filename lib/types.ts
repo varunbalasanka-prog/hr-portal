@@ -25,6 +25,8 @@ export interface Branch {
   /** Split from address for Google job listings (0024). */
   street_address?: string | null;
   postal_code?: string | null;
+  /** Roles this store's firm has (0025), added by withFirmRoles(). Missing until 0025 is run. */
+  roles?: string[];
 }
 
 export interface Candidate {

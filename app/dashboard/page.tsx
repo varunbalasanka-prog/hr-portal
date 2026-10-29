@@ -5,6 +5,7 @@ import { CANDIDATE_COLUMNS, isAdminRole, type Branch, type Candidate, type Notif
 import { Dashboard } from "@/components/dashboard";
 import { todayIst } from "@/lib/dates";
 import { dobRule } from "@/lib/walkin-server";
+import { withFirmRoles } from "@/lib/job-roles";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   ]);
   const setting = (k: string) => settings.data?.find((r) => r.key === k)?.value;
   const posts = { all: (setting("apply_posts") ?? []) as string[], byBranch: (setting("branch_posts") ?? {}) as Record<string, string[]> };
+  const stores = await withFirmRoles(supabase, (branches.data as Branch[]) ?? []);
   const letterTokens = Object.fromEntries(((letters.data ?? []) as { id: string; access_token: string }[]).map((r) => [r.id, r.access_token]));
 
   const subByCand = new Map(subs.map((s) => [s.candidate_id, s]));
@@ -48,7 +50,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       me={profile}
       photoUrl={photoUrl}
       rows={rows}
-      branches={(branches.data as Branch[]) ?? []}
+      branches={stores}
       people={(people.data as Profile[]) ?? []}
       notifications={notifications}
       appUrl={process.env.NEXT_PUBLIC_APP_URL ?? ""}

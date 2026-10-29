@@ -136,9 +136,9 @@ export function latestDate(years: number, today: string): string {
   return `${year}-${String(m).padStart(2, "0")}-${String(Math.min(d, lastDay)).padStart(2, "0")}`;
 }
 
-/** Keeps each branch's open posts in the master list's order, dropping any post no longer in it. */
-export function cleanBranchPosts(map: Record<string, string[]>, master: string[], branchIds: string[]): Record<string, string[]> {
+/** Keeps each branch's open posts in the master list's order, dropping any post no longer in it (or, with `allowed`, not on the store's firm list). */
+export function cleanBranchPosts(map: Record<string, string[]>, master: string[], branchIds: string[], allowed?: Record<string, string[]> | null): Record<string, string[]> {
   const out: Record<string, string[]> = {};
-  for (const id of branchIds) out[id] = master.filter((p) => (map[id] ?? []).includes(p));
+  for (const id of branchIds) out[id] = master.filter((p) => (map[id] ?? []).includes(p) && (!allowed || (allowed[id] ?? []).includes(p)));
   return out;
 }

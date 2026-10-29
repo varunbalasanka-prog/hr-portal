@@ -1,7 +1,10 @@
 "use server";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
-import { cleanBranchPosts, cleanPosts, cleanQuestion, type AdminQuestion, type QuestionInput } from "@/lib/apply-questions";
+import { firmRoleNames, loadFirmRoles } from "@/lib/job-roles";
+import { divisionOf } from "@/lib/staff";
+import type { Branch } from "@/lib/types";
+import { cleanBranchPosts, cleanQuestion, type AdminQuestion, type QuestionInput } from "@/lib/apply-questions";
 
 type Result = { ok: boolean; message: string };
 
@@ -64,45 +67,34 @@ export async function setQuestionActive(id: string, active: boolean): Promise<Re
 }
 
 async function branchPosts(supabase: Awaited<ReturnType<typeof requireAdmin>>["supabase"]) {
-  const [{ data: settings, error }, { data: branches, error: bErr }] = await Promise.all([
+  const [{ data: settings, error }, { data: branches, error: bErr }, firmRoles] = await Promise.all([
     supabase.from("app_settings").select("key, value").in("key", ["apply_posts", "branch_posts"]),
-    supabase.from("branches").select("id"),
+    supabase.from("branches").select("id, name, division"),
+    loadFirmRoles(supabase),
   ]);
   if (error || bErr) throw new Error((error ?? bErr)!.message);
   const get = (k: string) => settings?.find((r) => r.key === k)?.value;
+  const stores = (branches ?? []) as Pick<Branch, "id" | "name" | "division">[];
   return {
     master: (get("apply_posts") ?? []) as string[],
     map: (get("branch_posts") ?? {}) as Record<string, string[]>,
-    branchIds: (branches ?? []).map((b) => b.id as string),
+    branchIds: stores.map((b) => b.id),
+    // Each store may open only its firm's roles (0025). Null before 0025: any post on the master list.
+    allowed: firmRoles && Object.fromEntries(stores.map((b) => [b.id, firmRoleNames(firmRoles.roles, firmRoles.firms[divisionOf(b as Branch)] ?? [])])),
   };
-}
-
-/** Saves the master post list. A post removed here is also closed at every branch; a new post opens nowhere until ticked. */
-export async function savePosts(text: string): Promise<Result> {
-  const { supabase } = await requireAdmin();
-  const posts = cleanPosts(text);
-  if (!posts.length) return { ok: false, message: "Keep at least one post." };
-  const { map, branchIds } = await branchPosts(supabase);
-  const now = new Date().toISOString();
-  const { error } = await supabase.from("app_settings").upsert([
-    { key: "apply_posts", value: posts, updated_at: now },
-    { key: "branch_posts", value: cleanBranchPosts(map, posts, branchIds), updated_at: now },
-  ]);
-  if (error) return { ok: false, message: error.message };
-  return done(`Saved ${posts.length} posts. Tick new ones under each store to open them.`);
 }
 
 /** Sets which posts are open at the given branches (one store, or several when copying). */
 export async function saveBranchPosts(branchIdsToSet: string[], posts: string[]): Promise<Result> {
   const { supabase } = await requireAdmin();
-  const { master, map, branchIds } = await branchPosts(supabase);
+  const { master, map, branchIds, allowed } = await branchPosts(supabase);
   if (!branchIdsToSet.length || branchIdsToSet.some((id) => !branchIds.includes(id))) return { ok: false, message: "Store not found." };
   const next = { ...map };
   for (const id of branchIdsToSet) next[id] = posts;
   const { error } = await supabase.from("app_settings")
-    .upsert({ key: "branch_posts", value: cleanBranchPosts(next, master, branchIds), updated_at: new Date().toISOString() });
+    .upsert({ key: "branch_posts", value: cleanBranchPosts(next, master, branchIds, allowed), updated_at: new Date().toISOString() });
   if (error) return { ok: false, message: error.message };
-  const open = master.filter((p) => posts.includes(p)).length;
+  const open = master.filter((p) => posts.includes(p) && (!allowed || branchIdsToSet.some((id) => allowed[id]?.includes(p)))).length;
   const where = branchIdsToSet.length === 1 ? "this store" : `${branchIdsToSet.length} stores`;
   return done(open ? `Saved: ${open} posts open at ${where}.` : `Saved: ${where} hidden from the apply page (no posts open).`);
 }

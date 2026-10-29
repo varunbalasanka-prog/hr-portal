@@ -6,6 +6,7 @@ import { calculateSalary, rupees } from "@/lib/salary";
 import type { Branch, Candidate } from "@/lib/types";
 import { reactivateCandidate, updateCandidateStage } from "@/app/actions/candidates";
 import { Field, Flash, Select } from "./ui";
+import { roleOptions } from "@/lib/job-roles";
 
 export function StageForm({ c, branches, admin, onSaved }: { c: Candidate; branches: Branch[]; admin: boolean; onSaved: () => void }) {
   const stage = stageFor(c);
@@ -50,11 +51,15 @@ export function StageForm({ c, branches, admin, onSaved }: { c: Candidate; branc
     ...branches.filter((b) => c.applied_locations.includes(b.name)).map((b) => ({ value: b.id, label: `${b.name} (applied)` })),
     ...branches.filter((b) => !c.applied_locations.includes(b.name)).map((b) => ({ value: b.id, label: b.name })),
   ];
+  // Designation comes from the allocated store's firm roles (0025), keeping an older saved name.
+  const firmRoles = branches.find((b) => b.id === f.branchId)?.roles;
   const interviewHr = branches.find((b) => b.id === f.interviewBranchId)?.hr_username;
   const selectionFields = (
     <div className="grid grid-cols-1 gap-3 rounded-md border border-green-200 bg-green-50 p-3 sm:grid-cols-2">
       <Field label="Branch allocated *"><Select value={f.branchId ?? ""} onChange={set("branchId")} options={branchOptions} /></Field>
-      <Field label="Designation"><input className="input" value={f.designation ?? ""} onChange={(e) => set("designation")(e.target.value)} /></Field>
+      <Field label="Designation">{firmRoles
+        ? <Select value={f.designation ?? ""} onChange={set("designation")} options={roleOptions(firmRoles, f.designation)} />
+        : <input className="input" value={f.designation ?? ""} onChange={(e) => set("designation")(e.target.value)} />}</Field>
       <Field label="Proposed basic salary (₹)"><input className="input" inputMode="numeric" value={f.basicSalary ?? ""} onChange={(e) => set("basicSalary")(e.target.value)} /></Field>
       <Field label="Proposed allowances (₹)"><input className="input" inputMode="numeric" value={f.allowances ?? ""} onChange={(e) => set("allowances")(e.target.value)} /></Field>
       <Field label="Expected joining date *"><input type="date" className="input" value={f.expectedJoiningDate ?? ""} onChange={(e) => set("expectedJoiningDate")(e.target.value)} /></Field>

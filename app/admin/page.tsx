@@ -7,6 +7,8 @@ import type { WalkinRequestRow } from "./walkins";
 import type { OpeningRow, RoleRow } from "./job-listings";
 import type { AuditRow } from "./history";
 import { DEFAULT_WARN_AGE } from "@/lib/walkin";
+import { firmRoleNames, loadFirmRoles } from "@/lib/job-roles";
+import { divisionOf } from "@/lib/staff";
 import { DEFAULT_CONTACT, cleanRetention, type PrivacyContact } from "@/lib/privacy";
 
 export const dynamic = "force-dynamic";
@@ -30,15 +32,18 @@ export default async function AdminPage() {
     supabase.from("job_roles").select("name, summary, duties, requirements, shift, benefits").order("sort").order("name"),
   ]);
   const setting = (k: string) => settings?.find((r) => r.key === k)?.value;
+  // Null until 0025 runs; each store then gets its firm's roles for Store posts.
+  const firmRoles = await loadFirmRoles(supabase);
+  const stores = ((branches as Branch[]) ?? []).map((b) => firmRoles ? { ...b, roles: firmRoleNames(firmRoles.roles, firmRoles.firms[divisionOf(b)] ?? []) } : b);
   const viewed = new Map((receipts ?? []).filter((r) => r.viewed_at).map((r) => [`${r.notification_id}:${r.username}`, r.viewed_at as string]));
   const log = (notifs ?? []).map((n) => ({ ...n, viewed_at: viewed.get(`${n.id}:${n.recipient}`) ?? null }));
   return (
     <StaffPage me={profile} active="admin" title={profile.role === "superadmin" ? "Super admin settings" : "Admin settings"}
-      subtitle="Walk-in approvals, open posts, job listings, the application form, logins and privacy.">
+      subtitle="Walk-in approvals, job roles, open posts, job listings, the application form, logins and privacy.">
       <AdminPanel walkins={(walkins as unknown as WalkinRequestRow[]) ?? []}
         warnAge={settings?.some((r) => r.key === "walkin_warn_age") ? ((setting("walkin_warn_age") as number) || null) : DEFAULT_WARN_AGE} me={profile} history={(history as AuditRow[] | null) ?? null} people={(people as Profile[]) ?? []} log={log} questions={(questions as AdminQuestion[]) ?? []} posts={(setting("apply_posts") as string[]) ?? []}
-        branches={(branches as Branch[]) ?? []} branchPosts={(setting("branch_posts") as Record<string, string[]>) ?? {}}
-        jobs={{ ready: !openings.error, openings: (openings.data as OpeningRow[] | null) ?? [], roles: (roles as RoleRow[] | null) ?? [] }}
+        branches={stores} branchPosts={(setting("branch_posts") as Record<string, string[]>) ?? {}}
+        roles={firmRoles} jobs={{ ready: !openings.error, openings: (openings.data as OpeningRow[] | null) ?? [], roles: (roles as RoleRow[] | null) ?? [] }}
         privacyContact={{ ...DEFAULT_CONTACT, ...((setting("privacy_contact") as Partial<PrivacyContact>) ?? {}) }} retentionMonths={cleanRetention(setting("retention_months"))} />
     </StaffPage>
   );

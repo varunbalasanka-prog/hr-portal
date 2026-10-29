@@ -24,8 +24,8 @@ export function WalkinForm({ me, branches, posts, dobRule, onClose }: { me: Prof
   const store = me.role === "branch" ? branches.find((b) => b.id === me.branch_id) : undefined;
   const choices = me.role === "hr" ? branches.filter((b) => b.hr_username === me.username) : branches;
   const today = todayIst();
-  // Posts open at the chosen store; a store with none open still gets the full list.
-  const open = posts.byBranch[f.branchId]?.length ? posts.byBranch[f.branchId] : posts.all;
+  // Posts open at the chosen store; a store with none open gets its firm's roles (or the full list before 0025).
+  const open = posts.byBranch[f.branchId]?.length ? posts.byBranch[f.branchId] : branches.find((b) => b.id === f.branchId)?.roles ?? posts.all;
   const postOptions = f.post && !open.includes(f.post) ? [...open, f.post] : open;
   const ageNote = overAgeNote(f.dateOfBirth, dobRule, today);
 

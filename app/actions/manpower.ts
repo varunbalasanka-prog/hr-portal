@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { requireProfile } from "@/lib/auth";
 import { isAdminRole } from "@/lib/types";
 import { cleanTempRoles, type TempRole } from "@/lib/manpower";
+import { companyRoleNames, storeRoleNames } from "@/lib/job-roles";
 
 type Result = { ok: boolean; message: string };
 
@@ -13,6 +14,8 @@ export async function requestManpower(input: { branch_id: string; post: string; 
   const headcount = Math.round(Number(input.headcount));
   if (!branchId || !post) return { ok: false, message: "Choose the branch and the post." };
   if (!(headcount >= 1 && headcount <= 50)) return { ok: false, message: "Number of people must be 1 to 50." };
+  const allowed = await storeRoleNames(supabase, branchId);
+  if (allowed && !allowed.includes(post)) return { ok: false, message: "Pick a post from the list. Ask an admin to add a role that is missing." };
   const { error } = await supabase.from("manpower_requests").insert({
     branch_id: branchId, post, headcount, needed_by: input.needed_by || null, reason: input.reason.trim().slice(0, 500) || null,
   });
@@ -34,6 +37,9 @@ export async function requestTemporaryStaff(input: { branch_id: string; roles: T
   if (!branchId) return { ok: false, message: "Choose the branch." };
   const roles = cleanTempRoles(input.roles);
   if (typeof roles === "string") return { ok: false, message: roles };
+  const allowed = await companyRoleNames(supabase);
+  const unknown = allowed && roles.find((r) => !allowed.includes(r.post));
+  if (unknown) return { ok: false, message: `"${unknown.post}" isn't on the role list. Pick one from the list, or ask an admin to add it.` };
   const { start_date: from, end_date: to } = input;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) return { ok: false, message: "Choose the from and to dates." };
   if (to < from) return { ok: false, message: "The last day must be on or after the first day." };

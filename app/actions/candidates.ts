@@ -1,5 +1,6 @@
 "use server";
 import { revalidatePath } from "next/cache";
+import { storeRoleNames } from "@/lib/job-roles";
 import { requireAdmin, requireProfile } from "@/lib/auth";
 import { pushTo } from "@/lib/push";
 import { applyStage, isBlacklisted, reactivate, stageFor, walkinBlocked, type StageInput } from "@/lib/pipeline";
@@ -130,8 +131,10 @@ export async function addWalkin(input: WalkinInput): Promise<Result> {
   const { mobile } = v;
   const branch = await walkinBranch(supabase, profile, input.branchId);
   if (typeof branch === "string") return { ok: false, message: branch };
-  const { data: postList } = await supabase.from("app_settings").select("value").eq("key", "apply_posts").maybeSingle<{ value: string[] }>();
-  if (postList?.value?.length && !postList.value.includes(v.post)) return { ok: false, message: "Pick the post from the list." };
+  // The store's firm roles (0025); before that, the full post list.
+  const postList = (await storeRoleNames(supabase, branch.id))
+    ?? (await supabase.from("app_settings").select("value").eq("key", "apply_posts").maybeSingle<{ value: string[] }>()).data?.value ?? [];
+  if (postList.length && !postList.includes(v.post)) return { ok: false, message: "Pick the post from the list." };
 
   // Duplicate / blacklist check runs with the database's unique constraint as the final guard.
   const { data: existing } = await supabase.rpc("candidate_by_mobile", { p_mobile: mobile });
