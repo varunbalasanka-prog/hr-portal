@@ -22,6 +22,8 @@ const csp = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Stock photos on the balasanka.in homepage, resized and served from this site by next/image.
+  images: { remotePatterns: [{ protocol: "https", hostname: "images.unsplash.com" }] },
   // Files go straight from the browser to Supabase Storage; Vercel rejects bodies over 4.5 MB anyway.
   experimental: { serverActions: { bodySizeLimit: "4mb" } },
   async headers() {
