@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   },
 };
 
-type Props = { searchParams: Promise<{ branch?: string; src?: string }> };
+type Props = { searchParams: Promise<{ branch?: string; src?: string; post?: string }> };
 
 export default async function ApplyPage({ searchParams }: Props) {
   const [config, sp] = await Promise.all([loadApplyConfig(), searchParams]);
@@ -24,6 +24,8 @@ export default async function ApplyPage({ searchParams }: Props) {
   // so their visitors can't switch branch.
   const source = cleanSource(sp.src);
   const lockBranch = !!branch && (source === "poster" || source === "careers");
+  // A job page's Apply button picks its post too (still changeable among the store's open posts).
+  const post = branch && config?.branches.find((b) => b.id === branch)?.posts.includes(sp.post ?? "") ? sp.post : undefined;
   return (
     <main className="mx-auto max-w-2xl p-3 sm:p-6">
       <div className="card overflow-hidden">
@@ -36,7 +38,7 @@ export default async function ApplyPage({ searchParams }: Props) {
           </div>
         </div>
         <div className="p-4 sm:p-6">
-          {config ? <ApplyForm {...config} initialBranch={branch} lockBranch={lockBranch} source={source} /> : <p className="py-6 text-center text-sm text-red-700">The form could not load. Please refresh the page.</p>}
+          {config ? <ApplyForm {...config} initialBranch={branch} initialPost={post} lockBranch={lockBranch} source={source} /> : <p className="py-6 text-center text-sm text-red-700">The form could not load. Please refresh the page.</p>}
         </div>
       </div>
     </main>

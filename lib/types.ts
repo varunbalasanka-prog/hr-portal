@@ -22,6 +22,9 @@ export interface Branch {
   hr_username: string;
   /** Group of stores (0019). Defaults to the brand before " - " in the name. */
   division?: string | null;
+  /** Split from address for Google job listings (0024). */
+  street_address?: string | null;
+  postal_code?: string | null;
 }
 
 export interface Candidate {

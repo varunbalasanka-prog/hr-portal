@@ -20,11 +20,11 @@ type FieldError = { field?: string; message: string } | null;
 /** Fixed fields (branch, post, name, mobile, father's name, marital status, email, address) feed the candidate record and
  *  letters, so they can't be removed. Everything else comes from the questions the admin manages.
  *  Files upload from the browser straight to storage; the server only receives answers and file paths. */
-export function ApplyForm({ branches, questions, initialBranch, lockBranch, source }: ApplyConfig & { initialBranch?: string; lockBranch?: boolean; source?: string | null }) {
+export function ApplyForm({ branches, questions, initialBranch, initialPost, lockBranch, source }: ApplyConfig & { initialBranch?: string; initialPost?: string; lockBranch?: boolean; source?: string | null }) {
   const [choices, setChoices] = useState<Record<string, string>>({});
   const [branchId, setBranchId] = useState(initialBranch ?? "");
   const [heard, setHeard] = useState(source ?? "");
-  const [post, setPost] = useState("");
+  const [post, setPost] = useState(initialPost ?? "");
   const posts = branches.find((b) => b.id === branchId)?.posts ?? [];
   const [error, setError] = useState<FieldError>(null);
   const [doneRef, setDoneRef] = useState<string | null>(null);

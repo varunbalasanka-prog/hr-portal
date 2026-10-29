@@ -1,0 +1,80 @@
+[
+  {
+    "id": "a0844f45-8cbb-4e5d-8281-aaa1fd2f1ee5",
+    "post": "Executive Sales",
+    "role": {
+      "shift": "",
+      "duties": "Greet walk-in customers and explain products, prices and offers\nFollow up on enquiries by phone and WhatsApp\nReach monthly sales targets\nKeep the display area neat and stock details updated",
+      "summary": "Meet customers in the showroom, understand what they need and help them choose and buy.",
+      "benefits": "PF and ESI as per government rules",
+      "updated_at": "2026-10-29T11:54:48.966569+00:00",
+      "requirements": "Good communication in Tamil; basic English is a plus\nFreshers and experienced candidates can apply"
+    },
+    "branch": {
+      "id": "97347b28-b266-4016-968d-b76d43f32b41",
+      "name": "Akshaya Velli - Theni",
+      "town": "Theni",
+      "division": "Akshaya Velli",
+      "postal_code": "625531",
+      "business_type": "Jewellery",
+      "street_address": "No 441/2A Balasanka Plaza, Periyakulam Road"
+    },
+    "closes_on": "2026-11-23",
+    "opened_at": "2026-10-24T13:33:50.511116+00:00",
+    "salary_max": 18000,
+    "salary_min": 12000,
+    "updated_at": "2026-10-29T11:59:59.55338+00:00"
+  },
+  {
+    "id": "50771cce-af46-453f-adf6-ef29a1c66bed",
+    "post": "Store Manager",
+    "role": {
+      "shift": "",
+      "duties": "Plan and track monthly sales targets\nLead, train and schedule the store team\nControl stock, cash and audit compliance\nHandle key customers and complaints",
+      "summary": "Lead the showroom team and own its sales, customer service and daily operations.",
+      "benefits": "PF and ESI as per government rules",
+      "updated_at": "2026-10-29T11:54:48.966569+00:00",
+      "requirements": "5+ years in retail, with at least 2 years managing a team or store\nGood communication in Tamil and English"
+    },
+    "branch": {
+      "id": "1804e719-9989-439c-8105-e0c649fe7ba3",
+      "name": "Titan - Tenkasi",
+      "town": "Tenkasi",
+      "division": "Titan",
+      "postal_code": "627811",
+      "business_type": "Jewellery",
+      "street_address": "154/21 Railway Road"
+    },
+    "closes_on": "2026-11-23",
+    "opened_at": "2026-10-24T13:33:50.511116+00:00",
+    "salary_max": null,
+    "salary_min": null,
+    "updated_at": "2026-10-29T11:54:48.982543+00:00"
+  },
+  {
+    "id": "533a558a-f7e1-49a5-a03f-045a98e5cda4",
+    "post": "Technician",
+    "role": {
+      "shift": "",
+      "duties": "Carry out periodic service, repairs and inspections\nDiagnose problems and replace parts\nFollow company service standards and safety rules\nRoad-test vehicles after work",
+      "summary": "Service and repair two-wheelers in our workshop.",
+      "benefits": "PF and ESI as per government rules",
+      "updated_at": "2026-10-29T11:54:48.966569+00:00",
+      "requirements": "ITI or diploma (mechanical or automobile) preferred\nTwo-wheeler service experience preferred; freshers with an ITI can apply"
+    },
+    "branch": {
+      "id": "73440872-203a-44d9-8f57-3355058cca36",
+      "name": "Balasanka Cycle - Theni",
+      "town": "Theni",
+      "division": "Balasanka Cycle",
+      "postal_code": "625531",
+      "business_type": "Cycles",
+      "street_address": "No 339 Rathnam Nagar, Periyakulam Road"
+    },
+    "closes_on": "2026-11-23",
+    "opened_at": "2026-10-24T13:33:50.511116+00:00",
+    "salary_max": null,
+    "salary_min": 15000,
+    "updated_at": "2026-10-29T11:59:59.55338+00:00"
+  }
+]

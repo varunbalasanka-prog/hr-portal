@@ -167,7 +167,7 @@ export function currentForms(saved: { kind: string; form: AppraisalForm }[] | nu
 
 /** Same mapping as appraisal_kind() in 0022_appraisal_forms.sql. */
 export function kindFor(businessType: string | null | undefined): FormKind | null {
-  return businessType === "Jewellery" ? "jewellery" : businessType === "Automobiles" ? "automobile" : null;
+  return businessType === "Jewellery" ? "jewellery" : businessType === "Automobiles" || businessType === "Cycles" ? "automobile" : null;
 }
 
 /** Fields the approval steps rely on. Admins can reword them but not remove them or change their type. */
