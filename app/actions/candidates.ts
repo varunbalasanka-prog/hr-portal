@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin, requireProfile } from "@/lib/auth";
 import { pushTo } from "@/lib/push";
 import { applyStage, isBlacklisted, reactivate, stageFor, walkinBlocked, type StageInput } from "@/lib/pipeline";
-import { formatDateTime, dateToIso, todayIst, tomorrowIstIso } from "@/lib/dates";
+import { formatDateTime, todayIst } from "@/lib/dates";
 import { CANDIDATE_COLUMNS, type Branch, type Candidate, type Profile } from "@/lib/types";
 import { checkWalkin, overAgeNote } from "@/lib/walkin";
 import { dobRule } from "@/lib/walkin-server";
@@ -108,11 +108,7 @@ export interface WalkinInput {
   address: string;
   branchId: string;
   post: string;
-  interviewNeeded: "Yes" | "No";
   interviewAt?: string;
-  basicSalary?: string;
-  allowances?: string;
-  expectedJoiningDate?: string;
   remark?: string;
 }
 
@@ -157,21 +153,18 @@ export async function addWalkin(input: WalkinInput): Promise<Result> {
       + (hr && hr !== profile.username ? ` ${hr} has been told they walked in today.` : "") };
   }
 
-  const interview = input.interviewNeeded === "Yes";
-  const { interviewAt, joining } = v;
+  // Every walk-in goes to an interview at this store; the branch is set when they are selected.
+  const { interviewAt } = v;
 
   const { data: inserted, error } = await supabase.from("candidates").insert({
     source: "walkin", name: v.name, mobile, form_data: { [rule.label]: v.dob }, marital_status: input.maritalStatus || null, address: input.address.trim() || null,
-    posts: [v.post], applied_locations: [branch.name], branch_id: interview ? null : branch.id,
-    designation: interview ? null : v.post, assigned_hr: branch.hr_username, entry_by: profile.username,
-    interview_needed: interview,
-    pipeline_status: interview ? "Interview Scheduled" : "Expected Joining",
+    posts: [v.post], applied_locations: [branch.name], branch_id: null,
+    assigned_hr: branch.hr_username, entry_by: profile.username,
+    interview_needed: true,
+    pipeline_status: "Interview Scheduled",
     interview_at: interviewAt,
-    expected_joining_date: joining,
-    // A salary typed at the walk-in is a proposal for an admin to approve.
-    ...(v.basic || v.allowances ? { proposed_basic: v.basic, proposed_allowances: v.allowances, salary_status: "proposed" } : {}),
-    next_action: interview ? "Check interview attendance" : `Check joining status (${joining})`,
-    next_action_at: interview ? interviewAt : dateToIso(joining) ?? tomorrowIstIso(),
+    next_action: "Check interview attendance",
+    next_action_at: interviewAt,
   }).select("id").single();
   if (error) {
     if (error.code === "23505") return { ok: false, message: `Mobile ${mobile} already exists.` };
@@ -329,8 +322,7 @@ export async function requestWalkinApproval(input: WalkinInput): Promise<Result>
   if (typeof branch === "string") return { ok: false, message: branch };
   // The admin's approval replays this payload, so send the cleaned values.
   const payload: WalkinInput = {
-    ...input, name: v.name, mobile: v.mobile, post: v.post, branchId: branch.id,
-    basicSalary: String(v.basic || ""), allowances: String(v.allowances || ""),
+    ...input, name: v.name, mobile: v.mobile, post: v.post, branchId: branch.id, interviewAt: v.interviewAt,
   };
   const { data, error } = await supabase.rpc("request_walkin_override", { p_mobile: v.mobile, p_branch: branch.id, p_payload: payload });
   if (error) return { ok: false, message: error.message };

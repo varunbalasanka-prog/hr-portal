@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ageOn, checkWalkin, cleanWarnAge, normalizeMobile, overAgeNote, parseRupees, type WalkinFields } from "../lib/walkin";
 
 const now = new Date("2026-10-29T06:00:00Z"); // 11:30 am IST
-const ok: WalkinFields = { name: "Priya", mobile: "98765 43210", dateOfBirth: "2000-05-01", post: "Sales", interviewNeeded: "Yes", interviewAt: "2026-10-30T11:00" };
+const ok: WalkinFields = { name: "Priya", mobile: "98765 43210", dateOfBirth: "2000-05-01", post: "Sales", interviewAt: "2026-10-30T11:00" };
 
 describe("walk-in checks", () => {
   it("cleans mobile numbers", () => {
@@ -39,18 +39,13 @@ describe("walk-in checks", () => {
     expect(checkWalkin({ ...ok, name: " . " }, undefined, now).error).toMatch(/name/);
   });
 
-  it("checks joining date and salary when no interview", () => {
-    const direct = { ...ok, interviewNeeded: "No" as const, interviewAt: "", expectedJoiningDate: "2026-11-01", basicSalary: "15,000", allowances: "" };
-    const v = checkWalkin(direct, undefined, now);
-    expect(v.error).toBeUndefined();
-    if (v.error === undefined) expect([v.basic, v.allowances, v.joining]).toEqual([15000, 0, "2026-11-01"]);
-    expect(checkWalkin({ ...direct, expectedJoiningDate: "2026-10-01" }, undefined, now).error).toMatch(/past/);
-    expect(checkWalkin({ ...direct, basicSalary: "abc" }, undefined, now).error).toMatch(/Basic salary/);
+  it("always needs an interview, even if an old form sends no date", () => {
+    expect(checkWalkin({ ...ok, interviewAt: undefined }, undefined, now).error).toMatch(/interview date/);
   });
 });
 
 describe("walk-in date of birth", () => {
-  const ok: WalkinFields = { name: "Priya", mobile: "9876543210", dateOfBirth: "2000-05-01", post: "Sales", interviewNeeded: "Yes", interviewAt: "2026-10-30T11:00" };
+  const ok: WalkinFields = { name: "Priya", mobile: "9876543210", dateOfBirth: "2000-05-01", post: "Sales", interviewAt: "2026-10-30T11:00" };
   it("needs a believable date of birth and the minimum age", () => {
     expect(checkWalkin({ ...ok, dateOfBirth: "" }, undefined, now).error).toMatch(/date of birth/);
     expect(checkWalkin({ ...ok, dateOfBirth: "1900-01-01" }, undefined, now).error).toMatch(/year/);

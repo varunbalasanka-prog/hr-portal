@@ -2,9 +2,9 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { pushTo } from "@/lib/push";
-import { dateToIso, localInputToIso, tomorrowIstIso } from "@/lib/dates";
+import { localInputToIso, tomorrowIstIso } from "@/lib/dates";
 import type { Branch } from "@/lib/types";
-import { cleanWarnAge, parseRupees } from "@/lib/walkin";
+import { cleanWarnAge } from "@/lib/walkin";
 import { dobRule } from "@/lib/walkin-server";
 import type { WalkinInput } from "./candidates";
 
@@ -77,18 +77,17 @@ export async function decideWalkin(requestId: string, approve: boolean): Promise
 
   if (approve) {
     const p = r.payload;
-    const interview = p.interviewNeeded === "Yes";
-    const interviewAt = interview ? localInputToIso(p.interviewAt) ?? tomorrowIstIso() : null;
+    // Every walk-in goes to an interview (older requests may still say "direct joining"; they get one too).
+    const interviewAt = localInputToIso(p.interviewAt) ?? tomorrowIstIso();
     const { error } = await supabase.rpc("restart_candidate", {
       p_candidate: c.id, p_remark: `Walk-in at ${b.name} approved by ${profile.username} (requested by ${r.requested_by})${p.remark ? `: ${p.remark}` : ""}`,
       p_patch: {
-        source: "walkin", entry_by: r.requested_by, post: p.post, branch_name: b.name, branch_id: interview ? "" : b.id,
-        assigned_hr: b.hr_username, interview_needed: interview, interview_at: interviewAt,
-        expected_joining_date: interview ? null : p.expectedJoiningDate || null, designation: interview ? null : p.post,
-        proposed_basic: parseRupees(p.basicSalary) ?? 0, proposed_allowances: parseRupees(p.allowances) ?? 0,
-        pipeline_status: interview ? "Interview Scheduled" : "Expected Joining",
-        next_action: interview ? "Check interview attendance" : `Check joining status (${p.expectedJoiningDate})`,
-        next_action_at: interview ? interviewAt : dateToIso(p.expectedJoiningDate) ?? tomorrowIstIso(),
+        source: "walkin", entry_by: r.requested_by, post: p.post, branch_name: b.name, branch_id: "",
+        assigned_hr: b.hr_username, interview_needed: true, interview_at: interviewAt,
+        expected_joining_date: null, designation: null,
+        pipeline_status: "Interview Scheduled",
+        next_action: "Check interview attendance",
+        next_action_at: interviewAt,
       },
     });
     if (error) return { ok: false, message: error.message };
