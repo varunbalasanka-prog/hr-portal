@@ -4,6 +4,7 @@ import { fetchAll } from "@/lib/fetch-all";
 import { CANDIDATE_COLUMNS, isAdminRole, type Branch, type Candidate, type NotificationRow, type OnboardingSubmission, type Profile } from "@/lib/types";
 import { Dashboard } from "@/components/dashboard";
 import { todayIst } from "@/lib/dates";
+import { dobRule } from "@/lib/walkin-server";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +12,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const { list } = await searchParams;
   const { profile, supabase } = await requireProfile();
 
-  const [cands, subs, branches, people, notifs, receipts, letters] = await Promise.all([
+  const [cands, subs, branches, people, notifs, receipts, letters, settings, dob] = await Promise.all([
     fetchAll<Candidate>((f, t) => supabase.from("candidates").select(CANDIDATE_COLUMNS).order("received_at", { ascending: false }).order("id").range(f, t).returns<Candidate[]>()),
     fetchAll<OnboardingSubmission>((f, t) => supabase.from("onboarding_submissions").select("*").order("id").range(f, t)),
     supabase.from("branches").select("*").order("name"),
@@ -20,7 +21,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     supabase.from("notification_receipts").select("*").eq("username", profile.username),
     // Link tokens only for approved confirmation letters that are due, so the SMS list can include the link.
     supabase.from("candidates").select("id, access_token").not("confirmation_approved_at", "is", null).lte("confirmation_date", todayIst()),
+    // The walk-in form's post list: the posts each store has open, and the full list as a fallback.
+    supabase.from("app_settings").select("key, value").in("key", ["apply_posts", "branch_posts"]),
+    dobRule(supabase),
   ]);
+  const setting = (k: string) => settings.data?.find((r) => r.key === k)?.value;
+  const posts = { all: (setting("apply_posts") ?? []) as string[], byBranch: (setting("branch_posts") ?? {}) as Record<string, string[]> };
   const letterTokens = Object.fromEntries(((letters.data ?? []) as { id: string; access_token: string }[]).map((r) => [r.id, r.access_token]));
 
   const subByCand = new Map(subs.map((s) => [s.candidate_id, s]));
@@ -48,6 +54,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       appUrl={process.env.NEXT_PUBLIC_APP_URL ?? ""}
       letterTokens={letterTokens}
       initialList={list}
+      posts={posts}
+      dobRule={dob}
     />
   );
 }

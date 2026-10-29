@@ -3,8 +3,10 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin, requireProfile } from "@/lib/auth";
 import { pushTo } from "@/lib/push";
 import { applyStage, isBlacklisted, reactivate, stageFor, walkinBlocked, type StageInput } from "@/lib/pipeline";
-import { formatDateTime, localInputToIso, dateToIso, todayIst, tomorrowIstIso } from "@/lib/dates";
-import { CANDIDATE_COLUMNS, type Branch, type Candidate } from "@/lib/types";
+import { formatDateTime, dateToIso, todayIst, tomorrowIstIso } from "@/lib/dates";
+import { CANDIDATE_COLUMNS, type Branch, type Candidate, type Profile } from "@/lib/types";
+import { checkWalkin } from "@/lib/walkin";
+import { dobRule } from "@/lib/walkin-server";
 
 type Result = { ok: true; message: string } | { ok: false; message: string; blocked?: string };
 
@@ -101,6 +103,7 @@ export async function reactivateCandidate(candidateId: string): Promise<Result> 
 export interface WalkinInput {
   name: string;
   mobile: string;
+  dateOfBirth?: string;
   maritalStatus: string;
   address: string;
   branchId: string;
@@ -113,13 +116,26 @@ export interface WalkinInput {
   remark?: string;
 }
 
+/** The store a walk-in may be entered for: a store login only ever its own store, an HR only the stores they look after. */
+async function walkinBranch(supabase: Awaited<ReturnType<typeof requireProfile>>["supabase"], profile: Profile, branchId: string): Promise<Branch | string> {
+  const id = profile.role === "branch" ? profile.branch_id : branchId;
+  if (!id) return profile.role === "branch" ? "This store login isn't linked to a store. Ask the admin to fix it." : "Select a branch.";
+  const { data: branch } = await supabase.from("branches").select("*").eq("id", id).maybeSingle<Branch>();
+  if (!branch) return "Select a branch.";
+  if (profile.role === "hr" && branch.hr_username !== profile.username) return `${branch.name} is looked after by ${branch.hr_username}. Ask them (or an admin) to add this walk-in.`;
+  return branch;
+}
+
 export async function addWalkin(input: WalkinInput): Promise<Result> {
   const { profile, supabase } = await requireProfile();
-  const mobile = input.mobile.replace(/\D/g, "").slice(-10);
-  if (mobile.length !== 10) return { ok: false, message: "Enter a 10-digit mobile number." };
-  if (!input.name.trim()) return { ok: false, message: "Name is required." };
-  const { data: branch } = await supabase.from("branches").select("*").eq("id", input.branchId).single<Branch>();
-  if (!branch) return { ok: false, message: "Select a branch." };
+  const rule = await dobRule(supabase);
+  const v = checkWalkin(input, rule);
+  if (v.error !== undefined) return { ok: false, message: v.error };
+  const { mobile } = v;
+  const branch = await walkinBranch(supabase, profile, input.branchId);
+  if (typeof branch === "string") return { ok: false, message: branch };
+  const { data: postList } = await supabase.from("app_settings").select("value").eq("key", "apply_posts").maybeSingle<{ value: string[] }>();
+  if (postList?.value?.length && !postList.value.includes(v.post)) return { ok: false, message: "Pick the post from the list." };
 
   // Duplicate / blacklist check runs with the database's unique constraint as the final guard.
   const { data: existing } = await supabase.rpc("candidate_by_mobile", { p_mobile: mobile });
@@ -129,36 +145,45 @@ export async function addWalkin(input: WalkinInput): Promise<Result> {
       const why = isBlacklisted(ex) ? "permanently blacklisted" : ex.pipeline_status.startsWith("Left") ? "left without information (absconding)" : "waiting for admin review";
       return { ok: false, blocked: `${ex.name} (${mobile}) is ${why}: ${ex.rejection_reason || ex.pipeline_status}.`, message: "This person can't be added without an admin's approval." };
     }
-    return { ok: false, message: `Mobile ${mobile} already exists (${ex.name}, ${ex.pipeline_status}).` };
+    // Already in the portal (e.g. applied online): tell their HR the person walked in, and tell the store who has them.
+    const hr = ex.assigned_hr;
+    if (hr && hr !== profile.username) {
+      const text = `${ex.name} (${mobile}) walked in at ${branch.name} today for ${v.post}${input.remark?.trim() ? ` (${input.remark.trim()})` : ""}. `
+        + `They are already with you as "${ex.pipeline_status}". Entered by ${profile.username}.`;
+      await supabase.from("notifications").insert({ sender: profile.username, recipient: hr, message: text });
+      await pushTo(hr, { title: "Existing candidate walked in", body: text, url: "/dashboard" });
+    }
+    return { ok: false, message: `${ex.name} (${mobile}) is already in the portal (${ex.pipeline_status}), handled by ${hr || "HR"}.`
+      + (hr && hr !== profile.username ? ` ${hr} has been told they walked in today.` : "") };
   }
 
   const interview = input.interviewNeeded === "Yes";
-  const interviewAt = interview ? localInputToIso(input.interviewAt) : null;
-  if (interview && !interviewAt) return { ok: false, message: "Enter the interview date and time." };
-  if (!interview && !input.expectedJoiningDate) return { ok: false, message: "Enter the expected joining date." };
+  const { interviewAt, joining } = v;
 
   const { data: inserted, error } = await supabase.from("candidates").insert({
-    source: "walkin", name: input.name.trim(), mobile, marital_status: input.maritalStatus || null, address: input.address || null,
-    posts: [input.post], applied_locations: [branch.name], branch_id: interview ? null : branch.id,
-    designation: interview ? null : input.post, assigned_hr: branch.hr_username, entry_by: profile.username,
+    source: "walkin", name: v.name, mobile, form_data: { [rule.label]: v.dob }, marital_status: input.maritalStatus || null, address: input.address.trim() || null,
+    posts: [v.post], applied_locations: [branch.name], branch_id: interview ? null : branch.id,
+    designation: interview ? null : v.post, assigned_hr: branch.hr_username, entry_by: profile.username,
     interview_needed: interview,
     pipeline_status: interview ? "Interview Scheduled" : "Expected Joining",
     interview_at: interviewAt,
-    expected_joining_date: interview ? null : input.expectedJoiningDate,
+    expected_joining_date: joining,
     // A salary typed at the walk-in is a proposal for an admin to approve.
-    ...(Number(input.basicSalary || 0) || Number(input.allowances || 0)
-      ? { proposed_basic: Number(input.basicSalary || 0), proposed_allowances: Number(input.allowances || 0), salary_status: "proposed" }
-      : {}),
-    next_action: interview ? "Check interview attendance" : `Check joining status (${input.expectedJoiningDate})`,
-    next_action_at: interview ? interviewAt : dateToIso(input.expectedJoiningDate) ?? tomorrowIstIso(),
+    ...(v.basic || v.allowances ? { proposed_basic: v.basic, proposed_allowances: v.allowances, salary_status: "proposed" } : {}),
+    next_action: interview ? "Check interview attendance" : `Check joining status (${joining})`,
+    next_action_at: interview ? interviewAt : dateToIso(joining) ?? tomorrowIstIso(),
   }).select("id").single();
-  if (error) return { ok: false, message: error.code === "23505" ? `Mobile ${mobile} already exists.` : error.message };
+  if (error) {
+    if (error.code === "23505") return { ok: false, message: `Mobile ${mobile} already exists.` };
+    if (error.code === "42501") return { ok: false, message: `Your login can't add a walk-in for ${branch.name}. Ask an admin.` };
+    return { ok: false, message: `Could not save: ${error.message}` };
+  }
 
   if (input.remark?.trim()) {
     await supabase.from("candidate_events").insert({ candidate_id: inserted.id, actor: profile.username, stage: "walkin", remark: input.remark.trim() });
   }
   if (branch.hr_username !== profile.username) {
-    const text = `New walk-in candidate: ${input.name} (${mobile}) at ${branch.name}.`;
+    const text = `New walk-in candidate: ${v.name} (${mobile}) at ${branch.name}.`;
     await supabase.from("notifications").insert({ sender: profile.username, recipient: branch.hr_username, message: text });
     await pushTo(branch.hr_username, { title: "New walk-in", body: text, url: "/dashboard" });
   }
@@ -295,8 +320,17 @@ export async function markSmsSent(candidateId: string, key: string, label: strin
 
 /** The store asks an admin to allow a walk-in for a blocked person. */
 export async function requestWalkinApproval(input: WalkinInput): Promise<Result> {
-  const { supabase } = await requireProfile();
-  const { data, error } = await supabase.rpc("request_walkin_override", { p_mobile: input.mobile, p_branch: input.branchId, p_payload: input });
+  const { profile, supabase } = await requireProfile();
+  const v = checkWalkin(input, await dobRule(supabase));
+  if (v.error !== undefined) return { ok: false, message: v.error };
+  const branch = await walkinBranch(supabase, profile, input.branchId);
+  if (typeof branch === "string") return { ok: false, message: branch };
+  // The admin's approval replays this payload, so send the cleaned values.
+  const payload: WalkinInput = {
+    ...input, name: v.name, mobile: v.mobile, post: v.post, branchId: branch.id,
+    basicSalary: String(v.basic || ""), allowances: String(v.allowances || ""),
+  };
+  const { data, error } = await supabase.rpc("request_walkin_override", { p_mobile: v.mobile, p_branch: branch.id, p_payload: payload });
   if (error) return { ok: false, message: error.message };
   const messages: Record<string, string> = {
     ok: "Sent to admin for approval. You'll get a notification when they decide.",
