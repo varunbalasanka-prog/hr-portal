@@ -16,6 +16,8 @@ export const metadata: Metadata = {
   title: "Balasanka HR Portal",
   description: "Recruitment and onboarding portal for Balasanka Group of Companies",
   icons: { icon: "/balasanka_logo.png" },
+  applicationName: "Balasanka Group",
+  openGraph: { siteName: "Balasanka Group" },
   // Codes from Google Search Console and Bing Webmaster Tools ("HTML tag" method), set in Vercel.
   verification: {
     google: process.env.GOOGLE_SITE_VERIFICATION || undefined,
