@@ -1,7 +1,7 @@
 "use client";
 import { useState, useTransition } from "react";
 import { QUESTION_TYPES, splitBilingual, type AdminQuestion, type QuestionInput } from "@/lib/apply-questions";
-import { moveQuestion, savePosts, saveQuestion, setQuestionActive } from "@/app/actions/questions";
+import { moveQuestion, saveQuestion, setQuestionActive } from "@/app/actions/questions";
 import { Badge, Field, Flash, Modal, Select } from "@/components/ui";
 
 type Msg = { ok: boolean; message: string } | null;
@@ -12,7 +12,6 @@ export function QuestionsAdmin({ questions, posts }: { questions: AdminQuestion[
   const [pending, start] = useTransition();
   const [editing, setEditing] = useState<{ id: string | null; input: QuestionInput } | null>(null);
   const [showDeleted, setShowDeleted] = useState(false);
-  const [postText, setPostText] = useState(posts.join("\n"));
   const live = questions.filter((q) => q.active);
   const deleted = questions.filter((q) => !q.active);
   const labelOf = (id: string) => questions.find((q) => q.id === id)?.label ?? "a deleted question";
@@ -72,9 +71,10 @@ export function QuestionsAdmin({ questions, posts }: { questions: AdminQuestion[
 
       <div className="mt-4 border-t pt-3">
         <h3 className="mb-1 text-sm font-bold">Posts applicants can pick</h3>
-        <p className="mb-1 text-xs text-slate-500">One per line. Applicants can still type a post that isn&apos;t listed.</p>
-        <textarea className="input font-mono text-xs" rows={8} value={postText} onChange={(e) => setPostText(e.target.value)} />
-        <button className="btn-primary mt-2" disabled={pending} onClick={() => run(() => savePosts(postText))}>Save posts</button>
+        <p className="text-xs text-slate-500">
+          These come from the company role list ({posts.length} roles). Add, rename or delete roles under Job roles, and choose
+          what each store is hiring for under Store posts.
+        </p>
       </div>
 
       {editing && (

@@ -166,7 +166,7 @@ export function StaffRegister({ me, admin, stints, appraisals, forms, branches, 
         )}
       </Modal>
       {admin && appraisals && <FormEditor open={editForms} onClose={() => setEditForms(false)} forms={forms} />}
-      <AppraisalSheet target={sheet} admin={admin} today={today} onClose={() => setSheet(null)} />
+      <AppraisalSheet target={sheet} admin={admin} today={today} roles={sheet ? branchOf(sheet.stint)?.roles : undefined} onClose={() => setSheet(null)} />
       {admin && <DivisionsEditor open={editDivisions} onClose={() => setEditDivisions(false)} branches={branches} />}
     </div>
   );

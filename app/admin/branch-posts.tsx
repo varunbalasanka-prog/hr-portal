@@ -2,8 +2,9 @@
 import { useState, useTransition } from "react";
 import { saveBranchPosts } from "@/app/actions/questions";
 import { Badge, Flash } from "@/components/ui";
+import { divisionOf } from "@/lib/staff";
 
-type Branch = { id: string; name: string; town: string; business_type: string };
+type Branch = { id: string; name: string; town: string; business_type: string; division?: string | null; roles?: string[] };
 
 /** Pick a store, tick the posts it is hiring for. Stores with nothing ticked don't appear on the apply page. */
 export function BranchPostsAdmin({ branches, posts, open }: { branches: Branch[]; posts: string[]; open: Record<string, string[]> }) {
@@ -15,7 +16,10 @@ export function BranchPostsAdmin({ branches, posts, open }: { branches: Branch[]
   const branch = branches.find((b) => b.id === selected);
   const saved = open[selected] ?? [];
   const dirty = ticked.length !== saved.length || ticked.some((p) => !saved.includes(p));
-  const sameType = branches.filter((b) => b.business_type === branch?.business_type && b.id !== selected);
+  // Once 0025 runs, a store opens only its firm's roles, and copying goes to the firm's other stores.
+  const choices = branch?.roles ?? posts;
+  const group = branch?.roles ? divisionOf(branch) : branch?.business_type;
+  const sameType = branches.filter((b) => b.id !== selected && (branch?.roles ? divisionOf(b) === group : b.business_type === group));
 
   const pick = (id: string) => {
     if (dirty && !confirm("Discard the unsaved changes for this store?")) return;
@@ -29,7 +33,7 @@ export function BranchPostsAdmin({ branches, posts, open }: { branches: Branch[]
       <h2 className="mb-1 text-sm font-bold">Posts open at each store</h2>
       <p className="mb-2 text-xs text-slate-500">
         Applicants pick a store, then choose only from the posts ticked for it. A store with nothing ticked is hidden from the apply page.
-        To add a brand-new post, add it to the post list below first.
+        A store can only open roles its firm has. To add a role, use the Job roles tab first.
       </p>
       <Flash msg={msg} />
       <div className="grid gap-3 md:grid-cols-[16rem_1fr]">
@@ -55,12 +59,13 @@ export function BranchPostsAdmin({ branches, posts, open }: { branches: Branch[]
             <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
               <div><b>{branch.name}</b> <Badge tone="slate">{branch.business_type}</Badge></div>
               <div className="flex gap-2 text-xs">
-                <button className="text-sky-700 underline" onClick={() => setTicked(posts)}>Tick all</button>
+                <button className="text-sky-700 underline" onClick={() => setTicked(choices)}>Tick all</button>
                 <button className="text-sky-700 underline" onClick={() => setTicked([])}>Clear all</button>
               </div>
             </div>
             <div className="grid grid-cols-1 gap-1 sm:grid-cols-2 xl:grid-cols-3">
-              {posts.map((p) => (
+              {choices.length === 0 && <p className="text-sm text-slate-500">This store&apos;s firm has no roles yet. Tick some under Job roles.</p>}
+              {choices.map((p) => (
                 <label key={p} className={`flex items-center gap-2 rounded border px-2 py-1.5 text-sm ${ticked.includes(p) ? "border-green-300 bg-green-50" : "border-slate-200"}`}>
                   <input type="checkbox" checked={ticked.includes(p)} onChange={() => toggle(p)} /> {p}
                 </label>
@@ -70,8 +75,8 @@ export function BranchPostsAdmin({ branches, posts, open }: { branches: Branch[]
               <button className="btn-primary" disabled={pending || !dirty} onClick={() => save([selected])}>{pending ? "Saving…" : dirty ? "Save this store" : "Saved"}</button>
               {sameType.length > 0 && (
                 <button className="btn-outline" disabled={pending}
-                  onClick={() => confirm(`Give all ${sameType.length + 1} ${branch.business_type} stores exactly these ${ticked.length} posts?`) && save([selected, ...sameType.map((b) => b.id)])}>
-                  Copy to all {branch.business_type} stores
+                  onClick={() => confirm(`Give all ${sameType.length + 1} ${group} stores exactly these ${ticked.length} posts?`) && save([selected, ...sameType.map((b) => b.id)])}>
+                  Copy to all {group} stores
                 </button>
               )}
             </div>

@@ -3,6 +3,7 @@ import { useState, useTransition } from "react";
 import { decideAppraisal, proposeAppraisal, saveAppraisalInterview } from "@/app/actions/appraisals";
 import { GRADES, STATUS_LABEL, answerKey, cycleFor, interviewGaps, pastYears, risePct, type Answers, type Appraisal, type AppraisalField, type AppraisalForm, type AppraisalSection } from "@/lib/appraisal";
 import { formatDate } from "@/lib/dates";
+import { roleOptions } from "@/lib/job-roles";
 import type { StaffStint } from "@/lib/staff";
 import { Badge, Flash, Modal } from "@/components/ui";
 
@@ -76,16 +77,17 @@ export function PendingAppraisals({ list, stints, bName, onOpen }: {
 }
 
 /** The interview form, the proposal and the admin's decision, in one sheet. */
-export function AppraisalSheet({ target, admin, today, onClose }: { target: SheetTarget | null; admin: boolean; today: string; onClose: () => void }) {
+/** roles: the employee's firm roles for the promotion designation (0025); a free text box before that. */
+export function AppraisalSheet({ target, admin, today, roles, onClose }: { target: SheetTarget | null; admin: boolean; today: string; roles?: string[]; onClose: () => void }) {
   return (
     <Modal open={!!target} onClose={onClose} wide title={target ? `${target.stint.name}: appraisal ${target.appraisal?.cycle ?? (target as { cycle: string }).cycle}` : ""}
       subtitle={target && (target.appraisal ? STATUS_LABEL[target.appraisal.status] : "New interview")}>
-      {target && <SheetBody key={target.appraisal?.id ?? "new"} target={target} admin={admin} today={today} onClose={onClose} />}
+      {target && <SheetBody key={target.appraisal?.id ?? "new"} target={target} admin={admin} today={today} roles={roles} onClose={onClose} />}
     </Modal>
   );
 }
 
-function SheetBody({ target, admin, today, onClose }: { target: SheetTarget; admin: boolean; today: string; onClose: () => void }) {
+function SheetBody({ target, admin, today, roles, onClose }: { target: SheetTarget; admin: boolean; today: string; roles?: string[]; onClose: () => void }) {
   const a = target.appraisal;
   const form = a ? a.form : (target as { form: AppraisalForm }).form;
   const cycle = a ? a.cycle : (target as { cycle: string }).cycle;
@@ -142,7 +144,12 @@ function SheetBody({ target, admin, today, onClose }: { target: SheetTarget; adm
             <>
               <div className="grid gap-3 sm:grid-cols-4">
                 <label className="sm:col-span-2"><span className="section-title">Designation (change it for a promotion)</span>
-                  <input className="input mt-1" value={prop.designation} onChange={(e) => setProp({ ...prop, designation: e.target.value })} /></label>
+                  {roles
+                    ? <select className="input mt-1" value={prop.designation} onChange={(e) => setProp({ ...prop, designation: e.target.value })}>
+                        <option value="">-- Select --</option>
+                        {roleOptions(roles, prop.designation).map((r) => <option key={r}>{r}</option>)}
+                      </select>
+                    : <input className="input mt-1" value={prop.designation} onChange={(e) => setProp({ ...prop, designation: e.target.value })} />}</label>
                 <label><span className="section-title">New basic (₹/month)</span>
                   <input className="input mt-1" inputMode="numeric" value={prop.basic} onChange={(e) => setProp({ ...prop, basic: e.target.value })} /></label>
                 <label><span className="section-title">Allowances (₹/month)</span>
