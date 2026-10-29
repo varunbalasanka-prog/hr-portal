@@ -13,7 +13,7 @@ export type WalkinPosts = { all: string[]; byBranch: Record<string, string[]> };
 export function WalkinForm({ me, branches, posts, dobRule, onClose }: { me: Profile; branches: Branch[]; posts: WalkinPosts; dobRule: DobRule; onClose: () => void }) {
   const router = useRouter();
   const [f, setF] = useState<WalkinInput>({
-    name: "", mobile: "", maritalStatus: "", address: "", post: "", interviewNeeded: "Yes",
+    name: "", mobile: "", maritalStatus: "", address: "", post: "",
     branchId: me.role === "branch" ? me.branch_id ?? "" : "",
   });
   const [msg, setMsg] = useState<{ ok: boolean; message: string } | null>(null);
@@ -55,16 +55,7 @@ export function WalkinForm({ me, branches, posts, dobRule, onClose }: { me: Prof
         )}
         <div className="sm:col-span-2"><Field label="Address"><textarea className="input" rows={2} value={f.address} onChange={(e) => set("address")(e.target.value)} /></Field></div>
         <Field label="Post applying for *"><Select value={f.post} onChange={set("post")} options={postOptions} /></Field>
-        <Field label="Interview needed?"><Select value={f.interviewNeeded} onChange={set("interviewNeeded")} options={["Yes", "No"]} /></Field>
-        {f.interviewNeeded === "Yes" ? (
-          <Field label="Interview date & time *"><input type="datetime-local" className="input" min={`${today}T00:00`} value={f.interviewAt ?? ""} onChange={(e) => set("interviewAt")(e.target.value)} /></Field>
-        ) : (
-          <>
-            <Field label="Proposed basic salary (₹)"><input className="input" inputMode="numeric" placeholder="e.g. 15000" value={f.basicSalary ?? ""} onChange={(e) => set("basicSalary")(e.target.value)} /></Field>
-            <Field label="Proposed allowances (₹)"><input className="input" inputMode="numeric" value={f.allowances ?? ""} onChange={(e) => set("allowances")(e.target.value)} /></Field>
-            <Field label="Expected joining date *"><input type="date" className="input" min={today} value={f.expectedJoiningDate ?? ""} onChange={(e) => set("expectedJoiningDate")(e.target.value)} /></Field>
-          </>
-        )}
+        <Field label="Interview date & time *"><input type="datetime-local" className="input" min={`${today}T00:00`} value={f.interviewAt ?? ""} onChange={(e) => set("interviewAt")(e.target.value)} /></Field>
         <div className="sm:col-span-2"><Field label="Remarks"><input className="input" value={f.remark ?? ""} onChange={(e) => set("remark")(e.target.value)} /></Field></div>
       </div>
       <div className="mt-3"><Flash msg={msg} /></div>

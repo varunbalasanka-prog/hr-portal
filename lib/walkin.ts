@@ -23,11 +23,7 @@ export interface WalkinFields {
   mobile: string;
   dateOfBirth?: string;
   post: string;
-  interviewNeeded: "Yes" | "No";
   interviewAt?: string;
-  basicSalary?: string;
-  allowances?: string;
-  expectedJoiningDate?: string;
 }
 
 /** The apply page's date-of-birth question: walk-ins save under the same label and follow the same minimum age.
@@ -61,9 +57,10 @@ export function cleanWarnAge(raw: string): number | null | undefined {
 
 export type WalkinCheck =
   | { error: string }
-  | { error?: undefined; name: string; mobile: string; dob: string; post: string; interviewAt: string | null; joining: string | null; basic: number; allowances: number };
+  | { error?: undefined; name: string; mobile: string; dob: string; post: string; interviewAt: string };
 
-/** Every rule the walk-in form needs, in one place so the browser and the server say the same thing. */
+/** Every rule the walk-in form needs, in one place so the browser and the server say the same thing.
+ *  Every walk-in goes through an interview; there is no direct joining. */
 export function checkWalkin(f: WalkinFields, dobRule: DobRule = DEFAULT_DOB, now: Date = new Date()): WalkinCheck {
   const name = f.name.trim().replace(/\s+/g, " ");
   if (name.replace(/[^\p{L}]/gu, "").length < 2) return { error: "Enter the applicant's name." };
@@ -77,22 +74,10 @@ export function checkWalkin(f: WalkinFields, dobRule: DobRule = DEFAULT_DOB, now
   const post = f.post.trim().replace(/\s+/g, " ");
   if (!post) return { error: "Enter the post they are applying for." };
 
-  if (f.interviewNeeded === "Yes") {
-    const at = localInputToIso(f.interviewAt);
-    if (!at) return { error: "Enter the interview date and time." };
-    const day = todayIst(new Date(at));
-    if (day < today) return { error: "The interview date is in the past. Check the date." };
-    if (day > addDays(today, 60)) return { error: "The interview date is more than 2 months away. Check the date." };
-    return { name, mobile, dob, post, interviewAt: at, joining: null, basic: 0, allowances: 0 };
-  }
-
-  const joining = (f.expectedJoiningDate ?? "").trim();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(joining)) return { error: "Enter the expected joining date." };
-  if (joining < today) return { error: "The joining date is in the past. Check the date." };
-  if (joining > addDays(today, 120)) return { error: "The joining date is more than 4 months away. Check the date." };
-  const basic = parseRupees(f.basicSalary);
-  const allowances = parseRupees(f.allowances);
-  if (basic === null) return { error: "Basic salary must be a number, like 15000." };
-  if (allowances === null) return { error: "Allowances must be a number, like 2000." };
-  return { name, mobile, dob, post, interviewAt: null, joining, basic, allowances };
+  const at = localInputToIso(f.interviewAt);
+  if (!at) return { error: "Enter the interview date and time." };
+  const day = todayIst(new Date(at));
+  if (day < today) return { error: "The interview date is in the past. Check the date." };
+  if (day > addDays(today, 60)) return { error: "The interview date is more than 2 months away. Check the date." };
+  return { name, mobile, dob, post, interviewAt: at };
 }

@@ -7,7 +7,7 @@ import { Flash } from "@/components/ui";
 
 export type WalkinRequestRow = {
   id: string; status: string; reason: string; requested_by: string; created_at: string; decided_by: string | null;
-  candidate: { name: string; mobile: string } | null; branch: { name: string } | null; payload: { post?: string; interviewNeeded?: string; remark?: string };
+  candidate: { name: string; mobile: string } | null; branch: { name: string } | null; payload: { post?: string; interviewAt?: string; remark?: string };
 };
 
 /** Walk-ins older than this get a warning on the store's form (they can still save) and a note to HR. */
@@ -44,7 +44,7 @@ export function WalkinApprovals({ rows }: { rows: WalkinRequestRow[] }) {
       <div className="space-y-2">
         {rows.map((r) => (
           <div key={r.id} className={`rounded border p-2 text-sm ${r.status === "pending" ? "border-amber-300 bg-amber-50" : "border-slate-200"}`}>
-            <div><b>{r.candidate?.name ?? "-"}</b> ({r.candidate?.mobile}) at <b>{r.branch?.name}</b> for {r.payload.post || "-"}{r.payload.interviewNeeded === "Yes" ? ", interview" : ", direct joining"}</div>
+            <div><b>{r.candidate?.name ?? "-"}</b> ({r.candidate?.mobile}) at <b>{r.branch?.name}</b> for {r.payload.post || "-"}</div>
             <div className="text-xs text-slate-600">Blocked because: {r.reason} · asked by {r.requested_by}, {formatDateTime(r.created_at)}{r.payload.remark ? ` · “${r.payload.remark}”` : ""}</div>
             {r.status === "pending" ? (
               <div className="mt-1.5 flex gap-2">
