@@ -9,7 +9,7 @@ import { ALERT_DAYS_BEFORE, BACKLOG_DAYS } from "@/lib/confirmation";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-/** Nightly (vercel.json): tells HR about confirmations to approve, sends festival loan reminders, removes uploads from applications that were never
+/** Nightly (vercel.json): tells HR about confirmations to approve, sends festival loan and manpower reminders, removes uploads from applications that were never
  *  submitted, then strips closed records older than the retention period set in Admin. Vercel sends "Authorization: Bearer $CRON_SECRET". */
 export async function GET(req: NextRequest) {
   if (!process.env.CRON_SECRET || req.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -20,9 +20,10 @@ export async function GET(req: NextRequest) {
     // A failed alert must not stop the clean-up; it is retried the next night (alerts are sent once each).
     const confirmations = await alertConfirmations(db).catch((e: Error) => `failed: ${e.message}`);
     const loans = await alertLoans(db).catch((e: Error) => `failed: ${e.message}`);
+    const manpower = await alertManpower(db).catch((e: Error) => `failed: ${e.message}`);
     const abandoned = await removeAbandonedUploads(db);
     const stripped = await stripOldRecords(db);
-    return NextResponse.json({ ok: true, confirmations, loans, abandoned, stripped });
+    return NextResponse.json({ ok: true, confirmations, loans, manpower, abandoned, stripped });
   } catch (e) {
     return NextResponse.json({ ok: false, error: (e as Error).message }, { status: 500 });
   }
@@ -40,6 +41,13 @@ async function alertConfirmations(db: SupabaseClient) {
 /** Festival loans (0021): tells the borrowing store two days before its people go back, and both stores once they are back. */
 async function alertLoans(db: SupabaseClient) {
   const { data, error } = await db.rpc("send_loan_alerts");
+  if (error) throw new Error(error.message);
+  return data as number;
+}
+
+/** Manpower requests (0026): approved permanent requests past their needed-by date, and temporary ones starting without enough people. */
+async function alertManpower(db: SupabaseClient) {
+  const { data, error } = await db.rpc("send_manpower_alerts");
   if (error) throw new Error(error.message);
   return data as number;
 }
