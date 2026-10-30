@@ -7,17 +7,12 @@ export const CAREERS_SITE = "https://hr.balasanka.in";
 export const CONTACT_EMAIL = "support@balasanka.in";
 
 export type Showroom = { brand: string; town: string; company: string; street: string; pin: string };
-export type Photo = { src: string; alt: string; credit: string };
-export type ShowroomGroup = { key: string; title: string; tamil: string; blurb: string; photo: Photo; showrooms: Showroom[] };
+export type ShowroomGroup = { key: string; title: string; tamil: string; blurb: string; showrooms: Showroom[] };
 
-/** Unsplash License photos (free for commercial use). Swap for our own showroom photos when we have them. */
-const unsplash = (id: string, w: number) => `https://images.unsplash.com/${id}?auto=format&fit=crop&q=70&w=${w}`;
-export const HERO_PHOTO: Photo = { src: unsplash("photo-1600685890506-593fdf55949b", 1400), alt: "A bride in traditional red attire wearing ornate gold jewellery", credit: "Aayush Rawat / Unsplash" };
 
 export const SHOWROOM_GROUPS: ShowroomGroup[] = [
   {
     key: "jewellery", title: "Jewellery", tamil: "நகைகள்",
-    photo: { src: unsplash("photo-1721807644561-9efcabee5c42", 800), alt: "Gold jewellery laid out on a table", credit: "Prahant Studio / Unsplash" },
     blurb: "Our own Akshaya Velli and Zora showrooms, and Tanishq, Mia by Tanishq and CaratLane stores.",
     showrooms: [
       { brand: "Akshaya Velli", town: "Theni", company: "Balasanka Akshaya Velli LLP", street: "No 441/2A Balasanka Plaza, Periyakulam Road", pin: "625531" },
@@ -35,7 +30,6 @@ export const SHOWROOM_GROUPS: ShowroomGroup[] = [
   },
   {
     key: "watches", title: "Watches and eyewear", tamil: "கடிகாரங்கள், கண்ணாடிகள்",
-    photo: { src: unsplash("photo-1772638904164-eed7c6b1e57e", 800), alt: "A wristwatch on a dark background", credit: "Puneet Kaul / Unsplash" },
     blurb: "Titan, Fastrack and Titan Eye+ stores for watches, accessories and eye care.",
     showrooms: [
       { brand: "Titan", town: "Tenkasi", company: "Balasanka Jewellery LLP", street: "154/21 Railway Road", pin: "627811" },
@@ -45,7 +39,6 @@ export const SHOWROOM_GROUPS: ShowroomGroup[] = [
   },
   {
     key: "vehicles", title: "Two-wheelers and cycles", tamil: "இருசக்கர வாகனங்கள்",
-    photo: { src: unsplash("photo-1790919358336-d20ad9808553", 800), alt: "Honda motorcycles in a showroom", credit: "Shubham Rohilla / Unsplash" },
     blurb: "TVS and Honda dealerships with sales, service and spares, and a cycle showroom in Theni.",
     showrooms: [
       { brand: "Balasanka TVS", town: "Sivakasi", company: "Balasanka Motor Private Ltd", street: "No 441 Virudhunagar Road", pin: "626123" },

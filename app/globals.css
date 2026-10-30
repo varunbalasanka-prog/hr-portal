@@ -39,3 +39,6 @@ body { background: #f5f6fa; color: #101828; }
 
 /* Thin scrollbars for the side menu and long tables. */
 .scroll-thin { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
+
+/* balasanka.in homepage brand strip: two copies of the list slide left by one copy's width. */
+@keyframes marquee { to { transform: translateX(-50%); } }
