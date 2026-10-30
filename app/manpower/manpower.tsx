@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import {
-  approveManpower, assignTempStaff, decideTempRequest, endStaffLoan, loanPool, requestManpower, requestTemporaryStaff, setManpowerStatus, type PoolPerson,
+  approveManpower, assignTempStaff, closeManpower, decideTempRequest, endStaffLoan, loanPool, requestManpower, requestTemporaryStaff, setManpowerStatus, type PoolPerson,
 } from "@/app/actions/manpower";
 import { addDays, formatDate } from "@/lib/dates";
 import { loanLastDay, loanState, stillNeeded, type StaffLoan, type TempRole } from "@/lib/manpower";
@@ -10,19 +10,19 @@ import { Badge, Field, Flash, Modal } from "@/components/ui";
 
 export type ManpowerRow = {
   id: string; branch_id: string; post: string; headcount: number; needed_by: string | null; reason: string | null;
-  status: "requested" | "approved" | "filled" | "cancelled"; requested_by: string; decided_by: string | null; created_at: string;
+  status: "requested" | "approved" | "filled" | "closed" | "cancelled"; requested_by: string; decided_by: string | null; created_at: string;
   kind?: "permanent" | "temporary"; roles?: TempRole[] | null; start_date?: string | null; end_date?: string | null; decision_note?: string | null;
   hired?: number;
 };
-const TONE = { requested: "amber", approved: "sky", filled: "green", cancelled: "zinc" } as const;
+const TONE = { requested: "amber", approved: "sky", filled: "green", closed: "zinc", cancelled: "zinc" } as const;
 type Msg = { ok: boolean; message: string } | null;
 
 const isTemp = (r: ManpowerRow) => r.kind === "temporary";
 /** A temporary request is over once its last day has passed. */
 const tempOver = (r: ManpowerRow, today: string) => isTemp(r) && !!r.end_date && r.end_date < today;
 
-/** Branches ask for people. Permanent: admins approve (shown as "urgent" on the careers page); joiners at the store for that post
- *  count towards it and fill it (0026), or an admin marks it filled.
+/** Branches ask for people. Permanent: admins approve (the post is then open on the careers page); joiners at the store for that post
+ *  count towards it and fill it (0026). It closes by itself on its needed-by date, or the store's HR closes it early (0027).
  *  Temporary (festival rush): the store's HR approves and lends named staff from other stores for fixed dates. */
 export function Manpower({ me, admin, canLend, rows, branches, posts, loans, today, tempReady }: {
   me: Profile; admin: boolean; canLend: boolean; rows: ManpowerRow[]; branches: Branch[]; posts: Record<string, string[]>;
@@ -58,7 +58,7 @@ export function Manpower({ me, admin, canLend, rows, branches, posts, loans, tod
                 ? <ul className="mt-0.5">{r.roles.map((x) => <li key={x.post}>{x.headcount} × {x.post}</li>)}</ul>
                 : r.post}
               {r.reason && <div className="text-xs text-slate-500">{r.reason}</div>}
-              {r.decision_note && <div className="text-xs text-slate-500">HR: {r.decision_note}</div>}
+              {r.decision_note && <div className="text-xs text-slate-500">{temp ? `HR: ${r.decision_note}` : r.decision_note}</div>}
               {temp && mine.length > 0 && (
                 <ul className="mt-1 space-y-0.5 text-xs">
                   {mine.map((l) => (
@@ -77,7 +77,9 @@ export function Manpower({ me, admin, canLend, rows, branches, posts, loans, tod
             <td className="text-xs">{r.requested_by}<br />{formatDate(r.created_at)}</td>
             <td className="space-x-1 whitespace-nowrap text-right">
               {!temp && admin && r.status === "requested" && <button className="btn-success !py-0.5 text-xs" disabled={pending} onClick={() => act(() => approveManpower(r.id))}>Approve</button>}
-              {!temp && admin && r.status === "approved" && <button className="btn-success !py-0.5 text-xs" disabled={pending} onClick={() => act(() => setManpowerStatus(r.id, "filled"))}>Filled</button>}
+              {!temp && lends(r.branch_id) && r.status === "approved" && <button className="btn-outline !py-0.5 text-xs" disabled={pending} onClick={() => {
+                if (window.confirm(`Close this request now? ${r.hired ?? 0} of ${r.headcount} joined.`)) act(() => closeManpower(r.id));
+              }}>Close</button>}
               {temp && lends(r.branch_id) && r.status === "requested" && <>
                 <button className="btn-success !py-0.5 text-xs" disabled={pending} onClick={() => act(() => decideTempRequest(r.id, true, ""))}>Approve</button>
                 <button className="btn-outline !py-0.5 text-xs" disabled={pending} onClick={() => {
@@ -87,7 +89,7 @@ export function Manpower({ me, admin, canLend, rows, branches, posts, loans, tod
               </>}
               {temp && lends(r.branch_id) && (r.status === "approved" || r.status === "filled") && !over &&
                 <button className="btn-primary !py-0.5 text-xs" disabled={pending} onClick={() => setAssigning(r)}>{r.status === "filled" ? "People" : "Pick people"}</button>}
-              {(admin || (r.requested_by === me.username && r.status === "requested")) && (r.status === "requested" || (r.status === "approved" && !over)) &&
+              {(admin || r.requested_by === me.username) && r.status === "requested" &&
                 <button className="btn-outline !py-0.5 text-xs" disabled={pending} onClick={() => act(() => setManpowerStatus(r.id, "cancelled"))}>Cancel</button>}
             </td>
           </tr>
@@ -105,11 +107,11 @@ export function Manpower({ me, admin, canLend, rows, branches, posts, loans, tod
           <button role="tab" aria-selected={kind === "temporary"} className={`chip ${kind === "temporary" ? "chip-on" : ""}`} onClick={() => setKind("temporary")}>Temporary</button>
         </div>
         <p className="-mt-1 text-xs text-slate-500">{kind === "permanent"
-          ? "New hires. Approved requests show as “Urgently hiring” on the careers page."
+          ? "New hires. Once approved, the post is open on the careers page. The request closes by itself when enough people join or on the needed-by date."
           : "Festival rush: staff from other stores (automobile or jewellery) are lent to you for the dates you choose, then go back."}</p>
         <Flash msg={msg} />
         {kind === "permanent"
-          ? <PermanentForm me={me} branches={branches} posts={posts} pending={pending} onSend={(f) => act(() => requestManpower(f))} />
+          ? <PermanentForm me={me} branches={branches} posts={posts} today={today} pending={pending} onSend={(f) => act(() => requestManpower(f))} />
           : tempReady
             ? <TemporaryForm me={me} branches={branches} posts={posts} today={today} pending={pending} onSend={(f) => act(() => requestTemporaryStaff(f))} />
             : <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">Temporary requests aren&apos;t set up yet. An admin needs to run 0021_temporary_staff.sql in Supabase.</p>}
@@ -147,8 +149,8 @@ function BranchPicker({ me, branches, value, onChange }: { me: Profile; branches
   );
 }
 
-function PermanentForm({ me, branches, posts, pending, onSend }: {
-  me: Profile; branches: Branch[]; posts: Record<string, string[]>; pending: boolean;
+function PermanentForm({ me, branches, posts, today, pending, onSend }: {
+  me: Profile; branches: Branch[]; posts: Record<string, string[]>; today: string; pending: boolean;
   onSend: (f: { branch_id: string; post: string; headcount: number; needed_by: string; reason: string }) => void;
 }) {
   const [f, setF] = useState({ branch_id: me.role === "branch" ? me.branch_id ?? "" : "", post: "", headcount: 1, needed_by: "", reason: "" });
@@ -163,10 +165,10 @@ function PermanentForm({ me, branches, posts, pending, onSend }: {
       </Field>
       <div className="grid grid-cols-2 gap-2">
         <Field label="How many people *"><input className="input" type="number" min={1} max={50} value={f.headcount} onChange={(e) => setF({ ...f, headcount: Number(e.target.value) })} /></Field>
-        <Field label="Needed by"><input className="input" type="date" value={f.needed_by} onChange={(e) => setF({ ...f, needed_by: e.target.value })} /></Field>
+        <Field label="Needed by *"><input className="input" type="date" min={today} value={f.needed_by} onChange={(e) => setF({ ...f, needed_by: e.target.value })} /></Field>
       </div>
       <Field label="Reason (replacement, new counter…)"><input className="input" value={f.reason} onChange={(e) => setF({ ...f, reason: e.target.value })} /></Field>
-      <button className="btn-primary" disabled={pending || !f.branch_id || !f.post} onClick={() => { onSend(f); setF({ ...f, post: "", headcount: 1, needed_by: "", reason: "" }); }}>Send request</button>
+      <button className="btn-primary" disabled={pending || !f.branch_id || !f.post || !f.needed_by} onClick={() => { onSend(f); setF({ ...f, post: "", headcount: 1, needed_by: "", reason: "" }); }}>Send request</button>
     </>
   );
 }

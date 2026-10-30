@@ -45,7 +45,7 @@ async function alertLoans(db: SupabaseClient) {
   return data as number;
 }
 
-/** Manpower requests (0026): approved permanent requests past their needed-by date, and temporary ones starting without enough people. */
+/** Manpower requests (0027): closes permanent requests past their needed-by date, and warns about temporary ones starting without enough people. */
 async function alertManpower(db: SupabaseClient) {
   const { data, error } = await db.rpc("send_manpower_alerts");
   if (error) throw new Error(error.message);

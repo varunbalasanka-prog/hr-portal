@@ -2,21 +2,18 @@ import "server-only";
 import { createPublicClient } from "./supabase/public";
 import { loadApplyConfig, type BranchOption } from "@/app/apply/config";
 
-export type CareerBranch = BranchOption & { urgent: { post: string; headcount: number }[] };
+export type CareerBranch = BranchOption;
 /** postedAt: when admin last changed which posts are open (null until migration 0017 has run). */
 export type CareerListing = { branches: CareerBranch[]; postedAt: string | null };
 
-/** Branches with open posts, plus the posts a branch urgently needs (approved manpower requests). */
+/** Branches with open posts. */
 export async function loadCareerListing(): Promise<CareerListing | null> {
   const [config, { data }] = await Promise.all([loadApplyConfig(), createPublicClient().rpc("public_careers")]);
   if (!config) return null;
-  const extra = (data ?? {}) as { urgent?: { branch_id: string; post: string; headcount: number }[]; posted_at?: string | null };
-  const urgent = extra.urgent ?? [];
+  const extra = (data ?? {}) as { posted_at?: string | null };
   return {
     postedAt: extra.posted_at ?? null,
-    branches: config.branches.map((b) => ({
-      ...b, urgent: urgent.filter((u) => u.branch_id === b.id && b.posts.includes(u.post)).map(({ post, headcount }) => ({ post, headcount })),
-    })),
+    branches: config.branches,
   };
 }
 

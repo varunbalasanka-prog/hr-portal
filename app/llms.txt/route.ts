@@ -26,8 +26,7 @@ export async function GET() {
         `- [${b.name}](${base}/apply?branch=${b.id}) (${b.business_type}): ${b.posts.map((p) => {
           const j = jobs?.find((x) => x.branch.id === b.id && x.post === p);
           return j ? `[${p}](${base}${jobPath(j)})` : p;
-        }).join(", ")}`
-        + (b.urgent.length ? `. Urgently hiring: ${b.urgent.map((u) => `${u.post} (${u.headcount})`).join(", ")}` : "")),
+        }).join(", ")}`),
       "",
     ]),
   ];
