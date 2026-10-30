@@ -58,7 +58,7 @@ export async function approveManpower(id: string): Promise<Result> {
   revalidatePath("/manpower");
   revalidatePath("/careers");
   const opened = (data as { opened?: boolean } | null)?.opened;
-  return { ok: true, message: `Approved. ${opened ? "The post wasn't open at this store, so it is now open for applications. " : ""}It shows as urgently hiring on the careers page.` };
+  return { ok: true, message: `Approved.${opened ? " The post wasn't open at this store, so it is now open on the careers page." : ""}` };
 }
 
 export async function setManpowerStatus(id: string, status: "filled" | "cancelled"): Promise<Result> {

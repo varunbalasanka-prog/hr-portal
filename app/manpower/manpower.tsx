@@ -21,7 +21,7 @@ const isTemp = (r: ManpowerRow) => r.kind === "temporary";
 /** A temporary request is over once its last day has passed. */
 const tempOver = (r: ManpowerRow, today: string) => isTemp(r) && !!r.end_date && r.end_date < today;
 
-/** Branches ask for people. Permanent: admins approve (shown as "urgent" on the careers page); joiners at the store for that post
+/** Branches ask for people. Permanent: admins approve (the post is then open on the careers page); joiners at the store for that post
  *  count towards it and fill it (0026), or an admin marks it filled.
  *  Temporary (festival rush): the store's HR approves and lends named staff from other stores for fixed dates. */
 export function Manpower({ me, admin, canLend, rows, branches, posts, loans, today, tempReady }: {
@@ -105,7 +105,7 @@ export function Manpower({ me, admin, canLend, rows, branches, posts, loans, tod
           <button role="tab" aria-selected={kind === "temporary"} className={`chip ${kind === "temporary" ? "chip-on" : ""}`} onClick={() => setKind("temporary")}>Temporary</button>
         </div>
         <p className="-mt-1 text-xs text-slate-500">{kind === "permanent"
-          ? "New hires. Approved requests show as “Urgently hiring” on the careers page."
+          ? "New hires. Once approved, the post is open on the careers page."
           : "Festival rush: staff from other stores (automobile or jewellery) are lent to you for the dates you choose, then go back."}</p>
         <Flash msg={msg} />
         {kind === "permanent"

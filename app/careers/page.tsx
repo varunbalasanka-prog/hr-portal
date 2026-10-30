@@ -39,11 +39,6 @@ export default async function CareersPage() {
               <article key={b.id} className="card flex flex-col p-4">
                 <h3 className="font-bold">{b.name}</h3>
                 <p className="mb-2 text-xs text-slate-500">{b.business_type}</p>
-                {b.urgent.length > 0 && (
-                  <p className="mb-2 rounded bg-red-50 px-2 py-1 text-sm text-red-800">
-                    <b>Urgently hiring / அவசரத் தேவை:</b> {b.urgent.map((u) => `${u.post} (${u.headcount})`).join(", ")}
-                  </p>
-                )}
                 <ul className="mb-3 flex flex-wrap gap-1.5 text-xs">
                   {b.posts.map((p) => {
                     const href = pathOf(b.id, p);

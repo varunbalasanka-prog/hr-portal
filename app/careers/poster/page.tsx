@@ -39,7 +39,7 @@ export default async function PosterPage({ searchParams }: Props) {
           <p className="mt-2 text-4xl font-bold">வேலைக்கு ஆட்கள் தேவை!</p>
           <p className="mt-6 text-2xl font-semibold">{b.name}</p>
           <ul className="mt-6 flex max-w-[160mm] flex-wrap justify-center gap-2 text-lg">
-            {(b.urgent.length ? b.urgent.map((u) => u.post) : b.posts.slice(0, 10)).map((p) => <li key={p} className="rounded-full border-2 border-brand px-3 py-1">{p}</li>)}
+            {b.posts.slice(0, 10).map((p) => <li key={p} className="rounded-full border-2 border-brand px-3 py-1">{p}</li>)}
           </ul>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={qr} alt={`QR code to apply at ${b.name}`} className="mt-10 h-[70mm] w-[70mm]" />
