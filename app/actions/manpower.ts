@@ -2,6 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { requireProfile } from "@/lib/auth";
 import { isAdminRole } from "@/lib/types";
+import { todayIst } from "@/lib/dates";
 import { cleanTempRoles, type TempRole } from "@/lib/manpower";
 import { companyRoleNames, storeRoleNames } from "@/lib/job-roles";
 
@@ -14,10 +15,12 @@ export async function requestManpower(input: { branch_id: string; post: string; 
   const headcount = Math.round(Number(input.headcount));
   if (!branchId || !post) return { ok: false, message: "Choose the branch and the post." };
   if (!(headcount >= 1 && headcount <= 50)) return { ok: false, message: "Number of people must be 1 to 50." };
+  // The request closes by itself after this date (0027), so it is required.
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.needed_by) || input.needed_by < todayIst()) return { ok: false, message: "Choose the needed-by date (today or later)." };
   const allowed = await storeRoleNames(supabase, branchId);
   if (allowed && !allowed.includes(post)) return { ok: false, message: "Pick a post from the list. Ask an admin to add a role that is missing." };
   const { error } = await supabase.from("manpower_requests").insert({
-    branch_id: branchId, post, headcount, needed_by: input.needed_by || null, reason: input.reason.trim().slice(0, 500) || null,
+    branch_id: branchId, post, headcount, needed_by: input.needed_by, reason: input.reason.trim().slice(0, 500) || null,
   });
   if (error) return { ok: false, message: error.message };
   // The store's HR and the admins are told by the database (0026).
@@ -61,9 +64,19 @@ export async function approveManpower(id: string): Promise<Result> {
   return { ok: true, message: `Approved.${opened ? " The post wasn't open at this store, so it is now open on the careers page." : ""}` };
 }
 
-export async function setManpowerStatus(id: string, status: "filled" | "cancelled"): Promise<Result> {
+/** The store's HR (or an admin) ends an approved permanent request early (0027). It also closes by itself once enough
+ *  people have joined or its needed-by date has passed. */
+export async function closeManpower(id: string): Promise<Result> {
+  const { supabase } = await requireProfile();
+  const { error } = await supabase.rpc("close_manpower_request", { p_request: id });
+  if (error) return { ok: false, message: error.message.includes("close_manpower_request") ? "An admin needs to run 0027_manpower_close.sql first." : error.message };
+  revalidatePath("/manpower");
+  revalidatePath("/careers");
+  return { ok: true, message: "Closed. The store and its HR have been told." };
+}
+
+export async function setManpowerStatus(id: string, status: "cancelled"): Promise<Result> {
   const { profile, supabase } = await requireProfile();
-  if (status !== "cancelled" && !isAdminRole(profile.role)) return { ok: false, message: "Only an admin can close requests." };
   if (status === "cancelled") {
     const { count } = await supabase.from("manpower_requests").select("id", { count: "exact", head: true }).eq("id", id).eq("kind", "temporary").neq("status", "requested");
     if (count) {
