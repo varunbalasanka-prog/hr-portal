@@ -20,14 +20,9 @@ export async function requestManpower(input: { branch_id: string; post: string; 
     branch_id: branchId, post, headcount, needed_by: input.needed_by || null, reason: input.reason.trim().slice(0, 500) || null,
   });
   if (error) return { ok: false, message: error.message };
-  const { data: admins } = await supabase.from("profiles").select("username").in("role", ["admin", "superadmin"]);
-  if (admins?.length) {
-    await supabase.from("notifications").insert(admins.map((a) => ({
-      sender: profile.username, recipient: a.username, message: `Manpower request: ${headcount} × ${post}. Please review on the Manpower page.`,
-    })));
-  }
+  // The store's HR and the admins are told by the database (0026).
   revalidatePath("/manpower");
-  return { ok: true, message: "Request sent to admin." };
+  return { ok: true, message: "Request sent to the admins and your HR." };
 }
 
 /** Festival help (0021): several roles with a headcount each, for fixed dates. The store's HR and admins are told by the database. */
@@ -54,9 +49,21 @@ export async function requestTemporaryStaff(input: { branch_id: string; roles: T
   return { ok: true, message: "Request sent to HR." };
 }
 
-export async function setManpowerStatus(id: string, status: "approved" | "filled" | "cancelled"): Promise<Result> {
+/** Admin approves a permanent request (0026). If the post wasn't open at the store, approving opens it. */
+export async function approveManpower(id: string): Promise<Result> {
   const { profile, supabase } = await requireProfile();
-  if (status !== "cancelled" && !isAdminRole(profile.role)) return { ok: false, message: "Only an admin can approve or close requests." };
+  if (!isAdminRole(profile.role)) return { ok: false, message: "Only an admin can approve permanent requests." };
+  const { data, error } = await supabase.rpc("approve_manpower_request", { p_request: id });
+  if (error) return { ok: false, message: error.message.includes("approve_manpower_request") ? "An admin needs to run 0026_manpower_gaps.sql first." : error.message };
+  revalidatePath("/manpower");
+  revalidatePath("/careers");
+  const opened = (data as { opened?: boolean } | null)?.opened;
+  return { ok: true, message: `Approved. ${opened ? "The post wasn't open at this store, so it is now open for applications. " : ""}It shows as urgently hiring on the careers page.` };
+}
+
+export async function setManpowerStatus(id: string, status: "filled" | "cancelled"): Promise<Result> {
+  const { profile, supabase } = await requireProfile();
+  if (status !== "cancelled" && !isAdminRole(profile.role)) return { ok: false, message: "Only an admin can close requests." };
   if (status === "cancelled") {
     const { count } = await supabase.from("manpower_requests").select("id", { count: "exact", head: true }).eq("id", id).eq("kind", "temporary").neq("status", "requested");
     if (count) {
@@ -69,7 +76,7 @@ export async function setManpowerStatus(id: string, status: "approved" | "filled
   if (error) return { ok: false, message: error.message };
   revalidatePath("/manpower");
   revalidatePath("/careers");
-  return { ok: true, message: status === "approved" ? "Approved. It now shows as urgent on the careers page." : "Updated." };
+  return { ok: true, message: "Updated." };
 }
 
 async function rpc(fn: string, args: Record<string, unknown>, done: string): Promise<Result> {

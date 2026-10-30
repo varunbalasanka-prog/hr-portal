@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import {
-  assignTempStaff, decideTempRequest, endStaffLoan, loanPool, requestManpower, requestTemporaryStaff, setManpowerStatus, type PoolPerson,
+  approveManpower, assignTempStaff, decideTempRequest, endStaffLoan, loanPool, requestManpower, requestTemporaryStaff, setManpowerStatus, type PoolPerson,
 } from "@/app/actions/manpower";
 import { addDays, formatDate } from "@/lib/dates";
 import { loanLastDay, loanState, stillNeeded, type StaffLoan, type TempRole } from "@/lib/manpower";
@@ -12,6 +12,7 @@ export type ManpowerRow = {
   id: string; branch_id: string; post: string; headcount: number; needed_by: string | null; reason: string | null;
   status: "requested" | "approved" | "filled" | "cancelled"; requested_by: string; decided_by: string | null; created_at: string;
   kind?: "permanent" | "temporary"; roles?: TempRole[] | null; start_date?: string | null; end_date?: string | null; decision_note?: string | null;
+  hired?: number;
 };
 const TONE = { requested: "amber", approved: "sky", filled: "green", cancelled: "zinc" } as const;
 type Msg = { ok: boolean; message: string } | null;
@@ -20,8 +21,9 @@ const isTemp = (r: ManpowerRow) => r.kind === "temporary";
 /** A temporary request is over once its last day has passed. */
 const tempOver = (r: ManpowerRow, today: string) => isTemp(r) && !!r.end_date && r.end_date < today;
 
-/** Branches ask for people. Permanent: admins approve (shown as "urgent" on the careers page), then mark filled.
- *  Temporary (festival rush): HR approves and lends named staff from other stores for fixed dates. */
+/** Branches ask for people. Permanent: admins approve (shown as "urgent" on the careers page); joiners at the store for that post
+ *  count towards it and fill it (0026), or an admin marks it filled.
+ *  Temporary (festival rush): the store's HR approves and lends named staff from other stores for fixed dates. */
 export function Manpower({ me, admin, canLend, rows, branches, posts, loans, today, tempReady }: {
   me: Profile; admin: boolean; canLend: boolean; rows: ManpowerRow[]; branches: Branch[]; posts: Record<string, string[]>;
   loans: StaffLoan[]; today: string; tempReady: boolean;
@@ -31,6 +33,8 @@ export function Manpower({ me, admin, canLend, rows, branches, posts, loans, tod
   const [pending, start] = useTransition();
   const [assigning, setAssigning] = useState<ManpowerRow | null>(null);
   const bName = (id: string) => branches.find((b) => b.id === id)?.name ?? "-";
+  // Only the store's own HR (or an admin) handles its temporary requests (0026).
+  const lends = (branchId: string) => admin || (canLend && branches.find((b) => b.id === branchId)?.hr_username === me.username);
   const loansOf = (id: string) => loans.filter((l) => l.request_id === id);
   const open = rows.filter((r) => (r.status === "requested" || r.status === "approved" || (isTemp(r) && r.status === "filled")) && !tempOver(r, today));
   const closed = rows.filter((r) => !open.includes(r));
@@ -67,21 +71,21 @@ export function Manpower({ me, admin, canLend, rows, branches, posts, loans, tod
                 </ul>
               )}
             </td>
-            <td className="tabular-nums">{temp ? `${mine.length}/${r.headcount}` : r.headcount}</td>
+            <td className="tabular-nums">{temp ? `${mine.length}/${r.headcount}` : r.hired ? <>{r.headcount}<div className="text-xs text-slate-500">{r.hired} joined</div></> : r.headcount}</td>
             <td className="whitespace-nowrap">{temp ? <>{formatDate(r.start_date ?? null)}<br />to {formatDate(r.end_date ?? null)}</> : formatDate(r.needed_by)}</td>
             <td>{over && r.status !== "cancelled" ? <Badge tone="zinc">over</Badge> : <Badge tone={TONE[r.status]}>{temp && r.status === "filled" ? "sent" : r.status}</Badge>}</td>
             <td className="text-xs">{r.requested_by}<br />{formatDate(r.created_at)}</td>
             <td className="space-x-1 whitespace-nowrap text-right">
-              {!temp && admin && r.status === "requested" && <button className="btn-success !py-0.5 text-xs" disabled={pending} onClick={() => act(() => setManpowerStatus(r.id, "approved"))}>Approve</button>}
+              {!temp && admin && r.status === "requested" && <button className="btn-success !py-0.5 text-xs" disabled={pending} onClick={() => act(() => approveManpower(r.id))}>Approve</button>}
               {!temp && admin && r.status === "approved" && <button className="btn-success !py-0.5 text-xs" disabled={pending} onClick={() => act(() => setManpowerStatus(r.id, "filled"))}>Filled</button>}
-              {temp && canLend && r.status === "requested" && <>
+              {temp && lends(r.branch_id) && r.status === "requested" && <>
                 <button className="btn-success !py-0.5 text-xs" disabled={pending} onClick={() => act(() => decideTempRequest(r.id, true, ""))}>Approve</button>
                 <button className="btn-outline !py-0.5 text-xs" disabled={pending} onClick={() => {
                   const note = window.prompt("Why is this request not approved? The store will see this.");
                   if (note !== null) act(() => decideTempRequest(r.id, false, note));
                 }}>Decline</button>
               </>}
-              {temp && canLend && (r.status === "approved" || r.status === "filled") && !over &&
+              {temp && lends(r.branch_id) && (r.status === "approved" || r.status === "filled") && !over &&
                 <button className="btn-primary !py-0.5 text-xs" disabled={pending} onClick={() => setAssigning(r)}>{r.status === "filled" ? "People" : "Pick people"}</button>}
               {(admin || (r.requested_by === me.username && r.status === "requested")) && (r.status === "requested" || (r.status === "approved" && !over)) &&
                 <button className="btn-outline !py-0.5 text-xs" disabled={pending} onClick={() => act(() => setManpowerStatus(r.id, "cancelled"))}>Cancel</button>}

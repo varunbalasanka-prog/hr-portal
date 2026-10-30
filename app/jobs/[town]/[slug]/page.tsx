@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { SITE_NAME } from "@/lib/careers";
+import { SITE_NAME, loadCareerListing } from "@/lib/careers";
 import { findJob, istDate, jobContent, jobPath, jobPosting, loadJobs } from "@/lib/jobs";
 import { formatDate } from "@/lib/dates";
 
@@ -30,9 +30,11 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 
 /** One open post at one store, with its own Google for Jobs listing. Closed or expired jobs are a 404 so Google drops them. */
 export default async function JobPage(props: Props) {
-  const job = await load(props);
+  const [job, listing] = await Promise.all([load(props), loadCareerListing()]);
   if (!job) notFound();
   const c = jobContent(job);
+  // Approved manpower requests for this post at this store (the same "Urgently hiring" as the careers page).
+  const urgent = listing?.branches.find((b) => b.id === job.branch.id)?.urgent.filter((u) => u.post === job.post).reduce((n, u) => n + u.headcount, 0) ?? 0;
   const apply = `/apply?branch=${job.branch.id}&src=careers&post=${encodeURIComponent(job.post)}`;
   return (
     <main className="mx-auto max-w-2xl p-3 sm:p-6">
@@ -44,6 +46,7 @@ export default async function JobPage(props: Props) {
           <p className="text-sm text-slate-200">{job.branch.name} · {job.branch.town}</p>
         </header>
         <div className="space-y-4 p-4 text-sm leading-relaxed sm:p-6">
+          {urgent > 0 && <p className="rounded-lg bg-amber-50 px-3 py-2 font-semibold text-amber-900">Urgently hiring / அவசரத் தேவை: {urgent} {urgent === 1 ? "person" : "people"}</p>}
           <p>{c.intro}{c.summary && ` ${c.summary}`}</p>
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
             {c.salary && <><dt className="font-semibold">Salary</dt><dd>{c.salary}</dd></>}
