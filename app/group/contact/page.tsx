@@ -17,7 +17,7 @@ export default function ContactPage() {
     </>],
     ["Visit a showroom", <>
       <ul className="flex flex-wrap gap-x-6 gap-y-2 text-xl font-semibold">
-        {TOWNS.map((t) => <li key={t}><a className="hover:underline" href={groupHref(`/showrooms/${townSlug(t)}`)}>{t}</a></li>)}
+        {TOWNS.map((t) => <li key={t}><a className="inline-block py-1.5 hover:underline" href={groupHref(`/showrooms/${townSlug(t)}`)}>{t}</a></li>)}
       </ul>
       <p className="mt-3 max-w-[44ch] text-lg leading-relaxed text-[#4a4666]">For a purchase, an order or a service booking, the showroom near you can help directly.</p>
     </>],
@@ -28,7 +28,7 @@ export default function ContactPage() {
   ];
   return (
     <>
-      <section className={`${WRAP} pb-8 pt-14 sm:pt-20`}>
+      <section className={`${WRAP} pb-8 pt-10 sm:pt-14`}>
         <h1 className="text-4xl font-semibold leading-tight sm:text-5xl text-[#2b2177]">Contact</h1>
       </section>
       <div className="pb-14 sm:pb-20">

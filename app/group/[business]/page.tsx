@@ -24,7 +24,7 @@ export default async function BusinessPage({ params }: { params: Promise<{ busin
   const towns = [...new Set(g.showrooms.map((s) => s.town))];
   return (
     <>
-      <section className={`${c.field} ${WRAP} py-14 sm:py-20`}>
+      <section className={`${c.field} ${WRAP} py-10 sm:py-16`}>
         <div className="grid items-center gap-10 md:grid-cols-12">
           <div className="md:col-span-7">
             <h1 className="text-4xl font-semibold leading-tight sm:text-5xl">{g.title}</h1>
@@ -33,7 +33,7 @@ export default async function BusinessPage({ params }: { params: Promise<{ busin
               {g.blurb} {g.showrooms.length} showrooms in {towns.join(", ").replace(/, ([^,]*)$/, " and $1")}.
             </p>
           </div>
-          <div className="flex justify-center md:col-span-5">
+          <div className="flex md:col-span-5 md:justify-center">
             <BusinessArt k={g.key} />
           </div>
         </div>

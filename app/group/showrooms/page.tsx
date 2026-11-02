@@ -14,7 +14,7 @@ const kindOf = (brand: string) => SHOWROOM_GROUPS.find((g) => g.showrooms.some((
 export default function ShowroomsPage() {
   return (
     <>
-      <section className={`${WRAP} pb-8 pt-14 sm:pt-20`}>
+      <section className={`${WRAP} pb-8 pt-10 sm:pt-14`}>
         <h1 className="text-4xl font-semibold leading-tight sm:text-5xl text-[#2b2177]">Showrooms</h1>
         <p className="mt-4 max-w-[44ch] text-lg leading-relaxed text-[#4a4666]">
           {ALL_SHOWROOMS.length} showrooms in {TOWNS.length} towns. Choose a town for addresses and directions.

@@ -24,7 +24,7 @@ const NAV: [string, string][] = [
 
 export function SiteHeader() {
   return (
-    <header className={`${WRAP} sticky top-0 z-40 flex items-center justify-between gap-6 bg-white/95 py-3 shadow-[0_1px_0_rgba(27,22,64,0.06)] backdrop-blur`}>
+    <header className={`${WRAP} pt-[max(0.75rem,env(safe-area-inset-top))] sticky top-0 z-40 flex items-center justify-between gap-6 bg-white pb-3 shadow-[0_1px_0_rgba(27,22,64,0.06)]`}>
       <a href={groupHref("/")} aria-label="Balasanka Group home" className="shrink-0">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/balasanka_logo.png" alt="Balasanka" className="h-11 w-auto sm:h-12" />
@@ -51,26 +51,26 @@ export function SiteFooter() {
     <>
     <div aria-hidden className="g-border" />
     <footer className={`${WRAP} bg-[#f4f4f6] pb-10 pt-16 text-[16px] text-[#1b1640]`}>
-      <div className="grid gap-10 md:grid-cols-12">
-        <div className="md:col-span-5">
+      <div className="grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-12">
+        <div className="col-span-2 md:col-span-5">
           <p className="text-3xl font-semibold">Balasanka Group of Companies</p>
           <p lang="ta" className="mt-1 text-lg">பாலசங்கா குழுமம்</p>
           <p className="mt-5 max-w-[42ch] leading-relaxed">
             {ALL_SHOWROOMS.length} showrooms in {TOWNS.join(", ").replace(/, ([^,]*)$/, " and $1")}.
           </p>
-          <p className="mt-4">Write to us at <a className={`font-semibold ${LINK}`} href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a></p>
+          <p className="mt-4">Write to us at <a className={`inline-block py-1 font-semibold ${LINK}`} href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a></p>
         </div>
         <div className="md:col-span-4">
           <h2 className="font-semibold">Group companies</h2>
-          <ul className="mt-3 space-y-1.5">{COMPANIES.map((c) => <li key={c}>{c}</li>)}</ul>
+          <ul className="mt-3 space-y-2 text-[15px] leading-snug sm:text-[16px]">{COMPANIES.map((c) => <li key={c}>{c}</li>)}</ul>
         </div>
         <div className="md:col-span-3">
           <h2 className="font-semibold">Pages</h2>
-          <ul className="mt-3 space-y-1.5">
-            {NAV.map(([label, href]) => <li key={href}><a className="hover:underline" href={href}>{label}</a></li>)}
-            <li><a className="hover:underline" href={`${CAREERS_SITE}/careers`}>Careers</a></li>
-            <li><a className="hover:underline" href={`${CAREERS_SITE}/privacy`}>Privacy</a></li>
-            <li><MotionToggle /></li>
+          <ul className="mt-1.5">
+            {NAV.map(([label, href]) => <li key={href}><a className="inline-block py-2 hover:underline md:py-1" href={href}>{label}</a></li>)}
+            <li><a className="inline-block py-2 hover:underline md:py-1" href={`${CAREERS_SITE}/careers`}>Careers</a></li>
+            <li><a className="inline-block py-2 hover:underline md:py-1" href={`${CAREERS_SITE}/privacy`}>Privacy</a></li>
+            <li className="py-2 md:py-1"><MotionToggle /></li>
           </ul>
         </div>
       </div>
@@ -87,7 +87,7 @@ export function ShowroomRow({ s, showTown = false, tone = "light" }: { s: Showro
     <li className="py-3.5">
       <p className="text-lg font-semibold">{showTown ? s.town : s.brand}</p>
       <address className={`mt-0.5 max-w-[52ch] not-italic leading-relaxed ${soft}`}>{fullAddress(s)}</address>
-      <a href={mapLink(s)} target="_blank" rel="noopener" className={`mt-1 inline-block font-normal ${LINK}`}>Directions on Google Maps</a>
+      <a href={mapLink(s)} target="_blank" rel="noopener" className={`mt-0.5 inline-block py-2 font-normal ${LINK}`}>Directions on Google Maps</a>
     </li>
   );
 }
@@ -140,7 +140,7 @@ export function BrandStrip() {
     </ul>
   );
   return (
-    <section aria-labelledby="h-brands" className="py-10 sm:py-12">
+    <section aria-labelledby="h-brands" className="py-8 sm:py-12">
       <h2 id="h-brands" className={`${WRAP} text-lg font-semibold text-[#4a4666]`}>Brands at our showrooms</h2>
       <div data-live className="g-strip mt-6 overflow-hidden">
         <div className="g-marquee">{row(false)}{row(true)}</div>

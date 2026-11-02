@@ -17,7 +17,7 @@ export const metadata: Metadata = {
  * Runs before the page paints: applies the visitor's "Pause animations" choice, and shows the logo intro
  * only on the first page of a visit (never when animations are paused).
  */
-const BOOT = `try{var d=document.documentElement,m=localStorage.getItem("bs-motion");if(m==="calm")d.dataset.motion="calm";if(m!=="calm"&&!sessionStorage.getItem("bs-intro")){d.dataset.intro="on";sessionStorage.setItem("bs-intro","1");setTimeout(function(){d.dataset.intro="done"},2000)}}catch(e){}`;
+const BOOT = `try{var d=document.documentElement,m=localStorage.getItem("bs-motion");if(m==="calm")d.dataset.motion="calm";var sd=navigator.connection&&navigator.connection.saveData;if(m!=="calm"&&!sd&&!sessionStorage.getItem("bs-intro")){d.dataset.intro="on";sessionStorage.setItem("bs-intro","1");setTimeout(function(){d.dataset.intro="done"},1600)}}catch(e){}`;
 
 /** The balasanka.in company site: one typeface (Hind Madurai, drawn for Tamil and Latin) in two weights, the logo's indigo and red. */
 export default function GroupLayout({ children }: { children: React.ReactNode }) {

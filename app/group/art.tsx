@@ -70,7 +70,7 @@ export function Scooter() {
 /** The picture for each business, keyed like SHOWROOM_GROUPS. Outlines draw once on arrival; loops run only while on screen. */
 export function BusinessArt({ k, className = "" }: { k: string; className?: string }) {
   return (
-    <div data-reveal="draw" data-live className={`mx-auto w-full max-w-[16rem] sm:max-w-[20rem] ${className}`}>
+    <div data-reveal="draw" data-live className={`w-full max-w-[10rem] md:max-w-[20rem] ${className}`}>
       {k === "jewellery" ? <Jhumka /> : k === "watches" ? <WatchFace /> : <Scooter />}
     </div>
   );

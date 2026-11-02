@@ -20,7 +20,7 @@ export default function GroupHome() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(groupSchema()).replace(/</g, "\\u003c") }} />
 
-      <section className={`${WRAP} py-14 sm:py-20`}>
+      <section className={`${WRAP} pb-2 pt-10 sm:pb-6 sm:pt-16`}>
         <div className="grid items-center gap-10 md:grid-cols-12">
           <div className="md:col-span-7">
             <h1 className="text-4xl font-semibold leading-tight text-[#2b2177] sm:text-5xl">Balasanka Group of Companies</h1>
@@ -57,7 +57,7 @@ export default function GroupHome() {
                 </ul>
                 <a href={groupHref(`/${g.slug}`)} className={`mt-7 inline-block font-semibold ${LINK}`}>See all {g.showrooms.length} {g.title.toLowerCase()} showrooms</a>
               </div>
-              <div className="flex justify-center md:col-span-5">
+              <div className="order-first flex md:order-none md:col-span-5 md:justify-center">
                 <BusinessArt k={g.key} />
               </div>
             </div>
