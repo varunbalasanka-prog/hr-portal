@@ -40,7 +40,7 @@ body { background: #f5f6fa; color: #101828; }
 /* Thin scrollbars for the side menu and long tables. */
 .scroll-thin { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
 
-/* balasanka.in company site motion. Everything here is switched off for people who ask for reduced motion. */
+/* balasanka.in company site motion. It plays even when the device asks for reduced motion (the owner's request), so keep it gentle. */
 .reveal-ready [data-reveal] {
   opacity: 0;
   transform: translateY(28px);
@@ -72,8 +72,4 @@ body { background: #f5f6fa; color: #101828; }
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .reveal-ready [data-reveal] { opacity: 1 !important; transform: none !important; transition: none !important; }
-  .g-sway, .g-spin, .g-bob, .g-glint, .g-shimmer { animation: none !important; }
-  .g-progress { display: none !important; }
-}
+
