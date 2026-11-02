@@ -15,7 +15,12 @@ export async function middleware(request: NextRequest) {
     if (path.startsWith("/_vercel") || path.startsWith("/_next")) return NextResponse.next();
     if (path === "/") return NextResponse.rewrite(new URL("/group", request.url));
     if (GROUP_PAGE.test(path)) return NextResponse.rewrite(new URL(`/group${path.replace(/\/$/, "")}`, request.url));
-    if (path === "/robots.txt") return new NextResponse("User-agent: *\nAllow: /\n", { headers: { "content-type": "text/plain" } });
+    if (path === "/robots.txt") {
+      return new NextResponse("User-agent: *\nAllow: /\n\nSitemap: https://balasanka.in/sitemap.xml\n", { headers: { "content-type": "text/plain" } });
+    }
+    if (path === "/sitemap.xml") return NextResponse.rewrite(new URL("/group/sitemap.xml", request.url));
+    // IndexNow's key file must sit on each site it pings for.
+    if (path.startsWith("/indexnow-")) return NextResponse.next();
     return NextResponse.redirect(new URL(`${path}${request.nextUrl.search}`, "https://hr.balasanka.in"), 308);
   }
   // In production the company pages have one address, on balasanka.in.

@@ -1,16 +1,11 @@
 import type { Metadata } from "next";
-import { ALL_SHOWROOMS, CAREERS_SITE, GROUP_SITE, SHOWROOM_GROUPS, TOWNS, brandsOf, groupHref, groupSchema, townSlug } from "@/lib/group";
+import { ALL_SHOWROOMS, CAREERS_SITE, SHOWROOM_GROUPS, TOWNS, brandsOf, groupHref, groupSchema, ldJson, pageMeta, townSlug } from "@/lib/group";
 import { BusinessArt } from "./art";
 import { BrandStrip, CHAPTER, LINK, NEUTRAL, WRAP } from "./ui";
 
 const DESCRIPTION = `Balasanka Group of Companies runs ${ALL_SHOWROOMS.length} jewellery, watch, eyewear and two-wheeler showrooms in ${TOWNS.length} towns of South Tamil Nadu.`;
 
-export const metadata: Metadata = {
-  title: "Balasanka Group of Companies | பாலசங்கா குழுமம்",
-  description: DESCRIPTION,
-  alternates: { canonical: `${GROUP_SITE}/` },
-  openGraph: { title: "Balasanka Group of Companies", description: DESCRIPTION, url: `${GROUP_SITE}/` },
-};
+export const metadata: Metadata = pageMeta("Balasanka Group of Companies | பாலசங்கா குழுமம்", DESCRIPTION, "/");
 
 const townsOf = (g: (typeof SHOWROOM_GROUPS)[number], brand: string) => [...new Set(g.showrooms.filter((s) => s.brand === brand).map((s) => s.town))];
 
@@ -18,7 +13,7 @@ const townsOf = (g: (typeof SHOWROOM_GROUPS)[number], brand: string) => [...new 
 export default function GroupHome() {
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(groupSchema()).replace(/</g, "\\u003c") }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ldJson(groupSchema()) }} />
 
       <section className={`${WRAP} pb-2 pt-10 sm:pb-6 sm:pt-16`}>
         <div className="grid items-center gap-10 md:grid-cols-12">

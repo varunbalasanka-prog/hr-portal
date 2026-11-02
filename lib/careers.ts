@@ -37,6 +37,7 @@ export function siteSchema() {
       alternateName: ["Balasanka Group of Companies", "Balasanka Careers", "பாலசங்கா குழுமம்"],
       url: `${base}/`,
     },
-    { "@context": "https://schema.org", "@type": "Organization", name: "Balasanka Group of Companies", url: `${base}/`, logo: `${base}/balasanka_logo.png` },
+    // The same company as on balasanka.in (one @id), so search engines treat both sites as one organisation.
+    { "@context": "https://schema.org", "@type": "Organization", "@id": "https://balasanka.in/#org", name: "Balasanka Group of Companies", url: "https://balasanka.in/", logo: `${base}/balasanka_logo.png` },
   ];
 }

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { GROUP_SITE, SHOWROOM_GROUPS, TOWNS, groupHref, townSlug } from "@/lib/group";
+import { ALL_SHOWROOMS, SHOWROOM_GROUPS, TOWNS, groupHref, ldJson, pageMeta, pageSchema, townSlug } from "@/lib/group";
 import { CHAPTER, ShowroomRow, WRAP } from "../../ui";
 
 export const dynamicParams = false;
@@ -11,11 +11,12 @@ const find = (slug: string) => TOWNS.find((t) => townSlug(t) === slug);
 export async function generateMetadata({ params }: { params: Promise<{ town: string }> }): Promise<Metadata> {
   const town = find((await params).town);
   if (!town) return {};
-  return {
-    title: `Showrooms in ${town} | Balasanka Group`,
-    description: `Addresses and directions for Balasanka Group's jewellery, watch and two-wheeler showrooms in ${town}, Tamil Nadu.`,
-    alternates: { canonical: `${GROUP_SITE}/showrooms/${townSlug(town)}` },
-  };
+  const brands = [...new Set(ALL_SHOWROOMS.filter((s) => s.town === town).map((s) => s.brand))];
+  return pageMeta(
+    `Showrooms in ${town} | Balasanka Group`,
+    `Addresses and directions for Balasanka Group showrooms in ${town}, Tamil Nadu: ${brands.join(", ")}.`,
+    `/showrooms/${townSlug(town)}`,
+  );
 }
 
 /** One town: its showrooms grouped by business, each business on its own colour. */
@@ -26,6 +27,10 @@ export default async function TownPage({ params }: { params: Promise<{ town: str
   const total = groups.reduce((n, x) => n + x.rooms.length, 0);
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: ldJson(pageSchema(groups.flatMap((x) => x.rooms), [["Showrooms", "/showrooms"], [town, `/showrooms/${townSlug(town)}`]])) }}
+      />
       <section className={`${WRAP} pb-8 pt-10 sm:pt-14`}>
         <h1 className="text-4xl font-semibold leading-tight sm:text-5xl text-[#2b2177]">{town}</h1>
         <p className="mt-4 max-w-[44ch] text-lg leading-relaxed text-[#4a4666]">{total} Balasanka {total === 1 ? "showroom" : "showrooms"} in {town}, Tamil Nadu.</p>

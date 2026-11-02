@@ -109,20 +109,85 @@ export const COMPANIES = [...new Set(ALL_SHOWROOMS.map((s) => s.company))].sort(
 export const fullAddress = (s: Showroom) => `${s.street}, ${s.town}, Tamil Nadu ${s.pin}`;
 export const mapLink = (s: Showroom) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${s.brand} ${fullAddress(s)}`)}`;
 
-/** schema.org Organization with each showroom as a Store, so search engines can show the group and its addresses. */
+const ORG_ID = `${GROUP_SITE}/#org`;
+const groupOf = (s: Showroom) => SHOWROOM_GROUPS.find((g) => g.showrooms.includes(s))!;
+/** The closest schema.org shop type for each business, so search engines know what each showroom sells. */
+const storeType = (s: Showroom) =>
+  s.brand === "Balasanka Cycle Bazar" ? "BikeStore" : ({ vehicles: "MotorcycleDealer", jewellery: "JewelryStore" } as Record<string, string>)[groupOf(s).key] ?? "Store";
+
+/** One showroom as a schema.org shop with its address, linked to its town page and to the group. */
+export function storeSchema(s: Showroom) {
+  return {
+    "@type": storeType(s),
+    name: `${s.brand}, ${s.town}`,
+    brand: s.brand,
+    url: `${GROUP_SITE}/showrooms/${townSlug(s.town)}`,
+    image: `${GROUP_SITE}/balasanka_logo.png`,
+    address: { "@type": "PostalAddress", streetAddress: s.street, addressLocality: s.town, addressRegion: "Tamil Nadu", postalCode: s.pin, addressCountry: "IN" },
+    hasMap: mapLink(s),
+    parentOrganization: { "@id": ORG_ID },
+  };
+}
+
+/** schema.org WebSite + Organization (founding facts confirmed by varun on 2 Nov 2026), with each showroom as a department. */
 export function groupSchema() {
+  return [
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "@id": `${GROUP_SITE}/#site`,
+      name: "Balasanka Group",
+      alternateName: ["Balasanka Group of Companies", "பாலசங்கா குழுமம்"],
+      url: `${GROUP_SITE}/`,
+      inLanguage: "en-IN",
+      publisher: { "@id": ORG_ID },
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "@id": ORG_ID,
+      name: "Balasanka Group of Companies",
+      alternateName: ["Balasanka Group", "பாலசங்கா குழுமம்"],
+      url: `${GROUP_SITE}/`,
+      logo: `${GROUP_SITE}/balasanka_logo.png`,
+      email: CONTACT_EMAIL,
+      foundingDate: "1966",
+      foundingLocation: { "@type": "Place", name: "Theni, Tamil Nadu" },
+      founder: { "@type": "Person", name: "S. Thirupathi Nadar" },
+      areaServed: TOWNS.map((t) => ({ "@type": "City", name: t })),
+      department: ALL_SHOWROOMS.map(storeSchema),
+    },
+  ];
+}
+
+/** Breadcrumbs (Home > ... > this page) so search results show where a page sits. */
+export function breadcrumbSchema(trail: [string, string][]) {
   return {
     "@context": "https://schema.org",
-    "@type": "Organization",
-    name: "Balasanka Group of Companies",
-    alternateName: ["Balasanka Group", "பாலசங்கா குழுமம்"],
-    url: `${GROUP_SITE}/`,
-    logo: `${GROUP_SITE}/balasanka_logo.png`,
-    email: CONTACT_EMAIL,
-    department: ALL_SHOWROOMS.map((s) => ({
-      "@type": "Store",
-      name: `${s.brand}, ${s.town}`,
-      address: { "@type": "PostalAddress", streetAddress: s.street, addressLocality: s.town, addressRegion: "Tamil Nadu", postalCode: s.pin, addressCountry: "IN" },
+    "@type": "BreadcrumbList",
+    itemListElement: [["Home", "/"] as [string, string], ...trail].map(([name, path], i) => ({
+      "@type": "ListItem", position: i + 1, name, item: `${GROUP_SITE}${path === "/" ? "/" : path}`,
     })),
+  };
+}
+
+/** Shop details for a set of showrooms (a town or a business), with the page's breadcrumbs. */
+export const pageSchema = (rooms: Showroom[], trail: [string, string][]) => [
+  { "@context": "https://schema.org", "@graph": rooms.map(storeSchema) },
+  breadcrumbSchema(trail),
+];
+
+/** JSON for a <script type="application/ld+json">, safe inside HTML. */
+export const ldJson = (x: unknown) => JSON.stringify(x).replace(/</g, "\\u003c");
+
+/** Title, description, canonical address and share preview for one page of balasanka.in. */
+export function pageMeta(title: string, description: string, path: string) {
+  const url = `${GROUP_SITE}${path}`;
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: { type: "website" as const, title, description, url, siteName: "Balasanka Group", locale: "en_IN", images: ["/balasanka_logo.png"] },
+    twitter: { card: "summary" as const, title, description },
   };
 }
