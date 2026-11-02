@@ -1,17 +1,46 @@
 import type { Metadata } from "next";
-import { ALL_SHOWROOMS, COMPANIES, GROUP_SITE, SHOWROOM_GROUPS, TOWNS } from "@/lib/group";
+import { ALL_SHOWROOMS, COMPANIES, GROUP_SITE, SHOWROOM_GROUPS, TOWNS, brandsOf } from "@/lib/group";
 import { BusinessLinks, WRAP } from "../ui";
 
 export const metadata: Metadata = {
   title: "About | Balasanka Group",
-  description: `The companies of the Balasanka Group and the showrooms each one runs in South Tamil Nadu.`,
+  description:
+    "Balasanka Group began in Theni in 1966 as a tamarind processing unit. Today it runs two-wheeler dealerships, jewellery houses and lifestyle stores across South Tamil Nadu.",
   alternates: { canonical: `${GROUP_SITE}/about` },
 };
 
 const list = (xs: string[]) => xs.join(", ").replace(/, ([^,]*)$/, " and $1");
 
-/** Who we are: the group in one paragraph, then each company with what it runs, straight from the showroom list. */
+/**
+ * The group's story. Facts come from varun's research PDF (2 Nov 2026), checked where a source could be opened:
+ * 2003 Balasanka Motor is on the company register; 1991 pulses, the solar dryer, Akshaya Velli 2021 and Zora 2022 are
+ * from Dinamalar (18 Oct 2026). Turnover, leadership names and businesses outside the showroom list are left out on purpose.
+ */
+const STORY: { year: string; title: string; text: string }[] = [
+  { year: "1966", title: "A tamarind unit in Theni", text: "Mr. S. Thirupathi Nadar starts a small tamarind pulp and seed husk processing unit in Theni. Honest weight and fair grading become the family's way of doing business." },
+  { year: "1991", title: "Akshaya pulses", text: "The family starts processing pulses under the Akshaya and Pasumark names, and sets up Asia's first solar dryer for pulses." },
+  { year: "2001", title: "Sri Balasanka Mill", text: "A mill in Theni turns tamarind seeds, once thrown away, into starch for textile printing and husk for fuel." },
+  { year: "2003", title: "Into two-wheelers", text: "Balasanka Motor becomes an authorised TVS dealer. TVS and Honda showrooms follow in Sivakasi, Virudhunagar, Tenkasi, Rajapalayam and Srivilliputhur." },
+  { year: "2021", title: "Akshaya Velli", text: "Our own silver jewellery house opens in Theni, with BIS hallmarked silver. It later opens in Sivakasi, Tenkasi, Tirunelveli and Rajapalayam." },
+  { year: "2022", title: "Zora and Cycle Bazar", text: "Zora by Akshaya Velli opens in Theni for silver gifts and pooja articles, and Balasanka Cycle Bazar opens for bicycles and e-cycles." },
+  { year: "2025", title: "Balasanka Jewellery", text: "Balasanka Jewellery LLP is formed to run our Tanishq, Mia by Tanishq, CaratLane, Titan, Titan Eye+ and Fastrack stores." },
+];
+
+const VALUES: { title: string; text: string }[] = [
+  { title: "Purity you can check", text: "Hallmarked silver and gold, graded produce and genuine spares. What we sell is what the label says." },
+  { title: "A family business", text: "The same family has run the group for three generations, and the people you meet in our showrooms are from your town." },
+  { title: "Close to home", text: `Every showroom is in South Tamil Nadu, within a few hours of Theni, where the group began.` },
+];
+
 export default function AboutPage() {
+  const brands = new Set(SHOWROOM_GROUPS.flatMap(brandsOf));
+  const facts: [string, string][] = [
+    ["1966", "the year we began"],
+    [String(ALL_SHOWROOMS.length), "showrooms today"],
+    [String(TOWNS.length), "towns"],
+    [String(brands.size), "brands"],
+  ];
+
   return (
     <>
       <section className={`${WRAP} py-14 sm:py-20`}>
@@ -19,15 +48,53 @@ export default function AboutPage() {
         <div className="mt-10 grid gap-8 md:grid-cols-12">
           <p lang="ta" className="text-2xl font-semibold text-[#d9261c] md:col-span-5">பாலசங்கா குழுமம்</p>
           <div className="space-y-4 text-lg leading-relaxed text-[#4a4666] md:col-span-7">
-            <p className="max-w-[46ch]">
-              Balasanka Group is a family of {COMPANIES.length} companies running {ALL_SHOWROOMS.length} showrooms across {list(TOWNS)}.
+            <p className="max-w-[48ch]">
+              Balasanka Group began in Theni in 1966 as a small tamarind processing unit. Sixty years later, the same family runs
+              two-wheeler dealerships, jewellery houses and lifestyle stores across {list(TOWNS)}.
             </p>
-            <p className="max-w-[46ch]">
-              We run our own jewellery house, Akshaya Velli, alongside franchise showrooms and dealerships for Tanishq, Mia by Tanishq,
-              CaratLane, Titan, Titan Eye+, Fastrack, TVS and Honda.
+            <p className="max-w-[48ch]">
+              We run our own jewellery brands, Akshaya Velli and Zora, alongside dealerships and franchise stores for TVS, Honda,
+              Tanishq, Mia by Tanishq, CaratLane, Titan, Titan Eye+ and Fastrack.
             </p>
           </div>
         </div>
+        <dl className="mt-14 grid grid-cols-2 gap-x-8 gap-y-8 border-t border-[#e4e2ee] pt-10 md:grid-cols-4">
+          {facts.map(([n, label], i) => (
+            <div key={label} data-reveal style={{ "--d": `${i * 70}ms` } as React.CSSProperties}>
+              <dt className="sr-only">{label}</dt>
+              <dd className="text-4xl font-bold text-[#2b2177]">{n}</dd>
+              <dd className="mt-1 text-[#4a4666]">{label}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+
+      <section aria-labelledby="h-story" className={`${WRAP} bg-[#f7f5ef] py-14 sm:py-20`}>
+        <h2 data-reveal id="h-story" className="text-3xl font-bold sm:text-4xl">Our story</h2>
+        <ol className="mt-12 border-l-2 border-[#d8d3c4]">
+          {STORY.map((s) => (
+            <li key={s.year} data-reveal className="relative pb-10 pl-8 last:pb-0 md:grid md:grid-cols-12 md:gap-8">
+              <span aria-hidden className="absolute -left-[7px] top-2 h-3 w-3 rounded-full bg-[#d9261c]" />
+              <p className="text-xl font-bold text-[#d9261c] md:col-span-2">{s.year}</p>
+              <div className="md:col-span-10">
+                <h3 className="text-xl font-semibold text-[#1b1640]">{s.title}</h3>
+                <p className="mt-2 max-w-[60ch] text-lg leading-relaxed text-[#4a4666]">{s.text}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section aria-labelledby="h-values" className={`${WRAP} py-14 sm:py-20`}>
+        <h2 data-reveal id="h-values" className="text-3xl font-bold sm:text-4xl">What we stand for</h2>
+        <ul className="mt-12 grid gap-x-12 gap-y-10 md:grid-cols-3">
+          {VALUES.map((v, i) => (
+            <li key={v.title} data-reveal style={{ "--d": `${i * 70}ms` } as React.CSSProperties}>
+              <h3 className="text-xl font-semibold text-[#1b1640]">{v.title}</h3>
+              <p className="mt-2 text-lg leading-relaxed text-[#4a4666]">{v.text}</p>
+            </li>
+          ))}
+        </ul>
       </section>
 
       <section aria-labelledby="h-companies" className={`${WRAP} bg-[#f4f4f6] py-14 sm:py-20`}>
