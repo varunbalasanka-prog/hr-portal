@@ -29,12 +29,12 @@ export default function ContactPage() {
   return (
     <>
       <section className={`${WRAP} pb-8 pt-14 sm:pt-20`}>
-        <h1 className="text-4xl font-bold leading-tight sm:text-5xl text-[#2b2177]">Contact</h1>
+        <h1 data-reveal className="text-4xl font-bold leading-tight sm:text-5xl text-[#2b2177]">Contact</h1>
       </section>
       <div className="pb-14 sm:pb-20">
         {rows.map(([title, body], i) => (
           <section key={title} aria-labelledby={`c-${i}`} className={`${WRAP} grid gap-4 py-10 md:grid-cols-12 ${i === 1 ? "bg-[#f3f2f9]" : ""}`}>
-            <h2 id={`c-${i}`} className="text-2xl font-bold sm:text-3xl md:col-span-4">{title}</h2>
+            <h2 data-reveal id={`c-${i}`} className="text-2xl font-bold sm:text-3xl md:col-span-4">{title}</h2>
             <div className="md:col-span-8">{body}</div>
           </section>
         ))}

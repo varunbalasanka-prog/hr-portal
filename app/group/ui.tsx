@@ -21,7 +21,7 @@ const NAV: [string, string][] = [
 
 export function SiteHeader() {
   return (
-    <header className={`${WRAP} relative z-10 flex items-center justify-between gap-6 bg-white py-4`}>
+    <header className={`${WRAP} sticky top-0 z-40 flex items-center justify-between gap-6 bg-white/95 py-3 shadow-[0_1px_0_rgba(27,22,64,0.06)] backdrop-blur`}>
       <a href={groupHref("/")} aria-label="Balasanka Group home" className="shrink-0">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/balasanka_logo.png" alt="Balasanka" className="h-11 w-auto sm:h-12" />
@@ -77,7 +77,7 @@ export function SiteFooter() {
 export function ShowroomRow({ s, showTown = false, tone = "light" }: { s: Showroom; showTown?: boolean; tone?: "light" | "dark" }) {
   const soft = tone === "dark" ? "opacity-85" : "text-[#4a4666]";
   return (
-    <li className="py-3.5">
+    <li data-reveal className="py-3.5">
       <p className="text-lg font-semibold">{showTown ? s.town : s.brand}</p>
       <address className={`mt-0.5 max-w-[52ch] not-italic leading-relaxed ${soft}`}>{fullAddress(s)}</address>
       <a href={mapLink(s)} target="_blank" rel="noopener" className={`mt-1 inline-block font-medium ${LINK}`}>Directions on Google Maps</a>
@@ -90,7 +90,7 @@ export function BusinessLinks({ except }: { except?: string }) {
   const list = SHOWROOM_GROUPS.filter((g) => g.key !== except);
   return (
     <nav aria-label="Our businesses" className={`${WRAP} grid gap-4 pb-14 sm:pb-20 ${list.length === 3 ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
-      {list.map((g) => <BusinessBlock key={g.key} g={g} />)}
+      {list.map((g, i) => <div key={g.key} data-reveal style={{ "--d": `${i * 90}ms` } as React.CSSProperties}><BusinessBlock g={g} /></div>)}
     </nav>
   );
 }

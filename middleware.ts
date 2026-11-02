@@ -12,6 +12,7 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const host = (request.headers.get("host") ?? "").toLowerCase().replace(/:\d+$/, "");
   if (GROUP_HOSTS.includes(host)) {
+    if (path.startsWith("/_vercel") || path.startsWith("/_next")) return NextResponse.next();
     if (path === "/") return NextResponse.rewrite(new URL("/group", request.url));
     if (GROUP_PAGE.test(path)) return NextResponse.rewrite(new URL(`/group${path.replace(/\/$/, "")}`, request.url));
     if (path === "/robots.txt") return new NextResponse("User-agent: *\nAllow: /\n", { headers: { "content-type": "text/plain" } });

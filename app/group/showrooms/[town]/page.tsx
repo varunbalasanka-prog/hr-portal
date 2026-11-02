@@ -27,7 +27,7 @@ export default async function TownPage({ params }: { params: Promise<{ town: str
   return (
     <>
       <section className={`${WRAP} pb-8 pt-14 sm:pt-20`}>
-        <h1 className="text-4xl font-bold leading-tight sm:text-5xl text-[#2b2177]">{town}</h1>
+        <h1 data-reveal className="text-4xl font-bold leading-tight sm:text-5xl text-[#2b2177]">{town}</h1>
         <p className="mt-4 max-w-[44ch] text-lg leading-relaxed text-[#4a4666]">{total} Balasanka {total === 1 ? "showroom" : "showrooms"} in {town}, Tamil Nadu.</p>
       </section>
 
@@ -35,7 +35,7 @@ export default async function TownPage({ params }: { params: Promise<{ town: str
         const c = CHAPTER[g.key];
         return (
           <section key={g.key} aria-labelledby={`k-${g.key}`} className={`${c.field} ${c.ink} ${WRAP} grid gap-6 py-14 md:grid-cols-12 lg:py-20`}>
-            <h2 id={`k-${g.key}`} className="text-2xl font-bold sm:text-3xl md:col-span-4">
+            <h2 data-reveal id={`k-${g.key}`} className="text-2xl font-bold sm:text-3xl md:col-span-4">
               <a href={groupHref(`/${g.slug}`)} className="hover:underline">{g.title}</a>
             </h2>
             <ul className="grid gap-x-10 sm:grid-cols-2 md:col-span-8">
@@ -46,7 +46,7 @@ export default async function TownPage({ params }: { params: Promise<{ town: str
       })}
 
       <nav aria-labelledby="other-towns" className={`${WRAP} py-14 sm:py-16`}>
-        <h2 id="other-towns" className="text-2xl font-bold sm:text-3xl">Other towns</h2>
+        <h2 data-reveal id="other-towns" className="text-2xl font-bold sm:text-3xl">Other towns</h2>
         <ul className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-xl font-semibold">
           {TOWNS.filter((t) => t !== town).map((t) => <li key={t}><a href={groupHref(`/showrooms/${townSlug(t)}`)} className="hover:underline">{t}</a></li>)}
         </ul>
