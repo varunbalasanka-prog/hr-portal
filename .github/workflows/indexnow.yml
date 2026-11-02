@@ -10,10 +10,15 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     if: ${{ github.repository == 'varunbalasanka-prog/hr-portal' }}
+    # The jobs site and the company site each have their own sitemap and are pinged separately.
+    strategy:
+      fail-fast: false
+      matrix:
+        site: ["${{ vars.SITE_URL || 'https://hr.balasanka.in' }}", "https://balasanka.in"]
     steps:
       - name: Submit sitemap URLs
         env:
-          SITE: "${{ vars.SITE_URL || 'https://hr.balasanka.in' }}"
+          SITE: "${{ matrix.site }}"
           KEY: "cc71ee91fe6709574f83fdd45a3980f2"
         run: |
           # A push to main deploys in about 2 minutes; wait so engines fetch the new version.

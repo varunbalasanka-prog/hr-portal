@@ -11,6 +11,15 @@ import { SiteFooter, SiteHeader } from "./ui";
 export const metadata: Metadata = {
   metadataBase: new URL(GROUP_SITE),
   openGraph: { images: ["/balasanka_logo.png"], locale: "en_IN", siteName: "Balasanka Group" },
+  // balasanka.in's own Search Console / Bing codes ("HTML tag" method), set in Vercel. Not needed if the domain is verified by a DNS record.
+  ...(process.env.GROUP_GOOGLE_SITE_VERIFICATION || process.env.GROUP_BING_SITE_VERIFICATION
+    ? {
+        verification: {
+          google: process.env.GROUP_GOOGLE_SITE_VERIFICATION || undefined,
+          other: process.env.GROUP_BING_SITE_VERIFICATION ? { "msvalidate.01": process.env.GROUP_BING_SITE_VERIFICATION } : undefined,
+        },
+      }
+    : {}),
 };
 
 /**

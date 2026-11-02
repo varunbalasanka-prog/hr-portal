@@ -2,19 +2,18 @@ import type { Metadata } from "next";
 import {
   ALL_SHOWROOMS,
   COMPANIES,
-  GROUP_SITE,
+  pageMeta,
   SHOWROOM_GROUPS,
   TOWNS,
   brandsOf,
 } from "@/lib/group";
 import { BusinessLinks, WRAP } from "../ui";
 
-export const metadata: Metadata = {
-  title: "About | Balasanka Group",
-  description:
-    "Balasanka Group began in Theni in 1966 as a tamarind processing unit. Today it runs two-wheeler dealerships, jewellery houses and lifestyle stores across South Tamil Nadu.",
-  alternates: { canonical: `${GROUP_SITE}/about` },
-};
+export const metadata: Metadata = pageMeta(
+  "About | Balasanka Group",
+  "Balasanka Group began in Theni in 1966 as a tamarind processing unit. Today it runs two-wheeler dealerships, jewellery houses and lifestyle stores across South Tamil Nadu.",
+  "/about",
+);
 
 const list = (xs: string[]) => xs.join(", ").replace(/, ([^,]*)$/, " and $1");
 

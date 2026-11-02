@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { BRAND_NOTES, GROUP_SITE, SHOWROOM_GROUPS, brandsOf } from "@/lib/group";
+import { BRAND_NOTES, SHOWROOM_GROUPS, brandsOf, ldJson, pageMeta, pageSchema } from "@/lib/group";
 import { BusinessArt } from "../art";
 import { BusinessLinks, CHAPTER, ShowroomRow, WRAP } from "../ui";
 
@@ -13,7 +13,7 @@ export async function generateMetadata({ params }: { params: Promise<{ business:
   const g = find((await params).business);
   if (!g) return {};
   const description = `${g.blurb} ${g.showrooms.length} Balasanka Group showrooms in South Tamil Nadu.`;
-  return { title: `${g.title} | Balasanka Group`, description, alternates: { canonical: `${GROUP_SITE}/${g.slug}` } };
+  return pageMeta(`${g.title} | Balasanka Group`, description, `/${g.slug}`);
 }
 
 /** One business: its colour chapter as the opening, then each brand with every showroom's address. */
@@ -24,6 +24,7 @@ export default async function BusinessPage({ params }: { params: Promise<{ busin
   const towns = [...new Set(g.showrooms.map((s) => s.town))];
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ldJson(pageSchema(g.showrooms, [[g.title, `/${g.slug}`]])) }} />
       <section className={`${c.field} ${WRAP} py-10 sm:py-16`}>
         <div className="grid items-center gap-10 md:grid-cols-12">
           <div className="md:col-span-7">

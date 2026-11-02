@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { ALL_SHOWROOMS, GROUP_SITE, SHOWROOM_GROUPS, TOWNS, groupHref, townSlug } from "@/lib/group";
+import { ALL_SHOWROOMS, SHOWROOM_GROUPS, TOWNS, groupHref, pageMeta, townSlug } from "@/lib/group";
 import { LINK, NEUTRAL, WRAP } from "../ui";
 
-export const metadata: Metadata = {
-  title: "Showrooms | Balasanka Group",
-  description: `Addresses and directions for all ${ALL_SHOWROOMS.length} Balasanka Group showrooms in ${TOWNS.length} towns of South Tamil Nadu.`,
-  alternates: { canonical: `${GROUP_SITE}/showrooms` },
-};
+export const metadata: Metadata = pageMeta(
+  "Showrooms | Balasanka Group",
+  `Addresses and directions for all ${ALL_SHOWROOMS.length} Balasanka Group showrooms in ${TOWNS.length} towns of South Tamil Nadu: ${TOWNS.join(", ")}.`,
+  "/showrooms",
+);
 
 const kindOf = (brand: string) => SHOWROOM_GROUPS.find((g) => g.showrooms.some((s) => s.brand === brand))!.title.toLowerCase();
 

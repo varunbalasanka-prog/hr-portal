@@ -1,12 +1,8 @@
 import type { Metadata } from "next";
-import { CAREERS_SITE, CONTACT_EMAIL, GROUP_SITE, TOWNS, groupHref, townSlug } from "@/lib/group";
+import { CAREERS_SITE, CONTACT_EMAIL, TOWNS, groupHref, pageMeta, townSlug } from "@/lib/group";
 import { LINK, WRAP } from "../ui";
 
-export const metadata: Metadata = {
-  title: "Contact | Balasanka Group",
-  description: "How to reach the Balasanka Group: email, showroom addresses and jobs.",
-  alternates: { canonical: `${GROUP_SITE}/contact` },
-};
+export const metadata: Metadata = pageMeta("Contact | Balasanka Group", "How to reach the Balasanka Group: email, showroom addresses and jobs.", "/contact");
 
 /** Three ways to reach us, each as a row: what it is for on the left, how on the right. */
 export default function ContactPage() {
