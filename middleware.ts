@@ -4,16 +4,22 @@ import { NextResponse, type NextRequest } from "next/server";
 const PUBLIC_PREFIXES = ["/login", "/onboard", "/letters", "/api/sync-sheet", "/api/cleanup", "/api/digilocker", "/apply", "/j/", "/privacy", "/careers", "/robots.txt", "/sitemap.xml", "/llms.txt", "/indexnow-", "/jobs/", "/group"];
 // Candidate pages and crons never need a staff session, so skip the Supabase round trip there.
 const NO_SESSION = ["/onboard", "/letters", "/api/cron", "/api/cleanup", "/api/sync-sheet", "/api/digilocker", "/apply", "/j/", "/privacy", "/careers", "/robots.txt", "/sitemap.xml", "/llms.txt", "/indexnow-", "/jobs/", "/group"];
-// The company homepage domain: "/" shows the group page; anything else belongs to the HR site.
+// The company site domain: its pages are served from /group; anything else belongs to the HR site.
 const GROUP_HOSTS = ["balasanka.in", "www.balasanka.in"];
+const GROUP_PAGE = /^\/(jewellery|watches-and-eyewear|two-wheelers|about|contact|showrooms(\/[a-z]+)?)\/?$/;
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const host = (request.headers.get("host") ?? "").toLowerCase().replace(/:\d+$/, "");
   if (GROUP_HOSTS.includes(host)) {
     if (path === "/") return NextResponse.rewrite(new URL("/group", request.url));
+    if (GROUP_PAGE.test(path)) return NextResponse.rewrite(new URL(`/group${path.replace(/\/$/, "")}`, request.url));
     if (path === "/robots.txt") return new NextResponse("User-agent: *\nAllow: /\n", { headers: { "content-type": "text/plain" } });
     return NextResponse.redirect(new URL(`${path}${request.nextUrl.search}`, "https://hr.balasanka.in"), 308);
+  }
+  // In production the company pages have one address, on balasanka.in.
+  if (path.startsWith("/group") && process.env.VERCEL_ENV === "production") {
+    return NextResponse.redirect(new URL(path.replace(/^\/group/, "") || "/", "https://balasanka.in"), 308);
   }
   if (NO_SESSION.some((p) => path.startsWith(p))) return NextResponse.next();
   let response = NextResponse.next({ request });

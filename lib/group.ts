@@ -7,12 +7,37 @@ export const CAREERS_SITE = "https://hr.balasanka.in";
 export const CONTACT_EMAIL = "support@balasanka.in";
 
 export type Showroom = { brand: string; town: string; company: string; street: string; pin: string };
-export type ShowroomGroup = { key: string; title: string; tamil: string; blurb: string; showrooms: Showroom[] };
+export type ShowroomGroup = { key: string; slug: string; title: string; tamil: string; blurb: string; showrooms: Showroom[] };
+
+/**
+ * Pages live under /group on the HR site (and its previews); on balasanka.in the middleware serves them from the root,
+ * so links drop the prefix in production.
+ */
+export const GROUP_BASE = process.env.VERCEL_ENV === "production" ? "" : "/group";
+export const groupHref = (path: string) => (path === "/" ? GROUP_BASE || "/" : `${GROUP_BASE}${path}`);
+export const townSlug = (town: string) => town.toLowerCase();
+
+/** One plain line per brand, shown on the business pages. Facts only: nothing here is a claim about quality or size. */
+export const BRAND_NOTES: Record<string, string> = {
+  "Akshaya Velli": "Our own jewellery house. Velli is the Tamil word for silver.",
+  Zora: "Zora by Akshaya Velli, our newer jewellery label.",
+  Tanishq: "Tanishq gold and diamond jewellery, a Titan Company brand, in a franchise showroom run by us.",
+  "Mia by Tanishq": "Light, everyday jewellery from Tanishq.",
+  CaratLane: "Diamond and gold jewellery from CaratLane, a Titan Company brand.",
+  Titan: "Titan watches, in a franchise store run by us.",
+  "Titan Eye+": "Spectacles, sunglasses and eye tests from Titan Eye+.",
+  Fastrack: "Fastrack watches, bags and accessories.",
+  "Balasanka TVS": "TVS motorcycles and scooters, with service and genuine spares.",
+  "Shri Murugesan TVS": "TVS motorcycles and scooters, with service and genuine spares.",
+  "Yasotha Motors": "Two-wheeler sales and service in Theni.",
+  "Mukesh Honda": "Honda motorcycles and scooters, with service and genuine spares.",
+  "Balasanka Cycle Bazar": "Bicycles and cycle accessories.",
+};
 
 
 export const SHOWROOM_GROUPS: ShowroomGroup[] = [
   {
-    key: "jewellery", title: "Jewellery", tamil: "நகைகள்",
+    key: "jewellery", slug: "jewellery", title: "Jewellery", tamil: "நகைகள்",
     blurb: "Our own Akshaya Velli and Zora showrooms, and Tanishq, Mia by Tanishq and CaratLane stores.",
     showrooms: [
       { brand: "Akshaya Velli", town: "Theni", company: "Balasanka Akshaya Velli LLP", street: "No 441/2A Balasanka Plaza, Periyakulam Road", pin: "625531" },
@@ -29,7 +54,7 @@ export const SHOWROOM_GROUPS: ShowroomGroup[] = [
     ],
   },
   {
-    key: "watches", title: "Watches and eyewear", tamil: "கடிகாரங்கள், கண்ணாடிகள்",
+    key: "watches", slug: "watches-and-eyewear", title: "Watches and eyewear", tamil: "கடிகாரங்கள், கண்ணாடிகள்",
     blurb: "Titan, Fastrack and Titan Eye+ stores for watches, accessories and eye care.",
     showrooms: [
       { brand: "Titan", town: "Tenkasi", company: "Balasanka Jewellery LLP", street: "154/21 Railway Road", pin: "627811" },
@@ -38,7 +63,7 @@ export const SHOWROOM_GROUPS: ShowroomGroup[] = [
     ],
   },
   {
-    key: "vehicles", title: "Two-wheelers and cycles", tamil: "இருசக்கர வாகனங்கள்",
+    key: "vehicles", slug: "two-wheelers", title: "Two-wheelers and cycles", tamil: "இருசக்கர வாகனங்கள்",
     blurb: "TVS and Honda dealerships with sales, service and spares, and a cycle showroom in Theni.",
     showrooms: [
       { brand: "Balasanka TVS", town: "Sivakasi", company: "Balasanka Motor Private Ltd", street: "No 441 Virudhunagar Road", pin: "626123" },
