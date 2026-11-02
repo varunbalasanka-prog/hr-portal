@@ -16,7 +16,7 @@ const list = (xs: string[]) => xs.join(", ").replace(/, ([^,]*)$/, " and $1");
  * Left out on purpose: Bombay Dyeing, turnover, leadership names and businesses outside the showroom list.
  */
 const STORY: { year: string; title: string; text: string }[] = [
-  { year: "1966", title: "Where it began", text: "Mr. S. Thirupathi Nadar starts a small tamarind business in Theni. Honest weight and fair grading become the family's way of doing business." },
+  { year: "1966", title: "SGT", text: "Mr. S. Thirupathi Nadar starts SGT, a small tamarind business in Theni. Honest weight and fair grading become the family's way of doing business." },
   { year: "1991", title: "Balasanka Dhal", text: "The family starts processing pulses, and sets up Asia's first solar dryer for pulses. Sanka Dhal follows in 1995 and Akshaya Dhal in 2016." },
   { year: "1997", title: "Shri Murugesan Motors", text: "Our first two-wheeler dealership opens in Theni." },
   { year: "2001", title: "Sri Balasanka Mills", text: "A mill in Theni turns tamarind seeds, once thrown away, into starch for textile printing and husk for fuel." },
