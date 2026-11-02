@@ -37,6 +37,21 @@ export const BRAND_NOTES: Record<string, string> = {
 
 export const SHOWROOM_GROUPS: ShowroomGroup[] = [
   {
+    key: "vehicles", slug: "two-wheelers", title: "Two-wheelers and cycles", tamil: "இருசக்கர வாகனங்கள்",
+    blurb: "TVS and Honda dealerships with sales, service and spares, and a cycle showroom in Theni.",
+    showrooms: [
+      { brand: "Balasanka TVS", town: "Sivakasi", company: "Balasanka Motor Private Ltd", street: "No 441 Virudhunagar Road", pin: "626123" },
+      { brand: "Balasanka TVS", town: "Virudhunagar", company: "Balasanka Motor Private Ltd", street: "97/2 Katcheri Road", pin: "626001" },
+      { brand: "Balasanka TVS", town: "Tenkasi", company: "Balasanka Automobiles LLP", street: "No 18 Housing Board Colony, Madurai Road", pin: "627811" },
+      { brand: "Shri Murugesan TVS", town: "Theni", company: "Shri Murugesan Motor LLP", street: "W8/158 Rathinam Nagar, Periyakulam Road", pin: "625531" },
+      { brand: "Yasotha Motors", town: "Theni", company: "Yasotha Motors", street: "336/2 Periyakulam Road, Unjampatti", pin: "625531" },
+      { brand: "Mukesh Honda", town: "Rajapalayam", company: "Mukesh Motor", street: "1064/A Tenkasi Road, Near Cotton Market", pin: "626117" },
+      { brand: "Mukesh Honda", town: "Sivakasi", company: "Mukesh Motor", street: "462/1 Virudhunagar Road, Thiruthangal", pin: "626130" },
+      { brand: "Mukesh Honda", town: "Srivilliputhur", company: "Mukesh Motor", street: "61/2 61/3 61/4 Madurai Main Road, Ramakrishnapuram", pin: "626135" },
+      { brand: "Balasanka Cycle Bazar", town: "Theni", company: "Balasanka Cycle Bazar", street: "No 339 Rathnam Nagar, Periyakulam Road", pin: "625531" },
+    ],
+  },
+  {
     key: "jewellery", slug: "jewellery", title: "Jewellery", tamil: "நகைகள்",
     blurb: "Our own Akshaya Velli and Zora showrooms, and Tanishq, Mia by Tanishq and CaratLane stores.",
     showrooms: [
@@ -60,21 +75,6 @@ export const SHOWROOM_GROUPS: ShowroomGroup[] = [
       { brand: "Titan", town: "Tenkasi", company: "Balasanka Jewellery LLP", street: "154/21 Railway Road", pin: "627811" },
       { brand: "Titan Eye+", town: "Tenkasi", company: "Balasanka Jewellery LLP", street: "154/21 Railway Road", pin: "627811" },
       { brand: "Fastrack", town: "Madurai", company: "Balasanka Jewellery LLP", street: "11 Anna Salai 80 ft Road, Bye Pass Main Road, KK Nagar", pin: "625020" },
-    ],
-  },
-  {
-    key: "vehicles", slug: "two-wheelers", title: "Two-wheelers and cycles", tamil: "இருசக்கர வாகனங்கள்",
-    blurb: "TVS and Honda dealerships with sales, service and spares, and a cycle showroom in Theni.",
-    showrooms: [
-      { brand: "Balasanka TVS", town: "Sivakasi", company: "Balasanka Motor Private Ltd", street: "No 441 Virudhunagar Road", pin: "626123" },
-      { brand: "Balasanka TVS", town: "Virudhunagar", company: "Balasanka Motor Private Ltd", street: "97/2 Katcheri Road", pin: "626001" },
-      { brand: "Balasanka TVS", town: "Tenkasi", company: "Balasanka Automobiles LLP", street: "No 18 Housing Board Colony, Madurai Road", pin: "627811" },
-      { brand: "Shri Murugesan TVS", town: "Theni", company: "Shri Murugesan Motor LLP", street: "W8/158 Rathinam Nagar, Periyakulam Road", pin: "625531" },
-      { brand: "Yasotha Motors", town: "Theni", company: "Yasotha Motors", street: "336/2 Periyakulam Road, Unjampatti", pin: "625531" },
-      { brand: "Mukesh Honda", town: "Rajapalayam", company: "Mukesh Motor", street: "1064/A Tenkasi Road, Near Cotton Market", pin: "626117" },
-      { brand: "Mukesh Honda", town: "Sivakasi", company: "Mukesh Motor", street: "462/1 Virudhunagar Road, Thiruthangal", pin: "626130" },
-      { brand: "Mukesh Honda", town: "Srivilliputhur", company: "Mukesh Motor", street: "61/2 61/3 61/4 Madurai Main Road, Ramakrishnapuram", pin: "626135" },
-      { brand: "Balasanka Cycle Bazar", town: "Theni", company: "Balasanka Cycle Bazar", street: "No 339 Rathnam Nagar, Periyakulam Road", pin: "625531" },
     ],
   },
 ];
