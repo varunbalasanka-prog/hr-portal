@@ -21,7 +21,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     supabase.from("notifications").select("*").order("created_at", { ascending: false }).limit(300),
     supabase.from("notification_receipts").select("*").eq("username", profile.username),
     // Link tokens only for approved confirmation letters that are due, so the SMS list can include the link.
-    supabase.from("candidates").select("id, access_token").not("confirmation_approved_at", "is", null).lte("confirmation_date", todayIst()),
+    // Stores never get candidate links.
+    profile.role === "branch" ? Promise.resolve({ data: [] }) :
+      supabase.from("candidates").select("id, access_token").not("confirmation_approved_at", "is", null).lte("confirmation_date", todayIst()),
     // The walk-in form's post list: the posts each store has open, and the full list as a fallback.
     supabase.from("app_settings").select("key, value").in("key", ["apply_posts", "branch_posts"]),
     dobRule(supabase),
