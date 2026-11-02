@@ -26,7 +26,7 @@ export default function GroupLayout({ children }: { children: React.ReactNode })
       <script dangerouslySetInnerHTML={{ __html: BOOT }} />
       <div aria-hidden className="g-intro">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/balasanka_logo.png" alt="" />
+        <img src="/balasanka_logo.png" alt="" fetchPriority="high" decoding="sync" />
       </div>
       <div className="g-site min-h-screen bg-white font-['Hind_Madurai',ui-sans-serif,system-ui,sans-serif] text-[17px] text-[#1b1640] antialiased">
         <div aria-hidden className="g-progress" />

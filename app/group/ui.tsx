@@ -92,29 +92,35 @@ export function ShowroomRow({ s, showTown = false, tone = "light" }: { s: Showro
   );
 }
 
-/** The three businesses as linked colour blocks, used at the foot of pages to move between them. */
+/** The businesses as linked tinted cards, each with its drawing, used at the foot of pages to move between them. */
 export function BusinessLinks({ except }: { except?: string }) {
   const list = SHOWROOM_GROUPS.filter((g) => g.key !== except);
   return (
-    <nav data-reveal aria-label="Our businesses" className={`${WRAP} grid gap-4 pb-14 sm:pb-20 ${list.length === 3 ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
-      {list.map((g) => <BusinessBlock key={g.key} g={g} />)}
-    </nav>
+    <section aria-labelledby="h-our-businesses" className={`${WRAP} py-14 sm:py-20`}>
+      <h2 data-reveal id="h-our-businesses" className="text-2xl font-semibold sm:text-3xl">{except ? "Our other businesses" : "Our businesses"}</h2>
+      <nav data-reveal aria-labelledby="h-our-businesses" className={`mt-8 grid gap-4 ${list.length === 3 ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
+        {list.map((g) => <BusinessBlock key={g.key} g={g} />)}
+      </nav>
+    </section>
   );
 }
 
 function BusinessBlock({ g }: { g: ShowroomGroup }) {
   const c = CHAPTER[g.key];
   return (
-    <a href={groupHref(`/${g.slug}`)} className={`${c.field} ${c.ink} group block rounded-xl p-7 hover:brightness-[0.97]`}>
-      <span className="block text-2xl font-semibold group-hover:underline sm:text-3xl">{g.title}</span>
-      <span className={`mt-2 block text-lg ${c.soft}`}>{g.showrooms.length} showrooms</span>
+    <a href={groupHref(`/${g.slug}`)} className={`${c.field} ${c.ink} group flex items-center justify-between gap-4 rounded-xl px-6 py-5 hover:brightness-[0.97]`}>
+      <span>
+        <span className="block text-xl font-semibold group-hover:underline">{g.title}</span>
+        <span className={`mt-1 block ${c.soft}`}>{g.showrooms.length} showrooms</span>
+      </span>
+      <span aria-hidden className="text-2xl text-[#d9261c] transition-transform group-hover:translate-x-1">→</span>
     </a>
   );
 }
 
 /**
- * The brands our showrooms sell, drifting slowly sideways (it rests while off screen, pauses under a finger
- * or the mouse, and becomes a still list when animations are paused). The second copy only closes the loop.
+ * The brands our showrooms sell, drifting slowly sideways (it rests only while off screen
+ * and becomes a still list when animations are paused). The second copy only closes the loop.
  */
 export function BrandStrip() {
   const row = (hidden: boolean) => (

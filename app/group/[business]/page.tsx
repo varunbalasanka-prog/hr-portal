@@ -39,7 +39,7 @@ export default async function BusinessPage({ params }: { params: Promise<{ busin
         </div>
       </section>
 
-      <div className={`${WRAP} py-14 sm:py-20`}>
+      <div className={`${WRAP} pt-14 sm:pt-20`}>
         {brandsOf(g).map((b, i) => {
           const rooms = g.showrooms.filter((s) => s.brand === b).sort((x, y) => x.town.localeCompare(y.town));
           return (
