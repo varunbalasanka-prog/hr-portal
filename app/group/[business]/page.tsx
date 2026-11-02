@@ -24,27 +24,29 @@ export default async function BusinessPage({ params }: { params: Promise<{ busin
   const towns = [...new Set(g.showrooms.map((s) => s.town))];
   return (
     <>
-      <section className={`${c.field} ${c.ink} ${WRAP} pb-16 pt-16 sm:pt-24 lg:pb-24`}>
+      <section className={`${c.field} ${WRAP} py-14 sm:py-20`}>
         <div className="grid items-center gap-10 md:grid-cols-12">
-          <h1 className="max-w-[12ch] text-[clamp(3.2rem,8vw,8rem)] font-bold leading-[0.95] tracking-[-0.035em] md:col-span-7">{g.title}</h1>
-          <BusinessArt k={g.key} className={`md:col-span-5 ${g.key === "jewellery" ? "mx-auto w-44 md:w-56" : "w-full max-w-[30rem] md:justify-self-end"}`} />
-        </div>
-        <div className="mt-10 grid gap-6 md:grid-cols-12">
-          <p lang="ta" className={`text-2xl font-semibold md:col-span-5 ${c.soft}`}>{g.tamil}</p>
-          <p className="max-w-[44ch] text-xl leading-relaxed md:col-span-7">
-            {g.blurb} {g.showrooms.length} showrooms in {towns.join(", ").replace(/, ([^,]*)$/, " and $1")}.
-          </p>
+          <div className="md:col-span-7">
+            <h1 className="text-4xl font-bold leading-tight sm:text-5xl">{g.title}</h1>
+            <p lang="ta" className="mt-2 text-xl text-[#4a4666]">{g.tamil}</p>
+            <p className="mt-5 max-w-[46ch] text-lg leading-relaxed text-[#4a4666]">
+              {g.blurb} {g.showrooms.length} showrooms in {towns.join(", ").replace(/, ([^,]*)$/, " and $1")}.
+            </p>
+          </div>
+          <div className="flex justify-center md:col-span-5">
+            <BusinessArt k={g.key} className={g.key === "jewellery" ? "w-36 sm:w-44" : "w-full max-w-[22rem]"} />
+          </div>
         </div>
       </section>
 
-      <div className={`${WRAP} py-16 lg:py-24`}>
+      <div className={`${WRAP} py-14 sm:py-20`}>
         {brandsOf(g).map((b, i) => {
           const rooms = g.showrooms.filter((s) => s.brand === b).sort((x, y) => x.town.localeCompare(y.town));
           return (
-            <section key={b} aria-labelledby={`b-${i}`} className={`grid gap-6 md:grid-cols-12 ${i ? "mt-20 lg:mt-28" : ""}`}>
+            <section key={b} aria-labelledby={`b-${i}`} className={`grid gap-6 md:grid-cols-12 ${i ? "mt-14 sm:mt-16" : ""}`}>
               <div className="md:col-span-5">
-                <h2 id={`b-${i}`} className="text-4xl font-bold tracking-tight sm:text-5xl">{b}</h2>
-                <p className="mt-3 max-w-[34ch] text-lg leading-relaxed text-[#3e3a5c]">{BRAND_NOTES[b]}</p>
+                <h2 id={`b-${i}`} className="text-3xl font-bold sm:text-4xl">{b}</h2>
+                <p className="mt-3 max-w-[34ch] text-lg leading-relaxed text-[#4a4666]">{BRAND_NOTES[b]}</p>
               </div>
               <ul className={`md:col-span-7 ${rooms.length > 2 ? "grid gap-x-10 sm:grid-cols-2" : ""}`}>
                 {rooms.map((s) => <ShowroomRow key={s.street} s={s} showTown />)}

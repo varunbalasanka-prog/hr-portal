@@ -14,24 +14,24 @@ const kindOf = (brand: string) => SHOWROOM_GROUPS.find((g) => g.showrooms.some((
 export default function ShowroomsPage() {
   return (
     <>
-      <section className={`${WRAP} pb-12 pt-16 sm:pt-24`}>
-        <h1 className="text-[clamp(3.2rem,9vw,8.5rem)] font-bold leading-[0.95] tracking-[-0.035em] text-[#2b2177]">Showrooms</h1>
-        <p className="mt-8 max-w-[44ch] text-xl leading-relaxed">
+      <section className={`${WRAP} pb-8 pt-14 sm:pt-20`}>
+        <h1 className="text-4xl font-bold leading-tight sm:text-5xl text-[#2b2177]">Showrooms</h1>
+        <p className="mt-4 max-w-[44ch] text-lg leading-relaxed text-[#4a4666]">
           {ALL_SHOWROOMS.length} showrooms in {TOWNS.length} towns. Choose a town for addresses and directions.
         </p>
       </section>
-      <div className={`${WRAP} pb-20 lg:pb-28`}>
+      <div className="pb-14 sm:pb-20">
         {TOWNS.map((t, i) => {
           const rooms = ALL_SHOWROOMS.filter((s) => s.town === t).sort((a, b) => a.brand.localeCompare(b.brand));
           return (
-            <section key={t} aria-labelledby={`t-${i}`} className={`grid gap-4 py-8 md:grid-cols-12 ${i % 2 ? "" : "bg-[#f3f2f7] -mx-[clamp(1rem,3vw,2.5rem)] px-[clamp(1rem,3vw,2.5rem)]"}`}>
-              <h2 id={`t-${i}`} className="text-4xl font-bold tracking-tight md:col-span-4">
+            <section key={t} aria-labelledby={`t-${i}`} className={`${WRAP} grid gap-4 py-8 md:grid-cols-12 ${i % 2 ? "" : "bg-[#f3f2f9]"}`}>
+              <h2 id={`t-${i}`} className="text-2xl font-bold sm:text-3xl md:col-span-4">
                 <a href={groupHref(`/showrooms/${townSlug(t)}`)} className="hover:underline">{t}</a>
               </h2>
               <div className="md:col-span-8">
-                <p className="text-xl leading-relaxed">
+                <p className="text-lg leading-relaxed">
                   {rooms.map((s, j) => (
-                    <span key={s.street + s.brand}>{j ? ", " : ""}<span className="font-semibold">{s.brand}</span> <span className="text-[#3e3a5c]">({kindOf(s.brand)})</span></span>
+                    <span key={s.street + s.brand}>{j ? ", " : ""}<span className="font-semibold">{s.brand}</span> <span className="text-[#4a4666]">({kindOf(s.brand)})</span></span>
                   ))}
                 </p>
                 <a href={groupHref(`/showrooms/${townSlug(t)}`)} className={`mt-3 inline-block text-lg font-medium ${LINK}`}>Addresses in {t}</a>

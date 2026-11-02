@@ -26,28 +26,28 @@ export default async function TownPage({ params }: { params: Promise<{ town: str
   const total = groups.reduce((n, x) => n + x.rooms.length, 0);
   return (
     <>
-      <section className={`${WRAP} pb-14 pt-16 sm:pt-24`}>
-        <h1 className="text-[clamp(3.2rem,11vw,10rem)] font-bold leading-[0.95] tracking-[-0.035em] text-[#2b2177]">{town}</h1>
-        <p className="mt-8 max-w-[44ch] text-xl leading-relaxed">{total} Balasanka {total === 1 ? "showroom" : "showrooms"} in {town}, Tamil Nadu.</p>
+      <section className={`${WRAP} pb-8 pt-14 sm:pt-20`}>
+        <h1 className="text-4xl font-bold leading-tight sm:text-5xl text-[#2b2177]">{town}</h1>
+        <p className="mt-4 max-w-[44ch] text-lg leading-relaxed text-[#4a4666]">{total} Balasanka {total === 1 ? "showroom" : "showrooms"} in {town}, Tamil Nadu.</p>
       </section>
 
       {groups.map(({ g, rooms }) => {
         const c = CHAPTER[g.key];
         return (
           <section key={g.key} aria-labelledby={`k-${g.key}`} className={`${c.field} ${c.ink} ${WRAP} grid gap-6 py-14 md:grid-cols-12 lg:py-20`}>
-            <h2 id={`k-${g.key}`} className="text-4xl font-bold tracking-tight md:col-span-4">
+            <h2 id={`k-${g.key}`} className="text-2xl font-bold sm:text-3xl md:col-span-4">
               <a href={groupHref(`/${g.slug}`)} className="hover:underline">{g.title}</a>
             </h2>
             <ul className="grid gap-x-10 sm:grid-cols-2 md:col-span-8">
-              {rooms.map((s) => <ShowroomRow key={s.brand + s.street} s={s} tone={g.key === "jewellery" ? "light" : "dark"} />)}
+              {rooms.map((s) => <ShowroomRow key={s.brand + s.street} s={s} />)}
             </ul>
           </section>
         );
       })}
 
-      <nav aria-labelledby="other-towns" className={`${WRAP} py-16 lg:py-20`}>
-        <h2 id="other-towns" className="text-3xl font-bold tracking-tight">Other towns</h2>
-        <ul className="mt-6 flex flex-wrap gap-x-8 gap-y-3 text-2xl font-semibold">
+      <nav aria-labelledby="other-towns" className={`${WRAP} py-14 sm:py-16`}>
+        <h2 id="other-towns" className="text-2xl font-bold sm:text-3xl">Other towns</h2>
+        <ul className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-xl font-semibold">
           {TOWNS.filter((t) => t !== town).map((t) => <li key={t}><a href={groupHref(`/showrooms/${townSlug(t)}`)} className="hover:underline">{t}</a></li>)}
         </ul>
       </nav>

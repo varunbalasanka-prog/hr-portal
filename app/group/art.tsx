@@ -40,7 +40,7 @@ export function Jhumka({ className = "" }: { className?: string }) {
 }
 
 /** Round spectacles, drawn in one line weight. */
-export function Spectacles({ className = "", color = "#ffffff" }: { className?: string; color?: string }) {
+export function Spectacles({ className = "", color = "#2b2177" }: { className?: string; color?: string }) {
   return (
     <svg viewBox="0 0 300 120" role="img" aria-label="Drawing of a pair of spectacles" className={className}>
       <circle cx={84} cy={66} r={46} fill={color} fillOpacity={0.12} stroke={color} strokeWidth={9} />
@@ -51,14 +51,14 @@ export function Spectacles({ className = "", color = "#ffffff" }: { className?: 
   );
 }
 
-/** A scooter in side view: white body, ink seat and wheels, a red tail lamp. */
-export function Scooter({ className = "", color = "#ffffff" }: { className?: string; color?: string }) {
+/** A scooter in side view: red body, ink seat and wheels. */
+export function Scooter({ className = "", color = RED }: { className?: string; color?: string }) {
   return (
     <svg viewBox="0 0 520 300" role="img" aria-label="Drawing of a scooter" className={className}>
       <circle cx={112} cy={238} r={50} fill={INK} />
-      <circle cx={112} cy={238} r={19} fill={color} />
+      <circle cx={112} cy={238} r={19} fill="#ffffff" />
       <circle cx={424} cy={238} r={50} fill={INK} />
-      <circle cx={424} cy={238} r={19} fill={color} />
+      <circle cx={424} cy={238} r={19} fill="#ffffff" />
       <path d="M366 226 A60 60 0 0 1 482 226" fill="none" stroke={color} strokeWidth={12} strokeLinecap="round" />
       <path d="M38 206 C42 150 96 126 178 124 L290 126 C304 127 309 140 304 154 L294 206 Z" fill={color} />
       <rect x={290} y={192} width={96} height={16} rx={6} fill={color} />
@@ -67,13 +67,13 @@ export function Scooter({ className = "", color = "#ffffff" }: { className?: str
       <path d="M120 122 C124 100 160 94 204 96 L282 100 C296 101 296 120 282 122 Z" fill={INK} />
       <line x1={364} y1={72} x2={436} y2={64} stroke={INK} strokeWidth={9} strokeLinecap="round" />
       <ellipse cx={424} cy={96} rx={15} ry={11} fill="#ffe08a" />
-      <rect x={30} y={168} width={18} height={12} rx={4} fill={RED} stroke={color} strokeWidth={3} />
+      <rect x={30} y={168} width={18} height={12} rx={4} fill="#ffe08a" />
     </svg>
   );
 }
 
 /** A bicycle in a single line weight. */
-export function Bicycle({ className = "", color = "#ffffff" }: { className?: string; color?: string }) {
+export function Bicycle({ className = "", color = "#2b2177" }: { className?: string; color?: string }) {
   const line = { stroke: color, strokeWidth: 8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, fill: "none" };
   return (
     <svg viewBox="0 0 300 190" role="img" aria-label="Drawing of a bicycle" className={className}>
