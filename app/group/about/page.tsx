@@ -12,18 +12,18 @@ export const metadata: Metadata = {
 const list = (xs: string[]) => xs.join(", ").replace(/, ([^,]*)$/, " and $1");
 
 /**
- * The group's story. Facts come from varun's research PDF (2 Nov 2026), checked where a source could be opened:
- * 2003 Balasanka Motor is on the company register; 1991 pulses, the solar dryer, Akshaya Velli 2021 and Zora 2022 are
- * from Dinamalar (18 Oct 2026). Turnover, leadership names and businesses outside the showroom list are left out on purpose.
+ * The group's story: a short pick from varun's own timeline (2 Nov 2026), which wins over the research PDF.
+ * Left out on purpose: Bombay Dyeing, turnover, leadership names and businesses outside the showroom list.
  */
 const STORY: { year: string; title: string; text: string }[] = [
-  { year: "1966", title: "A tamarind unit in Theni", text: "Mr. S. Thirupathi Nadar starts a small tamarind pulp and seed husk processing unit in Theni. Honest weight and fair grading become the family's way of doing business." },
-  { year: "1991", title: "Akshaya pulses", text: "The family starts processing pulses under the Akshaya and Pasumark names, and sets up Asia's first solar dryer for pulses." },
-  { year: "2001", title: "Sri Balasanka Mill", text: "A mill in Theni turns tamarind seeds, once thrown away, into starch for textile printing and husk for fuel." },
-  { year: "2003", title: "Into two-wheelers", text: "Balasanka Motor becomes an authorised TVS dealer. TVS and Honda showrooms follow in Sivakasi, Virudhunagar, Tenkasi, Rajapalayam and Srivilliputhur." },
-  { year: "2021", title: "Akshaya Velli", text: "Our own silver jewellery house opens in Theni, with BIS hallmarked silver. It later opens in Sivakasi, Tenkasi, Tirunelveli and Rajapalayam." },
-  { year: "2022", title: "Zora and Cycle Bazar", text: "Zora by Akshaya Velli opens in Theni for silver gifts and pooja articles, and Balasanka Cycle Bazar opens for bicycles and e-cycles." },
-  { year: "2025", title: "Balasanka Jewellery", text: "Balasanka Jewellery LLP is formed to run our Tanishq, Mia by Tanishq, CaratLane, Titan, Titan Eye+ and Fastrack stores." },
+  { year: "1966", title: "Where it began", text: "Mr. S. Thirupathi Nadar starts a small tamarind business in Theni. Honest weight and fair grading become the family's way of doing business." },
+  { year: "1991", title: "Balasanka Dhal", text: "The family starts processing pulses, and sets up Asia's first solar dryer for pulses. Sanka Dhal follows in 1995 and Akshaya Dhal in 2016." },
+  { year: "1997", title: "Shri Murugesan Motors", text: "Our first two-wheeler dealership opens in Theni." },
+  { year: "2001", title: "Sri Balasanka Mills", text: "A mill in Theni turns tamarind seeds, once thrown away, into starch for textile printing and husk for fuel." },
+  { year: "2004–2017", title: "Two-wheelers across the south", text: "Balasanka TVS, Mukesh Motors (Honda), Yasotha Motors and Tenkasi TVS take our dealerships to six towns." },
+  { year: "2019", title: "Tanishq", text: "Our first jewellery store, Tanishq, opens in Theni. Titan, Titan Eye+, Mia and CaratLane stores follow." },
+  { year: "2021", title: "Akshaya Velli", text: "Our own silver jewellery house opens in Theni, then in Tenkasi, Tirunelveli and Sivakasi." },
+  { year: "2025", title: "Zora", text: "Zora by Akshaya Velli opens in Theni for silver gifts and pooja articles." },
 ];
 
 const VALUES: { title: string; text: string }[] = [
