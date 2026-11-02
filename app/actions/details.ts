@@ -12,6 +12,7 @@ export type CandidateDetails = {
   fileLinks: Record<string, string>;
   formData: Record<string, string>;
   applications: ApplicationRow[];
+  /** Empty for store logins. */
   accessToken: string;
   tokenExpiresAt: string;
   scores: ScoreRow[];
@@ -21,7 +22,7 @@ export type CandidateDetails = {
 /** History, answers, link token and documents (as 10-minute signed links) for one candidate.
  *  The dashboard list doesn't load these, so they only reach the browser when a candidate is opened. */
 export async function getCandidateDetails(candidateId: string): Promise<CandidateDetails | null> {
-  const { supabase } = await requireProfile();
+  const { profile, supabase } = await requireProfile();
   // RLS check: if the user can't see the candidate, stop here.
   const { data: c } = await supabase.from("candidates").select("id, form_data, access_token, token_expires_at").eq("id", candidateId)
     .maybeSingle<{ id: string; form_data: Record<string, string>; access_token: string; token_expires_at: string }>();
@@ -54,7 +55,8 @@ export async function getCandidateDetails(candidateId: string): Promise<Candidat
   }));
   return {
     events: (events ?? []) as CandidateEvent[], onboarding: onboarding ?? null, fileLinks,
-    formData: c.form_data ?? {}, applications, accessToken: c.access_token, tokenExpiresAt: c.token_expires_at,
+    formData: c.form_data ?? {}, applications, // Stores never get the candidate's link: it opens the onboarding form and the letters (salary, personal details).
+    accessToken: profile.role === "branch" ? "" : c.access_token, tokenExpiresAt: c.token_expires_at,
     scores: (scores ?? []) as ScoreRow[], whatsappApi: whatsappApiEnabled(),
   };
 }
