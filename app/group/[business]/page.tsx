@@ -26,15 +26,15 @@ export default async function BusinessPage({ params }: { params: Promise<{ busin
     <>
       <section className={`${c.field} ${WRAP} py-14 sm:py-20`}>
         <div className="grid items-center gap-10 md:grid-cols-12">
-          <div data-reveal className="md:col-span-7">
-            <h1 className="text-4xl font-bold leading-tight sm:text-5xl">{g.title}</h1>
+          <div className="md:col-span-7">
+            <h1 className="text-4xl font-semibold leading-tight sm:text-5xl">{g.title}</h1>
             <p lang="ta" className="mt-2 text-xl text-[#4a4666]">{g.tamil}</p>
             <p className="mt-5 max-w-[46ch] text-lg leading-relaxed text-[#4a4666]">
               {g.blurb} {g.showrooms.length} showrooms in {towns.join(", ").replace(/, ([^,]*)$/, " and $1")}.
             </p>
           </div>
           <div className="flex justify-center md:col-span-5">
-            <BusinessArt k={g.key} className={g.key === "jewellery" ? "w-36 sm:w-44" : "w-full max-w-[22rem]"} />
+            <BusinessArt k={g.key} />
           </div>
         </div>
       </section>
@@ -45,7 +45,7 @@ export default async function BusinessPage({ params }: { params: Promise<{ busin
           return (
             <section key={b} aria-labelledby={`b-${i}`} className={`grid gap-6 md:grid-cols-12 ${i ? "mt-14 sm:mt-16" : ""}`}>
               <div data-reveal className="md:col-span-5">
-                <h2 id={`b-${i}`} className="text-3xl font-bold sm:text-4xl">{b}</h2>
+                <h2 id={`b-${i}`} className="text-3xl font-semibold sm:text-4xl">{b}</h2>
                 <p className="mt-3 max-w-[34ch] text-lg leading-relaxed text-[#4a4666]">{BRAND_NOTES[b]}</p>
               </div>
               <ul className={`md:col-span-7 ${rooms.length > 2 ? "grid gap-x-10 sm:grid-cols-2" : ""}`}>

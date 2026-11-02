@@ -35,6 +35,25 @@ export const BRAND_NOTES: Record<string, string> = {
 };
 
 
+/**
+ * The brands sold at our showrooms, in the homepage's moving strip, in business order.
+ * Shown as plain names until the official logo files from each brand's dealer kit are added (logo: "/brands/<file>").
+ * Partner logos must be used as supplied: never recoloured or redrawn.
+ */
+export const BRAND_STRIP: { name: string; note: string; logo?: string }[] = [
+  { name: "TVS", note: "Authorised dealer" },
+  { name: "Honda", note: "Authorised dealer" },
+  { name: "Balasanka Cycle Bazar", note: "Our own store" },
+  { name: "Akshaya Velli", note: "Our own jewellery house" },
+  { name: "Zora", note: "Our own label" },
+  { name: "Tanishq", note: "Franchise store" },
+  { name: "Mia by Tanishq", note: "Franchise store" },
+  { name: "CaratLane", note: "Franchise store" },
+  { name: "Titan", note: "Franchise store" },
+  { name: "Fastrack", note: "Franchise store" },
+  { name: "Titan Eye+", note: "Franchise store" },
+];
+
 export const SHOWROOM_GROUPS: ShowroomGroup[] = [
   {
     key: "vehicles", slug: "two-wheelers", title: "Two-wheelers and cycles", tamil: "இருசக்கர வாகனங்கள்",

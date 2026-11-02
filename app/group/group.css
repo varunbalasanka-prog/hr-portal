@@ -1,0 +1,102 @@
+/*
+ * balasanka.in company site: motion and texture. Loaded only by the group layout.
+ *
+ * One motion family: every entrance uses EASE, rises at most 16px, lasts 500-700ms and plays once.
+ * Loops only run while their drawing is on screen ([data-live].is-live) and stop when the visitor
+ * picks "Pause animations" (html[data-motion="calm"]). The top of each page is never hidden.
+ */
+:root { --g-ease: cubic-bezier(0.2, 0, 0, 1); --g-ink: #2b2177; }
+
+/* Tamil lines need a little more height and must never be letter-spaced. */
+.g-site :lang(ta) { line-height: 1.7; letter-spacing: 0; }
+
+/* ---------- Scroll reveals ---------- */
+.reveal-ready [data-reveal] {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.5s var(--g-ease), transform 0.6s var(--g-ease);
+  transition-delay: var(--d, 0ms);
+}
+.reveal-ready [data-reveal].is-in { opacity: 1; transform: none; }
+/* Drawings are never faded: their outlines draw themselves, then the colour fills in. */
+.reveal-ready [data-reveal="draw"] { opacity: 1; transform: none; }
+.reveal-ready [data-reveal="draw"] .g-line {
+  stroke-dasharray: 1; stroke-dashoffset: 1; fill-opacity: 0;
+  transition: stroke-dashoffset 1.2s var(--g-ease), fill-opacity 0.6s var(--g-ease) 0.8s;
+}
+.reveal-ready [data-reveal="draw"] .g-fill { opacity: 0; transition: opacity 0.6s var(--g-ease) 0.8s; }
+.reveal-ready [data-reveal="draw"].is-in .g-line { stroke-dashoffset: 0; fill-opacity: 1; }
+.reveal-ready [data-reveal="draw"].is-in .g-fill { opacity: 1; }
+
+/* ---------- Gentle loops, only while on screen ---------- */
+@keyframes g-sway { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+@keyframes g-spin { to { transform: rotate(360deg); } }
+@keyframes g-glint { 0%, 80% { transform: translateX(-70px); opacity: 0; } 88% { opacity: 0.8; } 100% { transform: translateX(70px); opacity: 0; } }
+@keyframes g-shimmer { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+.g-sway { transform-box: view-box; transform-origin: 200px 92px; }
+.g-spin { transform-box: fill-box; transform-origin: center; }
+.is-live .g-sway { animation: g-sway 6s ease-in-out infinite; }
+.is-live .g-spin { animation: g-spin 2.4s linear infinite; }
+.is-live .g-glint { animation: g-glint 6s ease-in-out infinite; }
+.is-live .g-shimmer { animation: g-shimmer 4s ease-in-out infinite; animation-delay: var(--d, 0ms); }
+
+/* ---------- Brand strip ---------- */
+@keyframes g-marquee { to { transform: translateX(-50%); } }
+.g-strip { mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+.g-marquee { display: flex; width: max-content; }
+.g-strip.is-live .g-marquee { animation: g-marquee 50s linear infinite; }
+.g-strip:hover .g-marquee, .g-strip:focus-within .g-marquee { animation-play-state: paused; }
+
+/* ---------- Logo intro: the logo appears, then the site opens out of it (once per visit) ---------- */
+.g-intro { display: none; }
+html[data-intro="on"] .g-intro {
+  display: grid; place-items: center; position: fixed; inset: 0; z-index: 100; background: #fff; pointer-events: none;
+  animation: g-intro-out 0.6s var(--g-ease) 1.15s both;
+}
+html[data-intro="on"] .g-intro img { width: min(52vw, 15rem); animation: g-intro-logo 1.75s var(--g-ease) both; }
+html[data-intro="on"] .g-site { animation: g-emerge 0.8s var(--g-ease) 1.1s backwards; }
+@keyframes g-intro-logo {
+  0% { opacity: 0; transform: scale(0.9); }
+  30%, 62% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.5); }
+}
+@keyframes g-intro-out { to { opacity: 0; visibility: hidden; } }
+@keyframes g-emerge { from { transform: scale(0.96); } }
+
+/* ---------- Calm mode: no loops, no intro, reveals fade only, drawings shown whole ---------- */
+html[data-motion="calm"] .g-site * { animation: none !important; }
+html[data-motion="calm"] .reveal-ready [data-reveal] { transform: none; }
+html[data-motion="calm"] .reveal-ready [data-reveal="draw"] .g-line { stroke-dashoffset: 0; fill-opacity: 1; transition: none; }
+html[data-motion="calm"] .reveal-ready [data-reveal="draw"] .g-fill { opacity: 1; transition: none; }
+html[data-motion="calm"] .g-strip { mask-image: none; }
+html[data-motion="calm"] .g-marquee { width: auto; }
+html[data-motion="calm"] .g-marquee > ul { flex-wrap: wrap; flex-shrink: 1; justify-content: center; row-gap: 1.25rem; }
+html[data-motion="calm"] .g-marquee [aria-hidden="true"] { display: none; }
+
+/* ---------- Scroll progress line (browsers without scroll timelines skip it) ---------- */
+.g-progress { display: none; }
+@supports (animation-timeline: scroll()) {
+  @keyframes g-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  .g-progress {
+    display: block; position: fixed; inset: 0 0 auto 0; z-index: 50; height: 3px; background: #d9261c;
+    transform-origin: 0 50%; animation: g-grow linear both; animation-timeline: scroll(root);
+  }
+}
+
+/* ---------- Kanchi temple border: a strip of stepped spires, used as a divider ---------- */
+.g-border {
+  height: 12px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='12'%3E%3Cpath d='M3 12V9h3V6h3V3h6v3h3v3h3v3z' fill='%232b2177' fill-opacity='.16'/%3E%3C/svg%3E") repeat-x left bottom;
+  border-bottom: 1px solid rgba(43, 33, 119, 0.16);
+}
+
+/* ---------- One still, faint paper grain over the whole site ---------- */
+.g-site::after {
+  content: ""; position: fixed; inset: 0; z-index: 60; pointer-events: none; opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ---------- Page to page: a short cross-fade in browsers that support it ---------- */
+@view-transition { navigation: auto; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.22s; }
+html[data-motion="calm"]::view-transition-group(root) { animation: none; }

@@ -1,125 +1,77 @@
 /**
- * Flat drawings of what each business sells, made in code in the site's own colours (no photographs).
- * One language throughout: filled shapes, round line ends, ink #1b1640, the logo red as the one accent.
+ * Drawings of what each business sells, made in code to the rulebook in art-kit.tsx (no photographs).
  */
+import { GOLD, GOLD_PALE, INK, Line, RED, Stage, circle, rect } from "./art-kit";
 import { WatchFace } from "./watch-face";
 
-const INK = "#1b1640";
-const RED = "#d9261c";
-const GOLD = "#c79a3b";
-const GOLD_DARK = "#9c7424";
-const PEARL = "#fbfaf6";
-
-/** A temple jhumka: ruby stud, short chain, a domed bell and a fringe of pearls. */
-export function Jhumka({ className = "" }: { className?: string }) {
-  const dome = [-58, -44, -30, -15, 0, 15, 30, 44, 58];
-  const fringe = Array.from({ length: 11 }, (_, i) => 46 + i * 10.8);
-  const petals = Array.from({ length: 8 }, (_, i) => (i * Math.PI) / 4);
+/** A temple jhumka hanging in its arch: ruby stud, short chain, a gold dome and a fringe of pearls. */
+export function Jhumka() {
+  const domePearls = [140, 160, 180, 200, 220, 240, 260];
+  const fringe = Array.from({ length: 10 }, (_, i) => 128 + i * 16);
   return (
-    <svg viewBox="0 0 200 380" role="img" aria-label="Drawing of a gold jhumka earring with pearls" className={className}>
+    <svg viewBox="0 0 400 400" role="img" aria-label="Drawing of a gold jhumka earring with pearls" className="w-full">
+      <Stage />
       <g className="g-sway">
-      {petals.map((a, i) => <circle key={i} cx={100 + Math.cos(a) * 24} cy={44 + Math.sin(a) * 24} r={10} fill={GOLD} />)}
-      <circle cx={100} cy={44} r={22} fill={GOLD_DARK} />
-      <circle cx={100} cy={44} r={13} fill={RED} />
-      {[78, 92, 106].map((y) => <ellipse key={y} cx={100} cy={y} rx={6} ry={8} fill="none" stroke={GOLD} strokeWidth={4} />)}
-      <circle cx={100} cy={124} r={9} fill={RED} />
-      <path d="M36 248 C36 168 64 132 100 132 C136 132 164 168 164 248 Z" fill={GOLD} />
-      <path d="M50 214 C64 206 82 202 100 202 C118 202 136 206 150 214" fill="none" stroke={GOLD_DARK} strokeWidth={5} strokeLinecap="round" />
-      <path d="M62 176 C74 170 87 167 100 167 C113 167 126 170 138 176" fill="none" stroke={GOLD_DARK} strokeWidth={5} strokeLinecap="round" />
-      {dome.map((dx) => <circle key={dx} cx={100 + dx} cy={232 - Math.abs(dx) * 0.05} r={4.5} fill={PEARL} />)}
-      <rect x={30} y={246} width={140} height={12} rx={6} fill={GOLD_DARK} />
-      {fringe.map((x, i) => (
-        <g key={x}>
-          <line x1={x} y1={258} x2={x} y2={i % 2 ? 286 : 300} stroke={GOLD} strokeWidth={2.5} />
-          <circle cx={x} cy={i % 2 ? 292 : 306} r={6.5} fill={PEARL} stroke={GOLD_DARK} strokeWidth={1.5} className="g-shimmer" style={{ "--d": `${i * 180}ms` } as React.CSSProperties} />
-        </g>
-      ))}
-      <line x1={100} y1={258} x2={100} y2={326} stroke={GOLD} strokeWidth={3} />
-      <path d="M100 322 C112 338 114 352 100 366 C86 352 88 338 100 322 Z" fill={RED} />
+        <Line d={circle(200, 92, 24)} fill={GOLD_PALE} />
+        <Line d={circle(200, 92, 11)} fill={RED} />
+        {[126, 140, 154].map((y) => <Line key={y} d={`M200 ${y - 7}c7 0 7 14 0 14c-7 0-7-14 0-14Z`} />)}
+        <Line d={circle(200, 170, 8)} fill={RED} />
+        <Line d="M122 290C122 214 156 180 200 180C244 180 278 214 278 290Z" fill={GOLD_PALE} />
+        <Line d="M150 214C166 208 183 205 200 205C217 205 234 208 250 214" />
+        <Line d="M136 248C156 241 178 238 200 238C222 238 244 241 264 248" />
+        {domePearls.map((x) => <Line key={x} d={circle(x, 268, 5)} fill="#ffffff" width={3} />)}
+        <Line d={rect(114, 288, 172, 12, 6)} fill={GOLD} />
+        {fringe.map((x, i) => {
+          const end = i % 2 ? 314 : 326;
+          return (
+            <g key={x}>
+              <Line d={`M${x} 300V${end}`} width={3} />
+              <Line d={circle(x, end + 7, 7)} fill="#ffffff" width={3} className="g-shimmer" style={{ "--d": `${i * 300}ms` } as React.CSSProperties} />
+            </g>
+          );
+        })}
+        <Line d="M200 300V338" width={3} />
+        <Line d="M200 336C212 350 214 362 200 374C186 362 188 350 200 336Z" fill={RED} />
       </g>
     </svg>
   );
 }
 
-/** Round spectacles, drawn in one line weight. */
-export function Spectacles({ className = "", color = "#2b2177" }: { className?: string; color?: string }) {
-  return (
-    <svg viewBox="0 0 300 120" role="img" aria-label="Drawing of a pair of spectacles" className={className}>
-      <circle cx={84} cy={66} r={46} fill={color} fillOpacity={0.12} stroke={color} strokeWidth={9} />
-      <circle cx={216} cy={66} r={46} fill={color} fillOpacity={0.12} stroke={color} strokeWidth={9} />
-      <clipPath id="lenses"><circle cx={84} cy={66} r={42} /><circle cx={216} cy={66} r={42} /></clipPath>
-      <g clipPath="url(#lenses)">
-        <rect x={60} y={0} width={14} height={140} fill="#ffffff" opacity={0.9} transform="rotate(25 150 66)" className="g-glint" />
-        <rect x={200} y={0} width={14} height={140} fill="#ffffff" opacity={0.9} transform="rotate(25 150 66)" className="g-glint" />
+/** A scooter in side view standing in its arch: red body, indigo seat and tyres, wheels that turn. */
+export function Scooter() {
+  const wheel = (cx: number) => (
+    <g key={cx}>
+      <Line d={circle(cx, 330, 38)} fill={INK} />
+      <Line d={circle(cx, 330, 22)} fill="#ffffff" />
+      <g className="g-spin">
+        <path d={`M${cx - 16} 330H${cx + 16}M${cx} 314V346`} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+        <circle cx={cx} cy={330} r={5} fill={INK} />
       </g>
-      <path d="M130 60 Q150 44 170 60" fill="none" stroke={color} strokeWidth={9} strokeLinecap="round" />
-      <path d="M38 56 L8 36 M262 56 L292 36" stroke={color} strokeWidth={9} strokeLinecap="round" />
-    </svg>
+    </g>
   );
-}
-
-/** A scooter in side view: red body, ink seat and wheels. */
-export function Scooter({ className = "", color = RED }: { className?: string; color?: string }) {
   return (
-    <svg viewBox="0 0 520 300" role="img" aria-label="Drawing of a scooter" className={className}>
-      <circle cx={112} cy={238} r={50} fill={INK} />
-      <circle cx={424} cy={238} r={50} fill={INK} />
-      {[112, 424].map((cx) => (
-        <g key={cx} className="g-spin">
-          <circle cx={cx} cy={238} r={22} fill="#ffffff" />
-          <path d={`M${cx - 18} 238 H${cx + 18} M${cx} 220 V256`} stroke={INK} strokeWidth={5} strokeLinecap="round" />
-        </g>
-      ))}
-      <g className="g-bob">
-      <path d="M366 226 A60 60 0 0 1 482 226" fill="none" stroke={color} strokeWidth={12} strokeLinecap="round" />
-      <path d="M38 206 C42 150 96 126 178 124 L290 126 C304 127 309 140 304 154 L294 206 Z" fill={color} />
-      <rect x={290} y={192} width={96} height={16} rx={6} fill={color} />
-      <path d="M358 206 C364 150 372 112 386 80 L410 80 C404 124 410 170 436 206 Z" fill={color} />
-      <line x1={404} y1={86} x2={424} y2={238} stroke={color} strokeWidth={11} strokeLinecap="round" />
-      <path d="M120 122 C124 100 160 94 204 96 L282 100 C296 101 296 120 282 122 Z" fill={INK} />
-      <line x1={364} y1={72} x2={436} y2={64} stroke={INK} strokeWidth={9} strokeLinecap="round" />
-      <ellipse cx={424} cy={96} rx={15} ry={11} fill="#ffe08a" />
-      <rect x={30} y={168} width={18} height={12} rx={4} fill="#ffe08a" />
-      </g>
+    <svg viewBox="0 0 400 400" role="img" aria-label="Drawing of a scooter" className="w-full">
+      <Stage />
+      {wheel(105)}
+      {wheel(300)}
+      <Line d="M264 320A38 38 0 0 1 338 316" />
+      <Line d="M58 312C60 262 100 240 160 238L235 240C246 241 250 252 246 262L238 312Z" fill={RED} />
+      <Line d={rect(236, 300, 66, 14, 4)} fill={RED} />
+      <Line d="M282 312C286 268 292 236 304 210L322 210C318 246 322 282 340 312Z" fill={RED} />
+      <Line d="M314 214L300 330" />
+      <Line d="M108 236C112 220 140 216 170 217L228 220C238 221 238 235 228 236Z" fill={INK} />
+      <Line d="M292 200L344 194" />
+      <Line d={circle(313, 228, 7)} fill="#ffffff" width={3} />
+      <Line d={rect(52, 280, 12, 10, 3)} fill="#ffffff" width={3} />
     </svg>
   );
 }
 
-/** A bicycle in a single line weight. */
-export function Bicycle({ className = "", color = "#2b2177" }: { className?: string; color?: string }) {
-  const line = { stroke: color, strokeWidth: 8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, fill: "none" };
-  return (
-    <svg viewBox="0 0 300 190" role="img" aria-label="Drawing of a bicycle" className={className}>
-      <circle cx={60} cy={132} r={50} {...line} />
-      <circle cx={240} cy={132} r={50} {...line} />
-      {[60, 240].map((cx) => (
-        <g key={cx} className="g-spin">
-          <circle cx={cx} cy={132} r={46} fill="none" stroke="none" />
-          <path d={`M${cx - 44} 132 H${cx + 44} M${cx} 88 V176 M${cx - 31} 101 L${cx + 31} 163 M${cx + 31} 101 L${cx - 31} 163`} stroke={color} strokeWidth={2.5} opacity={0.6} />
-        </g>
-      ))}
-      <path d="M60 132 L140 132 L120 62 L214 64 L140 132 M60 132 L120 62 M214 64 L240 132 M214 64 L212 42 L232 40" {...line} />
-      <path d="M104 52 L136 52" {...line} strokeWidth={11} />
-      <circle cx={140} cy={132} r={10} fill={color} />
-    </svg>
-  );
-}
-
-/** The picture for each business, keyed like SHOWROOM_GROUPS. */
+/** The picture for each business, keyed like SHOWROOM_GROUPS. Outlines draw once on arrival; loops run only while on screen. */
 export function BusinessArt({ k, className = "" }: { k: string; className?: string }) {
-  if (k === "jewellery") return <div data-reveal="pop" className={className}><Jhumka className="w-full" /></div>;
-  if (k === "watches") {
-    return (
-      <div data-reveal="pop" className={`flex items-center gap-6 ${className}`}>
-        <WatchFace className="w-[38%] shrink-0" />
-        <Spectacles className="w-[62%]" />
-      </div>
-    );
-  }
   return (
-    <div data-reveal="drive" className={`flex flex-col items-end gap-4 ${className}`}>
-      <Scooter className="w-full" />
-      <Bicycle className="w-[52%]" />
+    <div data-reveal="draw" data-live className={`mx-auto w-full max-w-[16rem] sm:max-w-[20rem] ${className}`}>
+      {k === "jewellery" ? <Jhumka /> : k === "watches" ? <WatchFace /> : <Scooter />}
     </div>
   );
 }

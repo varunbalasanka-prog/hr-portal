@@ -15,7 +15,7 @@ export default function AboutPage() {
   return (
     <>
       <section className={`${WRAP} py-14 sm:py-20`}>
-        <h1 data-reveal className="text-4xl font-bold leading-tight sm:text-5xl text-[#2b2177]">About the group</h1>
+        <h1 className="text-4xl font-semibold leading-tight sm:text-5xl text-[#2b2177]">About the group</h1>
         <div className="mt-10 grid gap-8 md:grid-cols-12">
           <p lang="ta" className="text-2xl font-semibold text-[#d9261c] md:col-span-5">பாலசங்கா குழுமம்</p>
           <div className="space-y-4 text-lg leading-relaxed text-[#4a4666] md:col-span-7">
@@ -30,8 +30,8 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section aria-labelledby="h-companies" className={`${WRAP} bg-[#f3f2f9] py-14 sm:py-20`}>
-        <h2 data-reveal id="h-companies" className="text-3xl font-bold sm:text-4xl">Our companies</h2>
+      <section aria-labelledby="h-companies" className={`${WRAP} bg-[#f4f4f6] py-14 sm:py-20`}>
+        <h2 data-reveal id="h-companies" className="text-3xl font-semibold sm:text-4xl">Our companies</h2>
         <ul className="mt-12 grid gap-x-12 gap-y-10 md:grid-cols-2">
           {COMPANIES.map((c) => {
             const rooms = ALL_SHOWROOMS.filter((s) => s.company === c);
