@@ -58,24 +58,24 @@ export default function AboutPage() {
             </p>
           </div>
         </div>
-        <dl className="mt-14 grid grid-cols-2 gap-x-8 gap-y-8 border-t border-[#e4e2ee] pt-10 md:grid-cols-4">
-          {facts.map(([n, label], i) => (
-            <div key={label} data-reveal style={{ "--d": `${i * 70}ms` } as React.CSSProperties}>
+        <dl data-reveal className="mt-14 grid grid-cols-2 gap-x-8 gap-y-8 border-t border-[#e4e2ee] pt-10 md:grid-cols-4">
+          {facts.map(([n, label]) => (
+            <div key={label}>
               <dt className="sr-only">{label}</dt>
-              <dd className="text-4xl font-bold text-[#2b2177]">{n}</dd>
+              <dd className="text-4xl font-semibold text-[#2b2177]">{n}</dd>
               <dd className="mt-1 text-[#4a4666]">{label}</dd>
             </div>
           ))}
         </dl>
       </section>
 
-      <section aria-labelledby="h-story" className={`${WRAP} bg-[#f7f5ef] py-14 sm:py-20`}>
-        <h2 data-reveal id="h-story" className="text-3xl font-bold sm:text-4xl">Our story</h2>
+      <section aria-labelledby="h-story" className={`${WRAP} bg-[#f8f3e8] py-14 sm:py-20`}>
+        <h2 data-reveal id="h-story" className="text-3xl font-semibold sm:text-4xl">Our story</h2>
         <ol className="mt-12 border-l-2 border-[#d8d3c4]">
           {STORY.map((s) => (
             <li key={s.year} data-reveal className="relative pb-10 pl-8 last:pb-0 md:grid md:grid-cols-12 md:gap-8">
               <span aria-hidden className="absolute -left-[7px] top-2 h-3 w-3 rounded-full bg-[#d9261c]" />
-              <p className="text-xl font-bold text-[#d9261c] md:col-span-2">{s.year}</p>
+              <p className="text-xl font-semibold text-[#d9261c] md:col-span-2">{s.year}</p>
               <div className="md:col-span-10">
                 <h3 className="text-xl font-semibold text-[#1b1640]">{s.title}</h3>
                 <p className="mt-2 max-w-[60ch] text-lg leading-relaxed text-[#4a4666]">{s.text}</p>
@@ -86,10 +86,10 @@ export default function AboutPage() {
       </section>
 
       <section aria-labelledby="h-values" className={`${WRAP} py-14 sm:py-20`}>
-        <h2 data-reveal id="h-values" className="text-3xl font-bold sm:text-4xl">What we stand for</h2>
-        <ul className="mt-12 grid gap-x-12 gap-y-10 md:grid-cols-3">
-          {VALUES.map((v, i) => (
-            <li key={v.title} data-reveal style={{ "--d": `${i * 70}ms` } as React.CSSProperties}>
+        <h2 data-reveal id="h-values" className="text-3xl font-semibold sm:text-4xl">What we stand for</h2>
+        <ul data-reveal className="mt-12 grid gap-x-12 gap-y-10 md:grid-cols-3">
+          {VALUES.map((v) => (
+            <li key={v.title}>
               <h3 className="text-xl font-semibold text-[#1b1640]">{v.title}</h3>
               <p className="mt-2 text-lg leading-relaxed text-[#4a4666]">{v.text}</p>
             </li>

@@ -26,7 +26,7 @@ export default function GroupHome() {
             <h1 className="text-4xl font-semibold leading-tight text-[#2b2177] sm:text-5xl">Balasanka Group of Companies</h1>
             <p lang="ta" className="mt-2 text-2xl font-semibold text-[#d9261c]">பாலசங்கா குழுமம்</p>
             <p className="mt-6 max-w-[44ch] text-lg leading-relaxed text-[#4a4666] sm:text-xl">
-              Two-wheelers, jewellery, watches and eyewear at {ALL_SHOWROOMS.length} showrooms in {TOWNS.length} towns of South Tamil Nadu, from Theni to Tirunelveli.
+              Two-wheelers, jewellery, watches and eyewear at {ALL_SHOWROOMS.length} showrooms in {TOWNS.length} towns of South Tamil Nadu, from Theni to Tirunelveli. A Theni family business since 1966.
             </p>
             <a href={groupHref("/showrooms")} className="mt-8 inline-flex h-12 items-center rounded-md bg-[#d9261c] px-6 font-semibold text-white hover:bg-[#b81f17]">Find a showroom near you</a>
           </div>
