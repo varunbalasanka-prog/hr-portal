@@ -41,8 +41,8 @@ const STORY: SiteContent["about"]["story"] = [
   },
   {
     year: "1991",
-    title: "Pulses",
-    text: "The family opens the Balasanka Dhal factory to process pulses, and sets up Asia's first solar dryer for pulses. The Sanka Dhal factory follows in 1995, and in 2016 our dhal and tamarind go on sale as Akshaya Dhal.",
+    title: "Balasanka Dhal",
+    text: "The family opens its first pulses factory, Balasanka Dhal, and sets up Asia's first solar dryer for pulses. A second factory, Sanka Dhal, follows in 1995, and in 2016 the Akshaya Dhal brand, which now carries all our dhal and seedless tamarind.",
   },
   {
     year: "1997",
@@ -129,10 +129,10 @@ export const DEFAULT_CONTENT: SiteContent = {
   { name: "Titan", note: "Franchise store" },
   { name: "Fastrack", note: "Franchise store" },
   { name: "Titan Eye+", note: "Franchise store" },
-  { name: "Akshaya Dhal", note: "Our dhal and tamarind" },
+  { name: "Akshaya Dhal", note: "Our own brand" },
 ],
   home: {
-    intro: "Two-wheelers, jewellery, watches and eyewear at {showrooms} showrooms in {towns} towns of South Tamil Nadu, from Theni to Tirunelveli, and dhal and seedless tamarind from our factory in Theni. A Theni family business since 1966.",
+    intro: "Two-wheelers, jewellery, watches and eyewear at {showrooms} showrooms in {towns} towns of South Tamil Nadu, from Theni to Tirunelveli, and Akshaya Dhal dhal and seedless tamarind from our factories in Theni. A Theni family business since 1966.",
     careers: "We hire for sales, service, accounts and customer care at our showrooms, and freshers are welcome. Apply online in about five minutes.",
   },
   /**
@@ -141,8 +141,8 @@ export const DEFAULT_CONTENT: SiteContent = {
    */
   about: {
     intro: [
-      "Balasanka Group began in Theni in 1966 as a small tamarind processing unit. Sixty years later, the same family runs two-wheeler dealerships, jewellery houses and lifestyle stores across {town list}, and still makes dhal and seedless tamarind at its factory in Theni.",
-      "Our own brands are Akshaya Dhal for dhal and seedless tamarind, and the jewellery house Akshaya Velli with its luxury line Zora. We run them alongside dealerships and franchise stores for TVS, Honda, Tanishq, Mia by Tanishq, CaratLane, Titan, Titan Eye+ and Fastrack.",
+      "Balasanka Group began in Theni in 1966 as a small tamarind processing unit. Sixty years later, the same family runs two-wheeler dealerships, jewellery houses and lifestyle stores across {town list}, and still makes dhal and seedless tamarind at its factories in Theni.",
+      "Our own brands are Akshaya Dhal, for dhal and seedless tamarind, and the jewellery house Akshaya Velli with its luxury line Zora. We run them alongside dealerships and franchise stores for TVS, Honda, Tanishq, Mia by Tanishq, CaratLane, Titan, Titan Eye+ and Fastrack.",
     ],
     story: STORY,
     values: VALUES,
@@ -161,10 +161,12 @@ export const DEFAULT_CONTENT: SiteContent = {
   foods: {
   title: "Dhal and tamarind",
   tamil: "பருப்பு, புளி",
-  blurb: "Toor, urad and moong dhal and seedless tamarind, sold as Akshaya Dhal, from our factories in Theni for shops, traders and families.",
+  blurb: "Akshaya Dhal toor, urad and moong dhal and seedless tamarind, made at our factories in Theni for shops, traders and families.",
   products: ["Toor dhal", "Urad dhal", "Moong dhal", "Seedless tamarind"],
   brands: [
-    { name: "Akshaya Dhal", note: "Our dhal and seedless tamarind. The tamarind business began as SGT in 1966." },
+    { name: "Akshaya Dhal", note: "Our brand for every dhal and our seedless tamarind." },
+    { name: "Balasanka Dhal", note: "Our first pulses factory in Theni, since 1991." },
+    { name: "Sanka Dhal", note: "Our second factory in Theni, since 1995." },
   ],
 },
 };

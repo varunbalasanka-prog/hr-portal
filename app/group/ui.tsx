@@ -63,7 +63,7 @@ export function SiteFooter({ site }: { site: Site }) {
           <p className="text-3xl font-semibold">Balasanka Group of Companies</p>
           <p lang="ta" className="mt-1 text-lg">பாலசங்கா குழுமம்</p>
           <p className="mt-5 max-w-[42ch] leading-relaxed">
-            {site.all.length} showrooms in {listOf(site.towns)}, and our dhal and tamarind factories in Theni.
+            {site.all.length} showrooms in {listOf(site.towns)}, and our {site.foods.brands[0]?.name ?? "Akshaya Dhal"} factories in Theni.
           </p>
           <p className="mt-4">Write to us at <EmailLink email={site.contact.email} className="inline-block py-1 font-semibold" /></p>
         </div>

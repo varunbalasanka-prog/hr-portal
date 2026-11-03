@@ -110,8 +110,8 @@ export function WordsEditor({ content, showrooms, ready }: { content: SiteConten
           <textarea className="input" rows={4} value={c.foods.products.join("\n")} onChange={(e) => put("foods", { ...c.foods, products: e.target.value.split("\n") })}
             onBlur={() => put("foods", { ...c.foods, products: c.foods.products.map((x) => x.trim()).filter(Boolean) })} />
         </Field>
-        <p className="label">Brands</p>
-        <List items={c.foods.brands} onChange={(v) => put("foods", { ...c.foods, brands: v })} blank={() => ({ name: "", note: "" })} addLabel="Add food brand" max={12}
+        <p className="label">Brand and factories (the first one is the brand everything is sold under)</p>
+        <List items={c.foods.brands} onChange={(v) => put("foods", { ...c.foods, brands: v })} blank={() => ({ name: "", note: "" })} addLabel="Add line" max={12}
           render={(b, set) => <div className="grid gap-2 sm:grid-cols-2"><Text label="Name" max={40} value={b.name} onChange={(v) => set({ ...b, name: v })} /><Text label="Line under it" max={200} value={b.note} onChange={(v) => set({ ...b, note: v })} /></div>} />
       </Part>
 

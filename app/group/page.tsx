@@ -8,7 +8,7 @@ import { BrandStrip, CHAPTER, LINK, NEUTRAL, WRAP } from "./ui";
 export async function generateMetadata(): Promise<Metadata> {
   const site = await getSite();
   const foodBrands = site.foods.brands.map((b) => b.name);
-  const description = `Balasanka Group of Companies runs ${site.all.length} jewellery, watch, eyewear and two-wheeler showrooms in ${site.towns.length} towns of South Tamil Nadu${foodBrands.length ? `, and makes ${foodBrands.join(", ").replace(/, ([^,]*)$/, " and $1")} dhal and seedless tamarind in Theni` : ""}.`;
+  const description = `Balasanka Group of Companies runs ${site.all.length} jewellery, watch, eyewear and two-wheeler showrooms in ${site.towns.length} towns of South Tamil Nadu${foodBrands.length ? `, and makes ${foodBrands[0]} dhal and seedless tamarind in Theni` : ""}.`;
   return pageMeta("Balasanka Group of Companies | பாலசங்கா குழுமம்", description, "/");
 }
 
