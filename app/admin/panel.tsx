@@ -11,6 +11,7 @@ import type { FirmRoles, JobRole } from "@/lib/job-roles";
 import { JobListingsAdmin, type OpeningRow, type RoleRow } from "./job-listings";
 import { UsersAdmin } from "./users";
 import { ChangeHistory, type AuditRow } from "./history";
+import type { Refs } from "@/lib/history-format";
 import { PrivacyAdmin } from "./privacy";
 import { WalkinAgeWarning, WalkinApprovals, type WalkinRequestRow } from "./walkins";
 import type { PrivacyContact } from "@/lib/privacy";
@@ -18,7 +19,7 @@ import type { Branch } from "@/lib/types";
 
 export function AdminPanel({ roles, warnAge, walkins, me, people, log, questions, posts, branches, branchPosts, jobs, history, privacyContact, retentionMonths }: {
   privacyContact: PrivacyContact; retentionMonths: number | null; walkins: WalkinRequestRow[]; warnAge: number | null;
-  me: Profile; history: AuditRow[] | null; people: Profile[]; log: NotificationRow[]; questions: AdminQuestion[]; posts: string[]; branches: Branch[]; branchPosts: Record<string, string[]>;
+  me: Profile; history: { rows: AuditRow[]; refs: Refs } | null; people: Profile[]; log: NotificationRow[]; questions: AdminQuestion[]; posts: string[]; branches: Branch[]; branchPosts: Record<string, string[]>;
   roles: { roles: JobRole[]; firms: FirmRoles } | null;
   jobs: { ready: boolean; openings: OpeningRow[]; roles: RoleRow[] };
 }) {
@@ -37,7 +38,7 @@ export function AdminPanel({ roles, warnAge, walkins, me, people, log, questions
         ))}
       </div>
       {tab === "walkins" && <><WalkinAgeWarning age={warnAge} /><WalkinApprovals rows={walkins} /></>}
-      {tab === "history" && history && <ChangeHistory rows={history} />}
+      {tab === "history" && history && <ChangeHistory rows={history.rows} refs={history.refs} />}
       {tab === "roles" && <JobRolesAdmin roles={roles?.roles ?? null} firms={roles?.firms ?? {}} branches={branches} />}
       {tab === "posts" && <BranchPostsAdmin branches={branches} posts={posts} open={branchPosts} />}
       {tab === "storehr" && <StoreHrAdmin branches={branches} people={people} />}

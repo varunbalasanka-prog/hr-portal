@@ -103,22 +103,24 @@ function parseKey(key: string | undefined): { group: Group; sub?: string } {
   return GROUPS.includes(g as Group) ? { group: g as Group, sub } : { group: "followup" };
 }
 
-export function Dashboard({ me, photoUrl, rows, branches, people, notifications, appUrl, letterTokens, initialList, posts, dobRule }: {
+export function Dashboard({ me, photoUrl, rows, branches, people, notifications, appUrl, letterTokens, initialList, initialOpen, posts, dobRule }: {
   me: Profile; photoUrl: string | null; rows: Row[]; branches: Branch[]; people: Profile[]; notifications: NotificationRow[]; appUrl: string;
-  letterTokens: Record<string, string>; initialList?: string; posts: WalkinPosts; dobRule: DobRule;
+  letterTokens: Record<string, string>; initialList?: string; /** Candidate id to open straight away (links from the change history). */ initialOpen?: string; posts: WalkinPosts; dobRule: DobRule;
 }) {
   const admin = isAdminRole(me.role);
   const store = me.role === "branch";
   const [list, setList] = useState<{ group: Group; sub?: string }>(() => parseKey(initialList));
   const [q, setQ] = useState("");
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(initialOpen ?? null);
   const [modal, setModal] = useState<"walkin" | "notify" | null>(null);
 
   // Keep the address bar in step, so Back, refresh and shared links open the same list.
   useEffect(() => {
     const key = list.sub ? `${list.group}.${list.sub}` : list.group;
     const url = new URL(window.location.href);
-    if (url.searchParams.get("list") !== key) { url.searchParams.set("list", key); window.history.replaceState(null, "", url); }
+    const stale = url.searchParams.has("open"); // opened once from a link; a refresh should not reopen it
+    url.searchParams.delete("open");
+    if (url.searchParams.get("list") !== key || stale) { url.searchParams.set("list", key); window.history.replaceState(null, "", url); }
   }, [list]);
 
   const counts = useMemo(() => countAll(rows.map((r) => r.cat)), [rows]);
