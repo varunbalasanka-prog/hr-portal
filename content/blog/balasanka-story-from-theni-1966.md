@@ -1,11 +1,12 @@
 ---
 title: From a tamarind business in Theni to 23 showrooms
-description: How the Balasanka Group grew from a small tamarind business started in Theni in 1966 into two-wheeler, jewellery and watch showrooms across South Tamil Nadu.
+description: How the Balasanka Group grew from a small tamarind business started in Theni in 1966, which still runs today, into two-wheeler, jewellery and watch showrooms across South Tamil Nadu.
 date: 2026-11-03
+updated: 2026-11-03
 category: story
 ---
 
-Most of our customers know us by a showroom name: a TVS or Honda dealership, Akshaya Velli, Tanishq or Titan. Fewer know that all of them grew from one small tamarind business in Theni, started nearly sixty years ago.
+Most of our customers know us by a showroom name: a TVS or Honda dealership, Akshaya Velli, Tanishq or Titan. Fewer know that all of them grew from one small tamarind business in Theni, started nearly sixty years ago, and that the business is still running today.
 
 ## 1966: SGT, Theni
 
@@ -13,7 +14,9 @@ In 1966, Mr. S. Thirupathi Nadar started SGT, a small tamarind business in Theni
 
 ## From tamarind to pulses
 
-In 1991 the family started Balasanka Dhal, processing pulses, and set up what was then Asia's first solar dryer for pulses. Sanka Dhal followed in 1995 and Akshaya Dhal in 2016. In 2001, Sri Balasanka Mills began turning tamarind seeds, which used to be thrown away, into starch for textile printing and husk for fuel.
+In 1991 the family started Balasanka Dhal, processing pulses, and set up what was then Asia's first solar dryer for pulses. Sanka Dhal followed in 1995 and Akshaya Dhal in 2016. From 2001, Sri Balasanka Mills turned tamarind seeds, which used to be thrown away, into starch for textile printing and husk for fuel. The mill has since closed.
+
+The food business itself never stopped. SGT, Balasanka Dhal, Sanka Dhal and Akshaya Dhal still make seedless tamarind and toor, urad and moong dhal at our factory in Theni, sold wholesale and at the factory outlet there.
 
 ## Two-wheelers
 
@@ -25,6 +28,6 @@ In 2019 our first jewellery store, Tanishq, opened in Theni. Titan, Titan Eye+, 
 
 ## Today
 
-The group now runs 23 showrooms in Madurai, Rajapalayam, Sivakasi, Srivilliputhur, Tenkasi, Theni, Tirunelveli and Virudhunagar. The businesses are very different, but the idea from 1966 hasn't changed: what we sell should be exactly what the label says.
+Alongside the food business in Theni, the group now runs 23 showrooms in Madurai, Rajapalayam, Sivakasi, Srivilliputhur, Tenkasi, Theni, Tirunelveli and Virudhunagar. The businesses are very different, but the idea from 1966 hasn't changed: what we sell should be exactly what the label says.
 
 You can read more on our [About page](/about), or [find a showroom near you](/showrooms).
