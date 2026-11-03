@@ -42,7 +42,8 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
     publisher: { "@type": "Organization", "@id": `${GROUP_SITE}/#org`, name: "Balasanka Group of Companies", logo: { "@type": "ImageObject", url: `${GROUP_SITE}/icon-512.png` } },
   };
   const next =
-    cat.business ? { text: `See our ${cat.label.toLowerCase()} showrooms`, href: groupHref(`/${cat.business}`) }
+    p.category === "foods" ? { text: "See our dhal and tamarind", href: groupHref(`/${cat.business}`) }
+    : cat.business ? { text: `See our ${cat.label.toLowerCase()} showrooms`, href: groupHref(`/${cat.business}`) }
     : p.category === "careers" ? { text: "See open jobs", href: `${CAREERS_SITE}/careers` }
     : { text: "Find a showroom near you", href: groupHref("/showrooms") };
   return (

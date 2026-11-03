@@ -124,6 +124,7 @@ export const POST_CATEGORIES = {
   vehicles: "Two-wheelers",
   jewellery: "Jewellery",
   watches: "Watches and eyewear",
+  foods: "Dhal and tamarind",
   story: "Our story",
   careers: "Careers",
 } as const;
