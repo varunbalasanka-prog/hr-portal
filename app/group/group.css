@@ -38,6 +38,12 @@ html:has(.g-site) { scroll-padding-top: 5rem; }
 .g-spin { transform-box: fill-box; transform-origin: center; }
 .is-live .g-sway { animation: g-sway 6s ease-in-out infinite; }
 .is-live .g-spin { animation: g-spin 2.4s linear infinite; }
+@keyframes g-drop { 0% { opacity: 0; transform: translateY(-40px); } 12% { opacity: 1; } 78% { opacity: 1; transform: translateY(66px); } 100% { opacity: 0; transform: translateY(72px); } }
+@keyframes g-tilt { 0%, 100% { transform: rotate(-1.5deg); } 50% { transform: rotate(1.5deg); } }
+.g-drop { opacity: 0; }
+.g-tilt { transform-box: fill-box; transform-origin: 50% 100%; }
+.is-live .g-drop { animation: g-drop 4s cubic-bezier(0.5, 0, 0.9, 0.6) infinite; animation-delay: var(--d, 0ms); }
+.is-live .g-tilt { animation: g-tilt 7s ease-in-out infinite; }
 .is-live .g-shimmer { animation: g-shimmer 4s ease-in-out infinite; animation-delay: var(--d, 0ms); }
 
 /* ---------- Brand strip ---------- */

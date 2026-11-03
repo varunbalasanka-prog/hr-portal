@@ -92,14 +92,24 @@ export function DhalBowl() {
           <ellipse key={i} cx={x.toFixed(1)} cy={y.toFixed(1)} rx={5.5} ry={3.8} fill={c} stroke="#b8860b" strokeWidth={1.2} transform={`rotate(${r.toFixed(0)} ${x.toFixed(1)} ${y.toFixed(1)})`} />
         ))}
       </g>
+      {[[170, 0, 0], [184, 900, 40], [160, 1700, 110], [192, 2500, 160], [176, 3300, 70]].map(([x, d, r], i) => (
+        <g key={i} className="g-drop" style={{ "--d": `${d}ms` } as React.CSSProperties}>
+          <ellipse cx={x} cy={140} rx={5.5} ry={3.8} fill="#ffd84d" stroke="#b8860b" strokeWidth={1.2} transform={`rotate(${r} ${x} 140)`} />
+        </g>
+      ))}
+      {[[140, 236, 0], [196, 214, 1300], [226, 244, 2600]].map(([x, y, d], i) => (
+        <Line key={i} d={`M${x} ${y - 7}V${y + 7}M${x - 7} ${y}H${x + 7}`} stroke="#ffffff" width={2.5} className="g-shimmer" style={{ "--d": `${d}ms` } as React.CSSProperties} />
+      ))}
       <Line d={rect(80, 254, 192, 18, 9)} fill={GOLD_PALE} />
       <Line d="M88 272H264C258 330 226 362 176 362C126 362 94 330 88 272Z" fill={GOLD} />
       <Line d="M140 362L130 376H222L212 362" fill={GOLD} />
       <Line d="M108 300C130 310 222 310 244 300" stroke="#ffffff" width={3} />
+      <g className="g-tilt">
       <Line d="M268 320C270 306 282 300 300 300H338C350 300 356 308 356 320V360C356 370 350 376 338 376H286C274 376 266 370 266 360Z" fill={TAMARIND} />
       <Line d="M278 318C292 312 312 320 326 314C334 311 342 314 346 318" stroke="#b07448" width={3} />
       <Line d="M276 338C294 332 314 342 332 334C338 332 344 334 348 338" stroke="#b07448" width={3} />
       <Line d="M278 358C296 352 316 360 340 354" stroke="#b07448" width={3} />
+      </g>
       {[[72, 368], [86, 374], [66, 378], [100, 378], [58, 370]].map(([x, y], i) => (
         <ellipse key={i} cx={x} cy={y} rx={6.5} ry={4.5} fill="#ffd95a" stroke="#b8860b" strokeWidth={1.5} className="g-fill" />
       ))}
