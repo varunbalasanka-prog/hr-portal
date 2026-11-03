@@ -9,8 +9,8 @@ import { withFirmRoles } from "@/lib/job-roles";
 
 export const dynamic = "force-dynamic";
 
-export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ list?: string }> }) {
-  const { list } = await searchParams;
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ list?: string; open?: string }> }) {
+  const { list, open } = await searchParams;
   const { profile, supabase } = await requireProfile();
 
   const [cands, subs, branches, people, notifs, receipts, letters, settings, dob] = await Promise.all([
@@ -58,6 +58,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       appUrl={process.env.NEXT_PUBLIC_APP_URL ?? ""}
       letterTokens={letterTokens}
       initialList={list}
+      initialOpen={open}
       posts={posts}
       dobRule={dob}
     />
