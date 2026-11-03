@@ -33,7 +33,7 @@ create table if not exists site_posts (
   slug text not null unique check (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$' and length(slug) <= 90),
   title text not null check (length(trim(title)) between 1 and 150),
   description text not null check (length(trim(description)) between 1 and 300),
-  category text not null check (category in ('vehicles', 'jewellery', 'watches', 'story', 'careers')),
+  category text not null check (category in ('vehicles', 'jewellery', 'watches', 'foods', 'story', 'careers')),
   body text not null default '' check (length(body) <= 60000),
   published_on date not null default current_date,
   checked_on date,

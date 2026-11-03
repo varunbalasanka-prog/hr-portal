@@ -7,6 +7,7 @@ export const BLOG_CATEGORIES = {
   vehicles: { label: "Two-wheelers", business: "two-wheelers" },
   jewellery: { label: "Jewellery", business: "jewellery" },
   watches: { label: "Watches and eyewear", business: "watches-and-eyewear" },
+  foods: { label: "Dhal and tamarind", business: "dhal-and-tamarind" },
   story: { label: "Our story", business: null },
   careers: { label: "Careers", business: null },
 } as const;
