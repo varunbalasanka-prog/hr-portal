@@ -7,7 +7,7 @@ import { BusinessLinks, CHAPTER, WRAP } from "../ui";
 
 export async function generateMetadata(): Promise<Metadata> {
   const f = (await getSite()).foods;
-  const description = `${f.brands.map((b) => b.name).join(", ")}: ${f.products.join(", ").toLowerCase()} from the Balasanka Group factory in Theni, Tamil Nadu. Wholesale and factory outlet.`;
+  const description = `${f.brands.map((b) => b.name).join(", ")}: ${f.products.join(", ").toLowerCase()} from the Balasanka Group factories in Theni, Tamil Nadu. Wholesale and factory outlet.`;
   return pageMeta(`${f.title} | Balasanka Group`, description, `/${FOODS_PAGE.slug}`);
 }
 
@@ -40,7 +40,7 @@ export default async function FoodsPage() {
             <h1 className="text-4xl font-semibold leading-tight sm:text-5xl">{FOODS.title}</h1>
             <p lang="ta" className="mt-2 text-xl text-[#4a4666]">{FOODS.tamil}</p>
             <p className="mt-5 max-w-[46ch] text-lg leading-relaxed text-[#4a4666]">
-              {FOODS.blurb} The group began with tamarind in Theni in 1966, and the family still runs the factory today.
+              {FOODS.blurb} The group began with tamarind in Theni in 1966, and the family still runs the factories today.
             </p>
           </div>
           <div className="flex md:col-span-5 md:justify-center">
@@ -53,7 +53,7 @@ export default async function FoodsPage() {
         <section aria-labelledby="f-what" className="grid gap-6 md:grid-cols-12">
           <div data-reveal className="md:col-span-5">
             <h2 id="f-what" className="text-3xl font-semibold sm:text-4xl">What we make</h2>
-            <p className="mt-3 max-w-[34ch] text-lg leading-relaxed text-[#4a4666]">Made at our factory in Theni.</p>
+            <p className="mt-3 max-w-[34ch] text-lg leading-relaxed text-[#4a4666]">From our factories in Theni.</p>
           </div>
           <ul data-reveal className="grid gap-x-10 gap-y-1 sm:grid-cols-2 md:col-span-7">
             {FOODS.products.map((p) => <li key={p} className="py-3 text-lg font-semibold">{p}</li>)}
@@ -62,8 +62,7 @@ export default async function FoodsPage() {
 
         <section aria-labelledby="f-brands" className="mt-14 grid gap-6 sm:mt-16 md:grid-cols-12">
           <div data-reveal className="md:col-span-5">
-            <h2 id="f-brands" className="text-3xl font-semibold sm:text-4xl">Our brands</h2>
-            <p className="mt-3 max-w-[34ch] text-lg leading-relaxed text-[#4a4666]">All are our own, made in Theni.</p>
+            <h2 id="f-brands" className="text-3xl font-semibold sm:text-4xl">{FOODS.brands.length === 1 ? "Our brand" : "Our brands"}</h2>
           </div>
           <ul data-reveal className="grid gap-x-10 sm:grid-cols-2 md:col-span-7">
             {FOODS.brands.map((b) => (

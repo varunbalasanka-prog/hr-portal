@@ -41,8 +41,8 @@ const STORY: SiteContent["about"]["story"] = [
   },
   {
     year: "1991",
-    title: "Balasanka Dhal",
-    text: "The family starts processing pulses, and sets up Asia's first solar dryer for pulses. Sanka Dhal follows in 1995 and Akshaya Dhal in 2016.",
+    title: "Pulses",
+    text: "The family opens the Balasanka Dhal factory to process pulses, and sets up Asia's first solar dryer for pulses. The Sanka Dhal factory follows in 1995, and in 2016 our dhal and tamarind go on sale as Akshaya Dhal.",
   },
   {
     year: "1997",
@@ -129,10 +129,7 @@ export const DEFAULT_CONTENT: SiteContent = {
   { name: "Titan", note: "Franchise store" },
   { name: "Fastrack", note: "Franchise store" },
   { name: "Titan Eye+", note: "Franchise store" },
-  { name: "Akshaya Dhal", note: "Our own brand" },
-  { name: "Balasanka Dhal", note: "Our own brand" },
-  { name: "Sanka Dhal", note: "Our own brand" },
-  { name: "SGT", note: "Our tamarind, since 1966" },
+  { name: "Akshaya Dhal", note: "Our dhal and tamarind" },
 ],
   home: {
     intro: "Two-wheelers, jewellery, watches and eyewear at {showrooms} showrooms in {towns} towns of South Tamil Nadu, from Theni to Tirunelveli, and dhal and seedless tamarind from our factory in Theni. A Theni family business since 1966.",
@@ -145,7 +142,7 @@ export const DEFAULT_CONTENT: SiteContent = {
   about: {
     intro: [
       "Balasanka Group began in Theni in 1966 as a small tamarind processing unit. Sixty years later, the same family runs two-wheeler dealerships, jewellery houses and lifestyle stores across {town list}, and still makes dhal and seedless tamarind at its factory in Theni.",
-      "Our own brands are Akshaya Dhal, Balasanka Dhal, Sanka Dhal and SGT tamarind, and the jewellery house Akshaya Velli with its luxury line Zora. We run them alongside dealerships and franchise stores for TVS, Honda, Tanishq, Mia by Tanishq, CaratLane, Titan, Titan Eye+ and Fastrack.",
+      "Our own brands are Akshaya Dhal for dhal and seedless tamarind, and the jewellery house Akshaya Velli with its luxury line Zora. We run them alongside dealerships and franchise stores for TVS, Honda, Tanishq, Mia by Tanishq, CaratLane, Titan, Titan Eye+ and Fastrack.",
     ],
     story: STORY,
     values: VALUES,
@@ -164,13 +161,10 @@ export const DEFAULT_CONTENT: SiteContent = {
   foods: {
   title: "Dhal and tamarind",
   tamil: "பருப்பு, புளி",
-  blurb: "Toor, urad and moong dhal and seedless tamarind from our factory in Theni, for shops, traders and families.",
+  blurb: "Toor, urad and moong dhal and seedless tamarind, sold as Akshaya Dhal, from our factories in Theni for shops, traders and families.",
   products: ["Toor dhal", "Urad dhal", "Moong dhal", "Seedless tamarind"],
   brands: [
-    { name: "SGT", note: "Tamarind, since 1966. Where the group began." },
-    { name: "Balasanka Dhal", note: "Since 1991." },
-    { name: "Sanka Dhal", note: "Since 1995." },
-    { name: "Akshaya Dhal", note: "Since 2016." },
+    { name: "Akshaya Dhal", note: "Our dhal and seedless tamarind. The tamarind business began as SGT in 1966." },
   ],
 },
 };

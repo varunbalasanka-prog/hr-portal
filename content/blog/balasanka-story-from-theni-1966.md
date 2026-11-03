@@ -14,9 +14,9 @@ In 1966, Mr. S. Thirupathi Nadar started SGT, a small tamarind business in Theni
 
 ## From tamarind to pulses
 
-In 1991 the family started Balasanka Dhal, processing pulses, and set up what was then Asia's first solar dryer for pulses. Sanka Dhal followed in 1995 and Akshaya Dhal in 2016. From 2001, Sri Balasanka Mills turned tamarind seeds, which used to be thrown away, into starch for textile printing and husk for fuel. The mill has since closed.
+In 1991 the family opened the Balasanka Dhal factory to process pulses, and set up what was then Asia's first solar dryer for pulses. The Sanka Dhal factory followed in 1995, and from 2016 the dhal and tamarind were sold under the Akshaya Dhal brand. From 2001, Sri Balasanka Mills turned tamarind seeds, which used to be thrown away, into starch for textile printing and husk for fuel. The mill has since closed.
 
-The food business itself never stopped. SGT, Balasanka Dhal, Sanka Dhal and Akshaya Dhal still make seedless tamarind and toor, urad and moong dhal at our factory in Theni, sold wholesale and at the factory outlet there.
+The food business itself never stopped. Our Theni factories still make seedless tamarind and toor, urad and moong dhal, sold as Akshaya Dhal, wholesale and at the factory outlet there.
 
 ## Two-wheelers
 
