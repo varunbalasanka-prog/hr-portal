@@ -11,7 +11,7 @@ import { BusinessLinks, WRAP } from "../ui";
 
 export const metadata: Metadata = pageMeta(
   "About | Balasanka Group",
-  "Balasanka Group began in Theni in 1966 as a tamarind processing unit. Today it runs two-wheeler dealerships, jewellery houses and lifestyle stores across South Tamil Nadu.",
+  "Balasanka Group began in Theni in 1966 as a tamarind processing unit. Today it runs two-wheeler dealerships, jewellery houses and lifestyle stores across South Tamil Nadu, and still makes dhal and tamarind in Theni.",
   "/about",
 );
 
@@ -40,7 +40,7 @@ const STORY: { year: string; title: string; text: string }[] = [
   {
     year: "2001",
     title: "Sri Balasanka Mills",
-    text: "A mill in Theni turns tamarind seeds, once thrown away, into starch for textile printing and husk for fuel.",
+    text: "A mill in Theni turned tamarind seeds, once thrown away, into starch for textile printing and husk for fuel.",
   },
   {
     year: "2004–2017",
@@ -104,10 +104,12 @@ export default function AboutPage() {
                 Balasanka Group began in Theni in 1966 as a small tamarind
                 processing unit. Sixty years later, the same family runs
                 two-wheeler dealerships, jewellery houses and lifestyle stores
-                across {list(TOWNS)}.
+                across {list(TOWNS)}, and still makes dhal and seedless
+                tamarind at its factory in Theni.
               </p>
               <p className="max-w-[48ch]">
-                We run our own jewellery brands, Akshaya Velli and Zora,
+                Our own brands are Akshaya Dhal, Balasanka Dhal, Sanka Dhal
+                and SGT tamarind, and the jewellery houses Akshaya Velli and Zora. We run them
                 alongside dealerships and franchise stores for TVS, Honda,
                 Tanishq, Mia by Tanishq, CaratLane, Titan, Titan Eye+ and
                 Fastrack.

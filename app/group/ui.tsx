@@ -1,11 +1,12 @@
 import { MotionToggle } from "./motion-toggle";
-import { ALL_SHOWROOMS, BRAND_STRIP, CAREERS_SITE, COMPANIES, CONTACT_EMAIL, SHOWROOM_GROUPS, TOWNS, groupHref, type Showroom, type ShowroomGroup, fullAddress, mapLink } from "@/lib/group";
+import { ALL_SHOWROOMS, BRAND_STRIP, CAREERS_SITE, COMPANIES, CONTACT_EMAIL, FOODS, SHOWROOM_GROUPS, TOWNS, groupHref, type Showroom, fullAddress, mapLink } from "@/lib/group";
 
 /** Each business has its own muted tint, told apart by warmth: cool grey-indigo, warm cream, soft neutral. */
 export const CHAPTER: Record<string, { field: string; ink: string; soft: string; link: string }> = {
   vehicles: { field: "bg-[#eff0f5]", ink: "text-[#1b1640]", soft: "text-[#4a4666]", link: "text-[#1b1640]" },
   jewellery: { field: "bg-[#f8f3e8]", ink: "text-[#1b1640]", soft: "text-[#4a4666]", link: "text-[#1b1640]" },
   watches: { field: "bg-[#f3f3f0]", ink: "text-[#1b1640]", soft: "text-[#4a4666]", link: "text-[#1b1640]" },
+  foods: { field: "bg-[#f1f3ea]", ink: "text-[#1b1640]", soft: "text-[#4a4666]", link: "text-[#1b1640]" },
 };
 /** The plain tint for anything that is not one business (town cards, alternating rows). */
 export const NEUTRAL = "bg-[#f4f4f6]";
@@ -17,6 +18,7 @@ export { LINK };
 
 const NAV: [string, string][] = [
   ...SHOWROOM_GROUPS.map((g) => [g.title.replace(" and cycles", ""), groupHref(`/${g.slug}`)] as [string, string]),
+  ["Dhal and tamarind", groupHref(`/${FOODS.slug}`)],
   ["Showrooms", groupHref("/showrooms")],
   ["About", groupHref("/about")],
   ["Contact", groupHref("/contact")],
@@ -29,11 +31,11 @@ export function SiteHeader() {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/balasanka_logo.png" alt="Balasanka" className="h-11 w-auto sm:h-12" />
       </a>
-      <nav aria-label="Main" className="hidden items-center gap-7 text-[16px] font-normal text-[#1b1640] lg:flex">
+      <nav aria-label="Main" className="hidden items-center gap-7 whitespace-nowrap text-[16px] font-normal text-[#1b1640] xl:flex">
         {NAV.map(([label, href]) => <a key={href} href={href} className="hover:underline">{label}</a>)}
         <a href={`${CAREERS_SITE}/careers`} className="rounded-md bg-[#d9261c] px-4 py-2 font-semibold text-white hover:bg-[#b81f17]">Careers</a>
       </nav>
-      <details className="group lg:hidden">
+      <details className="group xl:hidden">
         <summary className="cursor-pointer list-none rounded-md bg-[#1b1640] px-4 py-2 font-semibold text-white [&::-webkit-details-marker]:hidden">Menu</summary>
         <nav aria-label="Main" className="absolute inset-x-0 top-full bg-white px-5 pb-6 pt-2 shadow-lg">
           <ul className="text-2xl font-semibold text-[#1b1640]">
@@ -56,7 +58,7 @@ export function SiteFooter() {
           <p className="text-3xl font-semibold">Balasanka Group of Companies</p>
           <p lang="ta" className="mt-1 text-lg">பாலசங்கா குழுமம்</p>
           <p className="mt-5 max-w-[42ch] leading-relaxed">
-            {ALL_SHOWROOMS.length} showrooms in {TOWNS.join(", ").replace(/, ([^,]*)$/, " and $1")}.
+            {ALL_SHOWROOMS.length} showrooms in {TOWNS.join(", ").replace(/, ([^,]*)$/, " and $1")}, and our dhal and tamarind factory in Theni.
           </p>
           <p className="mt-4">Write to us at <a className={`inline-block py-1 font-semibold ${LINK}`} href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a></p>
         </div>
@@ -92,26 +94,32 @@ export function ShowroomRow({ s, showTown = false, tone = "light" }: { s: Showro
   );
 }
 
-/** The businesses as linked tinted cards, each with its drawing, used at the foot of pages to move between them. */
+/** Every business as a card: title, one line under it, and where it links. */
+const CARDS = [
+  ...SHOWROOM_GROUPS.map((g) => ({ key: g.key, title: g.title, sub: `${g.showrooms.length} showrooms`, href: groupHref(`/${g.slug}`) })),
+  { key: FOODS.key, title: FOODS.title, sub: "Factory in Theni", href: groupHref(`/${FOODS.slug}`) },
+];
+
+/** The businesses as linked tinted cards, used at the foot of pages to move between them. */
 export function BusinessLinks({ except }: { except?: string }) {
-  const list = SHOWROOM_GROUPS.filter((g) => g.key !== except);
+  const list = CARDS.filter((g) => g.key !== except);
   return (
     <section aria-labelledby="h-our-businesses" className={`${WRAP} py-14 sm:py-20`}>
       <h2 data-reveal id="h-our-businesses" className="text-2xl font-semibold sm:text-3xl">{except ? "Our other businesses" : "Our businesses"}</h2>
-      <nav data-reveal aria-labelledby="h-our-businesses" className={`mt-8 grid gap-4 ${list.length === 3 ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
+      <nav data-reveal aria-labelledby="h-our-businesses" className={`mt-8 grid gap-4 md:grid-cols-2 ${list.length === 3 ? "lg:grid-cols-3" : ""}`}>
         {list.map((g) => <BusinessBlock key={g.key} g={g} />)}
       </nav>
     </section>
   );
 }
 
-function BusinessBlock({ g }: { g: ShowroomGroup }) {
+function BusinessBlock({ g }: { g: (typeof CARDS)[number] }) {
   const c = CHAPTER[g.key];
   return (
-    <a href={groupHref(`/${g.slug}`)} className={`${c.field} ${c.ink} group flex items-center justify-between gap-4 rounded-xl px-6 py-5 hover:brightness-[0.97]`}>
+    <a href={g.href} className={`${c.field} ${c.ink} group flex items-center justify-between gap-4 rounded-xl px-6 py-5 hover:brightness-[0.97]`}>
       <span>
         <span className="block text-xl font-semibold group-hover:underline">{g.title}</span>
-        <span className={`mt-1 block ${c.soft}`}>{g.showrooms.length} showrooms</span>
+        <span className={`mt-1 block ${c.soft}`}>{g.sub}</span>
       </span>
       <span aria-hidden className="text-2xl text-[#d9261c] transition-transform group-hover:translate-x-1">→</span>
     </a>

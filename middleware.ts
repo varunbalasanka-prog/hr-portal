@@ -6,7 +6,7 @@ const PUBLIC_PREFIXES = ["/login", "/onboard", "/letters", "/api/sync-sheet", "/
 const NO_SESSION = ["/onboard", "/letters", "/api/cron", "/api/cleanup", "/api/sync-sheet", "/api/digilocker", "/apply", "/j/", "/privacy", "/careers", "/robots.txt", "/sitemap.xml", "/llms.txt", "/indexnow-", "/jobs/", "/group"];
 // The company site domain: its pages are served from /group; anything else belongs to the HR site.
 const GROUP_HOSTS = ["balasanka.in", "www.balasanka.in"];
-const GROUP_PAGE = /^\/(jewellery|watches-and-eyewear|two-wheelers|about|contact|showrooms(\/[a-z]+)?)\/?$/;
+const GROUP_PAGE = /^\/(jewellery|watches-and-eyewear|two-wheelers|dhal-and-tamarind|about|contact|showrooms(\/[a-z]+)?)\/?$/;
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;

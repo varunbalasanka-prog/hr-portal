@@ -40,6 +40,26 @@ export const BRAND_NOTES: Record<string, string> = {
  * Shown as plain names until the official logo files from each brand's dealer kit are added (logo: "/brands/<file>").
  * Partner logos must be used as supplied: never recoloured or redrawn.
  */
+/**
+ * The food business (varun, 3 Nov 2026): dhal and seedless tamarind from the group's factory in Theni,
+ * sold wholesale to shops and traders and at the factory outlet. Sri Balasanka Mills is no longer running.
+ * No chana dhal and no plain (with-seed) tamarind.
+ */
+export const FOODS = {
+  key: "foods",
+  slug: "dhal-and-tamarind",
+  title: "Dhal and tamarind",
+  tamil: "பருப்பு, புளி",
+  blurb: "Toor, urad and moong dhal and seedless tamarind from our factory in Theni, for shops, traders and families.",
+  products: ["Toor dhal", "Urad dhal", "Moong dhal", "Seedless tamarind"],
+  brands: [
+    { name: "SGT", note: "Tamarind, since 1966. Where the group began." },
+    { name: "Balasanka Dhal", note: "Since 1991." },
+    { name: "Sanka Dhal", note: "Since 1995." },
+    { name: "Akshaya Dhal", note: "Since 2016." },
+  ],
+};
+
 export const BRAND_STRIP: { name: string; note: string; logo?: string }[] = [
   { name: "TVS", note: "Authorised dealer" },
   { name: "Honda", note: "Authorised dealer" },
@@ -52,6 +72,10 @@ export const BRAND_STRIP: { name: string; note: string; logo?: string }[] = [
   { name: "Titan", note: "Franchise store" },
   { name: "Fastrack", note: "Franchise store" },
   { name: "Titan Eye+", note: "Franchise store" },
+  { name: "Akshaya Dhal", note: "Our own brand" },
+  { name: "Balasanka Dhal", note: "Our own brand" },
+  { name: "Sanka Dhal", note: "Our own brand" },
+  { name: "SGT", note: "Our tamarind, since 1966" },
 ];
 
 export const SHOWROOM_GROUPS: ShowroomGroup[] = [
