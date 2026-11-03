@@ -60,7 +60,7 @@ const STORY: { year: string; title: string; text: string }[] = [
   {
     year: "2025",
     title: "Zora",
-    text: "Zora by Akshaya Velli, its more luxurious line, opens in Theni.",
+    text: "Zora by Akshaya Velli, its more luxurious line, opens in Theni for silver jewellery, silver gifts and pooja articles.",
   },
 ];
 

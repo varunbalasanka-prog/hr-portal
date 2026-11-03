@@ -20,7 +20,7 @@ export const townSlug = (town: string) => town.toLowerCase();
 /** One plain line per brand, shown on the business pages. Facts only: nothing here is a claim about quality or size. */
 export const BRAND_NOTES: Record<string, string> = {
   "Akshaya Velli": "Our own jewellery house. Velli is the Tamil word for silver.",
-  Zora: "Zora by Akshaya Velli, the more luxurious line of Akshaya Velli.",
+  Zora: "Zora by Akshaya Velli, its more luxurious line: silver jewellery, silver gifts and pooja articles.",
   Tanishq: "Tanishq gold and diamond jewellery, a Titan Company brand, in a franchise showroom run by us.",
   "Mia by Tanishq": "Light, everyday jewellery from Tanishq.",
   CaratLane: "Diamond and gold jewellery from CaratLane, a Titan Company brand.",

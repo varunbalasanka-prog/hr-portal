@@ -21,7 +21,7 @@ Our first two-wheeler dealership, Shri Murugesan Motors, opened in Theni in 1997
 
 ## Jewellery, watches and eyewear
 
-In 2019 our first jewellery store, Tanishq, opened in Theni. Titan, Titan Eye+, Mia by Tanishq and CaratLane stores followed. In 2021 we opened Akshaya Velli in Theni, our own silver jewellery house, and then took it to Tenkasi, Tirunelveli and Sivakasi. In 2025, Zora by Akshaya Velli, its more luxurious line, opened in Theni.
+In 2019 our first jewellery store, Tanishq, opened in Theni. Titan, Titan Eye+, Mia by Tanishq and CaratLane stores followed. In 2021 we opened Akshaya Velli in Theni, our own silver jewellery house, and then took it to Tenkasi, Tirunelveli and Sivakasi. In 2025, Zora by Akshaya Velli, its more luxurious line, opened in Theni for silver jewellery, silver gifts and pooja articles.
 
 ## Today
 
