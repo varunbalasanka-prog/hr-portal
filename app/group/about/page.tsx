@@ -60,7 +60,7 @@ const STORY: { year: string; title: string; text: string }[] = [
   {
     year: "2025",
     title: "Zora",
-    text: "Zora by Akshaya Velli opens in Theni for silver gifts and pooja articles.",
+    text: "Zora by Akshaya Velli, its more luxurious line, opens in Theni.",
   },
 ];
 
@@ -109,7 +109,7 @@ export default function AboutPage() {
               </p>
               <p className="max-w-[48ch]">
                 Our own brands are Akshaya Dhal, Balasanka Dhal, Sanka Dhal
-                and SGT tamarind, and the jewellery houses Akshaya Velli and Zora. We run them
+                and SGT tamarind, and the jewellery house Akshaya Velli with its luxury line Zora. We run them
                 alongside dealerships and franchise stores for TVS, Honda,
                 Tanishq, Mia by Tanishq, CaratLane, Titan, Titan Eye+ and
                 Fastrack.

@@ -20,7 +20,7 @@ export const townSlug = (town: string) => town.toLowerCase();
 /** One plain line per brand, shown on the business pages. Facts only: nothing here is a claim about quality or size. */
 export const BRAND_NOTES: Record<string, string> = {
   "Akshaya Velli": "Our own jewellery house. Velli is the Tamil word for silver.",
-  Zora: "Zora by Akshaya Velli, our newer jewellery label.",
+  Zora: "Zora by Akshaya Velli, the more luxurious line of Akshaya Velli.",
   Tanishq: "Tanishq gold and diamond jewellery, a Titan Company brand, in a franchise showroom run by us.",
   "Mia by Tanishq": "Light, everyday jewellery from Tanishq.",
   CaratLane: "Diamond and gold jewellery from CaratLane, a Titan Company brand.",
@@ -65,7 +65,7 @@ export const BRAND_STRIP: { name: string; note: string; logo?: string }[] = [
   { name: "Honda", note: "Authorised dealer" },
   { name: "Balasanka Cycle Bazar", note: "Our own store" },
   { name: "Akshaya Velli", note: "Our own jewellery house" },
-  { name: "Zora", note: "Our own label" },
+  { name: "Zora", note: "Akshaya Velli's luxury line" },
   { name: "Tanishq", note: "Franchise store" },
   { name: "Mia by Tanishq", note: "Franchise store" },
   { name: "CaratLane", note: "Franchise store" },
@@ -96,7 +96,7 @@ export const SHOWROOM_GROUPS: ShowroomGroup[] = [
   },
   {
     key: "jewellery", slug: "jewellery", title: "Jewellery", tamil: "நகைகள்",
-    blurb: "Our own Akshaya Velli and Zora showrooms, and Tanishq, Mia by Tanishq and CaratLane stores.",
+    blurb: "Our own Akshaya Velli showrooms and its luxury line Zora, and Tanishq, Mia by Tanishq and CaratLane stores.",
     showrooms: [
       { brand: "Akshaya Velli", town: "Theni", company: "Balasanka Akshaya Velli LLP", street: "No 441/2A Balasanka Plaza, Periyakulam Road", pin: "625531" },
       { brand: "Akshaya Velli", town: "Rajapalayam", company: "Balasanka Akshaya Velli LLP", street: "Madurai Road, Cotton Market", pin: "626117" },
