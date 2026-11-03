@@ -6,7 +6,7 @@ const PUBLIC_PREFIXES = ["/login", "/onboard", "/letters", "/api/sync-sheet", "/
 const NO_SESSION = ["/onboard", "/letters", "/api/cron", "/api/cleanup", "/api/sync-sheet", "/api/digilocker", "/apply", "/j/", "/privacy", "/careers", "/robots.txt", "/sitemap.xml", "/llms.txt", "/indexnow-", "/jobs/", "/group"];
 // The company site domain: its pages are served from /group; anything else belongs to the HR site.
 const GROUP_HOSTS = ["balasanka.in", "www.balasanka.in"];
-const GROUP_PAGE = /^\/(jewellery|watches-and-eyewear|two-wheelers|about|contact|showrooms(\/[a-z]+)?)\/?$/;
+const GROUP_PAGE = /^\/(jewellery|watches-and-eyewear|two-wheelers|about|contact|showrooms(\/[a-z]+)?|blog(\/[a-z0-9-]+)?)\/?$/;
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
@@ -19,6 +19,7 @@ export async function middleware(request: NextRequest) {
       return new NextResponse("User-agent: *\nAllow: /\n\nSitemap: https://balasanka.in/sitemap.xml\n", { headers: { "content-type": "text/plain" } });
     }
     if (path === "/sitemap.xml") return NextResponse.rewrite(new URL("/group/sitemap.xml", request.url));
+    if (path === "/llms.txt") return NextResponse.rewrite(new URL("/group/llms.txt", request.url));
     // IndexNow's key file must sit on each site it pings for.
     if (path.startsWith("/indexnow-")) return NextResponse.next();
     return NextResponse.redirect(new URL(`${path}${request.nextUrl.search}`, "https://hr.balasanka.in"), 308);
