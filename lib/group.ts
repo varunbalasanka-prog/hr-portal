@@ -44,19 +44,21 @@ export const BRAND_NOTES: Record<string, string> = {
  * The food business (varun, 3 Nov 2026): dhal and seedless tamarind from the group's factory in Theni,
  * sold wholesale to shops and traders and at the factory outlet. Sri Balasanka Mills is no longer running.
  * No chana dhal and no plain (with-seed) tamarind.
+ * Everything is sold under one brand, Akshaya Dhal. Balasanka Dhal and Sanka Dhal are factory names, not brands,
+ * and SGT is where the tamarind trade began in 1966 (history, not a current brand). varun, 3 Nov 2026.
  */
 export const FOODS = {
   key: "foods",
   slug: "dhal-and-tamarind",
   title: "Dhal and tamarind",
   tamil: "பருப்பு, புளி",
-  blurb: "Toor, urad and moong dhal and seedless tamarind from our factory in Theni, for shops, traders and families.",
+  blurb: "Akshaya Dhal toor, urad and moong dhal and seedless tamarind, made at our factories in Theni for shops, traders and families.",
   products: ["Toor dhal", "Urad dhal", "Moong dhal", "Seedless tamarind"],
+  /** The one brand first, then the two factory names, each with one line. */
   brands: [
-    { name: "SGT", note: "Tamarind, since 1966. Where the group began." },
-    { name: "Balasanka Dhal", note: "Since 1991." },
-    { name: "Sanka Dhal", note: "Since 1995." },
-    { name: "Akshaya Dhal", note: "Since 2016." },
+    { name: "Akshaya Dhal", note: "Our brand for every dhal and our seedless tamarind." },
+    { name: "Balasanka Dhal", note: "Our first pulses factory in Theni, since 1991." },
+    { name: "Sanka Dhal", note: "Our second factory in Theni, since 1995." },
   ],
 };
 
@@ -73,9 +75,6 @@ export const BRAND_STRIP: { name: string; note: string; logo?: string }[] = [
   { name: "Fastrack", note: "Franchise store" },
   { name: "Titan Eye+", note: "Franchise store" },
   { name: "Akshaya Dhal", note: "Our own brand" },
-  { name: "Balasanka Dhal", note: "Our own brand" },
-  { name: "Sanka Dhal", note: "Our own brand" },
-  { name: "SGT", note: "Our tamarind, since 1966" },
 ];
 
 export const SHOWROOM_GROUPS: ShowroomGroup[] = [
