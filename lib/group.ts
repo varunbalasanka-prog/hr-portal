@@ -20,7 +20,7 @@ export const townSlug = (town: string) => town.toLowerCase();
 /** One plain line per brand, shown on the business pages. Facts only: nothing here is a claim about quality or size. */
 export const BRAND_NOTES: Record<string, string> = {
   "Akshaya Velli": "Our own jewellery house. Velli is the Tamil word for silver.",
-  Zora: "Zora by Akshaya Velli, our newer jewellery label.",
+  Zora: "Zora by Akshaya Velli, its more luxurious line: silver jewellery, silver gifts and pooja articles.",
   Tanishq: "Tanishq gold and diamond jewellery, a Titan Company brand, in a franchise showroom run by us.",
   "Mia by Tanishq": "Light, everyday jewellery from Tanishq.",
   CaratLane: "Diamond and gold jewellery from CaratLane, a Titan Company brand.",
@@ -40,18 +40,42 @@ export const BRAND_NOTES: Record<string, string> = {
  * Shown as plain names until the official logo files from each brand's dealer kit are added (logo: "/brands/<file>").
  * Partner logos must be used as supplied: never recoloured or redrawn.
  */
+/**
+ * The food business (varun, 3 Nov 2026): dhal and seedless tamarind from the group's factory in Theni,
+ * sold wholesale to shops and traders and at the factory outlet. Sri Balasanka Mills is no longer running.
+ * No chana dhal and no plain (with-seed) tamarind.
+ */
+export const FOODS = {
+  key: "foods",
+  slug: "dhal-and-tamarind",
+  title: "Dhal and tamarind",
+  tamil: "பருப்பு, புளி",
+  blurb: "Toor, urad and moong dhal and seedless tamarind from our factory in Theni, for shops, traders and families.",
+  products: ["Toor dhal", "Urad dhal", "Moong dhal", "Seedless tamarind"],
+  brands: [
+    { name: "SGT", note: "Tamarind, since 1966. Where the group began." },
+    { name: "Balasanka Dhal", note: "Since 1991." },
+    { name: "Sanka Dhal", note: "Since 1995." },
+    { name: "Akshaya Dhal", note: "Since 2016." },
+  ],
+};
+
 export const BRAND_STRIP: { name: string; note: string; logo?: string }[] = [
   { name: "TVS", note: "Authorised dealer" },
   { name: "Honda", note: "Authorised dealer" },
   { name: "Balasanka Cycle Bazar", note: "Our own store" },
   { name: "Akshaya Velli", note: "Our own jewellery house" },
-  { name: "Zora", note: "Our own label" },
+  { name: "Zora", note: "Akshaya Velli's luxury line" },
   { name: "Tanishq", note: "Franchise store" },
   { name: "Mia by Tanishq", note: "Franchise store" },
   { name: "CaratLane", note: "Franchise store" },
   { name: "Titan", note: "Franchise store" },
   { name: "Fastrack", note: "Franchise store" },
   { name: "Titan Eye+", note: "Franchise store" },
+  { name: "Akshaya Dhal", note: "Our own brand" },
+  { name: "Balasanka Dhal", note: "Our own brand" },
+  { name: "Sanka Dhal", note: "Our own brand" },
+  { name: "SGT", note: "Our tamarind, since 1966" },
 ];
 
 export const SHOWROOM_GROUPS: ShowroomGroup[] = [
@@ -72,7 +96,7 @@ export const SHOWROOM_GROUPS: ShowroomGroup[] = [
   },
   {
     key: "jewellery", slug: "jewellery", title: "Jewellery", tamil: "நகைகள்",
-    blurb: "Our own Akshaya Velli and Zora showrooms, and Tanishq, Mia by Tanishq and CaratLane stores.",
+    blurb: "Our own Akshaya Velli showrooms and its luxury line Zora, and Tanishq, Mia by Tanishq and CaratLane stores.",
     showrooms: [
       { brand: "Akshaya Velli", town: "Theni", company: "Balasanka Akshaya Velli LLP", street: "No 441/2A Balasanka Plaza, Periyakulam Road", pin: "625531" },
       { brand: "Akshaya Velli", town: "Rajapalayam", company: "Balasanka Akshaya Velli LLP", street: "Madurai Road, Cotton Market", pin: "626117" },

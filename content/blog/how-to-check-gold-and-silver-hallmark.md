@@ -41,7 +41,7 @@ If what the app shows doesn't match the piece in your hand, for example it says 
 
 Silver can be hallmarked too. The most common grade is **925**, meaning 92.5% pure silver, often called sterling silver. Hallmarking is not compulsory for silver the way it is for most gold jewellery, so it is worth asking whether a silver piece is hallmarked and what grade it is.
 
-> At Akshaya Velli and Zora, our silver is sold hallmarked. If you can't find the mark on a piece, ask any of our staff to show it to you.
+> At Akshaya Velli and its luxury line Zora, our silver is sold hallmarked. If you can't find the mark on a piece, ask any of our staff to show it to you.
 
 ## Before you pay
 

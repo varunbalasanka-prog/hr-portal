@@ -67,11 +67,37 @@ export function Scooter() {
   );
 }
 
+/** A jute sack of dhal standing in its arch, heaped with gold grains, with a seedless tamarind block and a brass measure beside it. */
+export function DhalSack() {
+  const grains = [
+    [168, 186], [184, 176], [200, 170], [216, 176], [232, 186], [176, 194], [192, 188], [208, 188], [224, 194], [200, 182],
+  ];
+  return (
+    <svg viewBox="0 0 400 400" role="img" aria-label="Drawing of a sack of dhal and a block of seedless tamarind" className="w-full">
+      <Stage />
+      <Line d="M128 372C116 312 122 252 146 212L254 212C278 252 284 312 272 372Z" fill={GOLD_PALE} />
+      <Line d="M150 300C182 294 218 294 250 300" width={3} />
+      <Line d="M146 330C182 324 218 324 254 330" width={3} />
+      <Line d={rect(172, 244, 56, 36, 6)} fill={RED} />
+      <Line d="M140 214C150 194 176 166 200 162C224 166 250 194 260 214Z" fill={GOLD_PALE} />
+      {grains.map(([x, y], i) => (
+        <Line key={i} d={circle(x, y, 5)} fill={GOLD} width={3} className="g-shimmer" style={{ "--d": `${i * 350}ms` } as React.CSSProperties} />
+      ))}
+      <Line d="M134 216C170 206 230 206 266 216" />
+      <Line d={rect(284, 330, 58, 42, 8)} fill="#ffffff" />
+      <Line d="M292 344C304 340 316 348 328 342" width={3} />
+      <Line d="M292 358C306 354 318 362 334 356" width={3} />
+      <Line d="M64 372L70 324H118L124 372Z" fill={GOLD} />
+      <Line d="M66 324C80 316 108 316 122 324" />
+    </svg>
+  );
+}
+
 /** The picture for each business, keyed like SHOWROOM_GROUPS. Outlines draw once on arrival; loops run only while on screen. */
 export function BusinessArt({ k, className = "" }: { k: string; className?: string }) {
   return (
     <div data-reveal="draw" data-live className={`w-full max-w-[10rem] md:max-w-[20rem] ${className}`}>
-      {k === "jewellery" ? <Jhumka /> : k === "watches" ? <WatchFace /> : <Scooter />}
+      {k === "jewellery" ? <Jhumka /> : k === "watches" ? <WatchFace /> : k === "foods" ? <DhalSack /> : <Scooter />}
     </div>
   );
 }

@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { ALL_SHOWROOMS, CAREERS_SITE, SHOWROOM_GROUPS, TOWNS, brandsOf, groupHref, groupSchema, ldJson, pageMeta, townSlug } from "@/lib/group";
+import { ALL_SHOWROOMS, CAREERS_SITE, FOODS, SHOWROOM_GROUPS, TOWNS, brandsOf, groupHref, groupSchema, ldJson, pageMeta, townSlug } from "@/lib/group";
 import { BusinessArt } from "./art";
 import { BrandStrip, CHAPTER, LINK, NEUTRAL, WRAP } from "./ui";
 
-const DESCRIPTION = `Balasanka Group of Companies runs ${ALL_SHOWROOMS.length} jewellery, watch, eyewear and two-wheeler showrooms in ${TOWNS.length} towns of South Tamil Nadu.`;
+const DESCRIPTION = `Balasanka Group of Companies runs ${ALL_SHOWROOMS.length} jewellery, watch, eyewear and two-wheeler showrooms in ${TOWNS.length} towns of South Tamil Nadu, and makes Akshaya Dhal, Balasanka Dhal, Sanka Dhal and SGT seedless tamarind in Theni.`;
 
 export const metadata: Metadata = pageMeta("Balasanka Group of Companies | பாலசங்கா குழுமம்", DESCRIPTION, "/");
 
@@ -21,7 +21,7 @@ export default function GroupHome() {
             <h1 className="text-4xl font-semibold leading-tight text-[#2b2177] sm:text-5xl">Balasanka Group of Companies</h1>
             <p lang="ta" className="mt-2 text-2xl font-semibold text-[#d9261c]">பாலசங்கா குழுமம்</p>
             <p className="mt-6 max-w-[44ch] text-lg leading-relaxed text-[#4a4666] sm:text-xl">
-              Two-wheelers, jewellery, watches and eyewear at {ALL_SHOWROOMS.length} showrooms in {TOWNS.length} towns of South Tamil Nadu, from Theni to Tirunelveli. A Theni family business since 1966.
+              Two-wheelers, jewellery, watches and eyewear at {ALL_SHOWROOMS.length} showrooms in {TOWNS.length} towns of South Tamil Nadu, from Theni to Tirunelveli, and dhal and seedless tamarind from our factory in Theni. A Theni family business since 1966.
             </p>
             <a href={groupHref("/showrooms")} className="mt-8 inline-flex h-12 items-center rounded-md bg-[#d9261c] px-6 font-semibold text-white hover:bg-[#b81f17]">Find a showroom near you</a>
           </div>
@@ -59,6 +59,28 @@ export default function GroupHome() {
           </section>
         );
       })}
+
+      <section aria-labelledby="h-foods" className={`${CHAPTER[FOODS.key].field} ${WRAP} py-14 sm:py-20`}>
+        <div className="grid items-center gap-10 md:grid-cols-12">
+          <div data-reveal className="md:col-span-7">
+            <h2 id="h-foods" className="text-3xl font-semibold sm:text-4xl">{FOODS.title}</h2>
+            <p lang="ta" className="mt-1 text-lg text-[#4a4666]">{FOODS.tamil}</p>
+            <p className="mt-4 max-w-[48ch] text-lg leading-relaxed text-[#4a4666]">{FOODS.blurb}</p>
+            <ul className="mt-6 grid gap-x-8 gap-y-3 sm:grid-cols-2">
+              {FOODS.brands.map((b) => (
+                <li key={b.name}>
+                  <p className="text-lg font-semibold">{b.name}</p>
+                  <p className="text-[15px] text-[#4a4666]">{b.note}</p>
+                </li>
+              ))}
+            </ul>
+            <a href={groupHref(`/${FOODS.slug}`)} className={`mt-7 inline-block font-semibold ${LINK}`}>See what we make and how to buy</a>
+          </div>
+          <div className="order-first flex md:order-none md:col-span-5 md:justify-center">
+            <BusinessArt k={FOODS.key} />
+          </div>
+        </div>
+      </section>
 
       <section aria-labelledby="h-towns" className={`${WRAP} py-14 sm:py-20`}>
         <h2 data-reveal id="h-towns" className="text-3xl font-semibold sm:text-4xl">Find us in {TOWNS.length} towns</h2>
