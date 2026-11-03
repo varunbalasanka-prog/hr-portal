@@ -1,6 +1,6 @@
-import { BLOG_CATEGORIES, showDate, type Block, type Inline, type Post } from "@/lib/blog";
+import { BLOG_CATEGORIES, safeHref, showDate, type Block, type Inline, type Post } from "@/lib/blog-format";
 import { groupHref } from "@/lib/group";
-import { LINK } from "../ui";
+import { LINK } from "../style";
 
 /** Inline text. Links to other sites open in a new tab; our own ("/about") stay in place and work on previews too. */
 function Text({ parts }: { parts: Inline[] }) {
@@ -8,7 +8,7 @@ function Text({ parts }: { parts: Inline[] }) {
     <>
       {parts.map((p, i) =>
         p.t === "bold" ? <strong key={i} className="font-semibold">{p.v}</strong>
-        : p.t === "link" ? (
+        : p.t === "link" && safeHref(p.href) ? (
           <a key={i} href={p.href.startsWith("/") ? groupHref(p.href) : p.href} className={LINK} {...(/^https?:/.test(p.href) ? { target: "_blank", rel: "noopener" } : {})}>{p.v}</a>
         )
         : <span key={i}>{p.v}</span>)}

@@ -1,12 +1,7 @@
 import type { Metadata } from "next";
-import {
-  ALL_SHOWROOMS,
-  COMPANIES,
-  pageMeta,
-  SHOWROOM_GROUPS,
-  TOWNS,
-  brandsOf,
-} from "@/lib/group";
+import { brandsOf, listOf, pageMeta } from "@/lib/group";
+import { fill } from "@/lib/site";
+import { getSite } from "@/lib/site-data";
 import { BusinessLinks, WRAP } from "../ui";
 
 export const metadata: Metadata = pageMeta(
@@ -15,76 +10,17 @@ export const metadata: Metadata = pageMeta(
   "/about",
 );
 
-const list = (xs: string[]) => xs.join(", ").replace(/, ([^,]*)$/, " and $1");
+const list = listOf;
 
-/**
- * The group's story: a short pick from varun's own timeline (2 Nov 2026), which wins over the research PDF.
- * Left out on purpose: Bombay Dyeing, turnover, leadership names and businesses outside the showroom list.
- */
-const STORY: { year: string; title: string; text: string }[] = [
-  {
-    year: "1966",
-    title: "SGT",
-    text: "Mr. S. Thirupathi Nadar starts SGT, a small tamarind business in Theni. Honest weight and fair grading become the family's way of doing business.",
-  },
-  {
-    year: "1991",
-    title: "Balasanka Dhal",
-    text: "The family starts processing pulses, and sets up Asia's first solar dryer for pulses. Sanka Dhal follows in 1995 and Akshaya Dhal in 2016.",
-  },
-  {
-    year: "1997",
-    title: "Shri Murugesan Motors",
-    text: "Our first two-wheeler dealership opens in Theni.",
-  },
-  {
-    year: "2001",
-    title: "Sri Balasanka Mills",
-    text: "A mill in Theni turned tamarind seeds, once thrown away, into starch for textile printing and husk for fuel.",
-  },
-  {
-    year: "2004–2017",
-    title: "Two-wheelers across the south",
-    text: "Balasanka TVS, Mukesh Motors (Honda), Yasotha Motors and Tenkasi TVS take our dealerships to six towns.",
-  },
-  {
-    year: "2019",
-    title: "Tanishq",
-    text: "Our first jewellery store, Tanishq, opens in Theni. Titan, Titan Eye+, Mia and CaratLane stores follow.",
-  },
-  {
-    year: "2021",
-    title: "Akshaya Velli",
-    text: "Our own silver jewellery house opens in Theni, then in Tenkasi, Tirunelveli and Sivakasi.",
-  },
-  {
-    year: "2025",
-    title: "Zora",
-    text: "Zora by Akshaya Velli, its more luxurious line, opens in Theni for silver jewellery, silver gifts and pooja articles.",
-  },
-];
-
-const VALUES: { title: string; text: string }[] = [
-  {
-    title: "Purity you can check",
-    text: "Hallmarked silver and gold, graded produce and genuine spares. What we sell is what the label says.",
-  },
-  {
-    title: "A family business",
-    text: "The same family has run the group for three generations, and the people you meet in our showrooms are from your town.",
-  },
-  {
-    title: "Close to home",
-    text: `Every showroom is in South Tamil Nadu, within a few hours of Theni, where the group began.`,
-  },
-];
-
-export default function AboutPage() {
-  const brands = new Set(SHOWROOM_GROUPS.flatMap(brandsOf));
+/** The group's story, values and companies. The words are edited on the Website page (About page). */
+export default async function AboutPage() {
+  const site = await getSite();
+  const { story: STORY, values: VALUES } = site.about;
+  const brands = new Set(site.groups.flatMap(brandsOf));
   const facts: [string, string][] = [
     ["1966", "the year we began"],
-    [String(ALL_SHOWROOMS.length), "showrooms today"],
-    [String(TOWNS.length), "towns"],
+    [String(site.all.length), "showrooms today"],
+    [String(site.towns.length), "towns"],
     [String(brands.size), "brands"],
   ];
 
@@ -100,20 +36,7 @@ export default function AboutPage() {
               பாலசங்கா குழுமம்
             </p>
             <div className="mt-6 space-y-4 text-lg leading-relaxed text-[#4a4666]">
-              <p className="max-w-[48ch]">
-                Balasanka Group began in Theni in 1966 as a small tamarind
-                processing unit. Sixty years later, the same family runs
-                two-wheeler dealerships, jewellery houses and lifestyle stores
-                across {list(TOWNS)}, and still makes dhal and seedless
-                tamarind at its factory in Theni.
-              </p>
-              <p className="max-w-[48ch]">
-                Our own brands are Akshaya Dhal, Balasanka Dhal, Sanka Dhal
-                and SGT tamarind, and the jewellery house Akshaya Velli with its luxury line Zora. We run them
-                alongside dealerships and franchise stores for TVS, Honda,
-                Tanishq, Mia by Tanishq, CaratLane, Titan, Titan Eye+ and
-                Fastrack.
-              </p>
+              {site.about.intro.map((t, i) => <p key={i} className="max-w-[48ch]">{fill(t, site)}</p>)}
             </div>
           </div>
           <dl className="grid grid-cols-2 gap-x-6 gap-y-6 rounded-xl bg-[#f4f4f6] p-6 sm:p-8 md:col-span-5">
@@ -142,7 +65,7 @@ export default function AboutPage() {
         <ol className="mt-12 border-l-2 border-[#d8d3c4]">
           {STORY.map((s) => (
             <li
-              key={s.year}
+              key={`${s.year}-${s.title}`}
               data-reveal
               className="relative pb-10 pl-8 last:pb-0 md:grid md:grid-cols-[7.5rem_1fr] md:gap-6"
             >
@@ -200,9 +123,9 @@ export default function AboutPage() {
           Our companies
         </h2>
         <ul className="mt-12 grid gap-x-12 gap-y-10 md:grid-cols-2">
-          {COMPANIES.map((c) => {
-            const rooms = ALL_SHOWROOMS.filter((s) => s.company === c);
-            const kinds = SHOWROOM_GROUPS.filter((g) =>
+          {site.companies.map((c) => {
+            const rooms = site.all.filter((s) => s.company === c);
+            const kinds = site.groups.filter((g) =>
               g.showrooms.some((s) => s.company === c),
             ).map((g) => g.title.toLowerCase());
             return (
@@ -223,7 +146,7 @@ export default function AboutPage() {
         </ul>
       </section>
 
-      <BusinessLinks />
+      <BusinessLinks site={site} />
     </>
   );
 }

@@ -1,19 +1,26 @@
 import type { Metadata } from "next";
-import { ALL_SHOWROOMS, CAREERS_SITE, FOODS, SHOWROOM_GROUPS, TOWNS, brandsOf, groupHref, groupSchema, ldJson, pageMeta, townSlug } from "@/lib/group";
+import { CAREERS_SITE, FOODS_PAGE, brandsOf, groupHref, groupSchema, ldJson, pageMeta, townSlug, type ShowroomGroup } from "@/lib/group";
+import { fill } from "@/lib/site";
+import { getSite } from "@/lib/site-data";
 import { BusinessArt } from "./art";
 import { BrandStrip, CHAPTER, LINK, NEUTRAL, WRAP } from "./ui";
 
-const DESCRIPTION = `Balasanka Group of Companies runs ${ALL_SHOWROOMS.length} jewellery, watch, eyewear and two-wheeler showrooms in ${TOWNS.length} towns of South Tamil Nadu, and makes Akshaya Dhal, Balasanka Dhal, Sanka Dhal and SGT seedless tamarind in Theni.`;
+export async function generateMetadata(): Promise<Metadata> {
+  const site = await getSite();
+  const foodBrands = site.foods.brands.map((b) => b.name);
+  const description = `Balasanka Group of Companies runs ${site.all.length} jewellery, watch, eyewear and two-wheeler showrooms in ${site.towns.length} towns of South Tamil Nadu${foodBrands.length ? `, and makes ${foodBrands.join(", ").replace(/, ([^,]*)$/, " and $1")} in Theni` : ""}.`;
+  return pageMeta("Balasanka Group of Companies | பாலசங்கா குழுமம்", description, "/");
+}
 
-export const metadata: Metadata = pageMeta("Balasanka Group of Companies | பாலசங்கா குழுமம்", DESCRIPTION, "/");
-
-const townsOf = (g: (typeof SHOWROOM_GROUPS)[number], brand: string) => [...new Set(g.showrooms.filter((s) => s.brand === brand).map((s) => s.town))];
+const townsOf = (g: ShowroomGroup, brand: string) => [...new Set(g.showrooms.filter((s) => s.brand === brand).map((s) => s.town))];
 
 /** Company homepage, served at balasanka.in. Every section uses the same two columns: words on the left, picture on the right. */
-export default function GroupHome() {
+export default async function GroupHome() {
+  const site = await getSite();
+  const FOODS = { ...site.foods, ...FOODS_PAGE };
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ldJson(groupSchema()) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ldJson(groupSchema(site)) }} />
 
       <section className={`${WRAP} pb-2 pt-10 sm:pb-6 sm:pt-16`}>
         <div className="grid items-center gap-10 md:grid-cols-12">
@@ -21,7 +28,7 @@ export default function GroupHome() {
             <h1 className="text-4xl font-semibold leading-tight text-[#2b2177] sm:text-5xl">Balasanka Group of Companies</h1>
             <p lang="ta" className="mt-2 text-2xl font-semibold text-[#d9261c]">பாலசங்கா குழுமம்</p>
             <p className="mt-6 max-w-[44ch] text-lg leading-relaxed text-[#4a4666] sm:text-xl">
-              Two-wheelers, jewellery, watches and eyewear at {ALL_SHOWROOMS.length} showrooms in {TOWNS.length} towns of South Tamil Nadu, from Theni to Tirunelveli, and dhal and seedless tamarind from our factory in Theni. A Theni family business since 1966.
+              {fill(site.home.intro, site)}
             </p>
             <a href={groupHref("/showrooms")} className="mt-8 inline-flex h-12 items-center rounded-md bg-[#d9261c] px-6 font-semibold text-white hover:bg-[#b81f17]">Find a showroom near you</a>
           </div>
@@ -30,10 +37,10 @@ export default function GroupHome() {
         </div>
       </section>
 
-      <BrandStrip />
+      <BrandStrip site={site} />
       <div aria-hidden className="g-border" />
 
-      {SHOWROOM_GROUPS.map((g) => {
+      {site.groups.filter((g) => g.showrooms.length).map((g) => {
         const c = CHAPTER[g.key];
         return (
           <section key={g.key} aria-labelledby={`h-${g.key}`} className={`${c.field} ${WRAP} py-14 sm:py-20`}>
@@ -83,11 +90,11 @@ export default function GroupHome() {
       </section>
 
       <section aria-labelledby="h-towns" className={`${WRAP} py-14 sm:py-20`}>
-        <h2 data-reveal id="h-towns" className="text-3xl font-semibold sm:text-4xl">Find us in {TOWNS.length} towns</h2>
+        <h2 data-reveal id="h-towns" className="text-3xl font-semibold sm:text-4xl">Find us in {site.towns.length} towns</h2>
         <p className="mt-3 max-w-[48ch] text-lg leading-relaxed text-[#4a4666]">Choose your town for the address of every showroom there.</p>
         <ul data-reveal className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">
-          {TOWNS.map((t) => {
-            const n = ALL_SHOWROOMS.filter((s) => s.town === t).length;
+          {site.towns.map((t) => {
+            const n = site.all.filter((s) => s.town === t).length;
             return (
               <li key={t}>
                 <a href={groupHref(`/showrooms/${townSlug(t)}`)} className={`block rounded-lg ${NEUTRAL} px-4 py-4 transition-colors hover:bg-[#e9e9ef]`}>
@@ -105,7 +112,7 @@ export default function GroupHome() {
           <div>
             <h2 id="h-careers" className="text-3xl font-semibold sm:text-4xl">Work with us</h2>
             <p className="mt-3 max-w-[50ch] text-lg leading-relaxed text-[#4a4666]">
-              We hire for sales, service, accounts and customer care at our showrooms, and freshers are welcome. Apply online in about five minutes.
+              {site.home.careers}
             </p>
           </div>
           <a href={`${CAREERS_SITE}/careers`} className="inline-flex h-12 shrink-0 items-center justify-center rounded-md bg-[#2b2177] px-6 font-semibold text-white hover:bg-[#1e1758]">See open jobs</a>

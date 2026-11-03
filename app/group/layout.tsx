@@ -5,6 +5,7 @@ import "@fontsource/hind-madurai/tamil-400.css";
 import "@fontsource/hind-madurai/tamil-600.css";
 import "./group.css";
 import { GROUP_SITE } from "@/lib/group";
+import { getSite } from "@/lib/site-data";
 import { ScrollReveal } from "./scroll-reveal";
 import { SiteFooter, SiteHeader } from "./ui";
 
@@ -29,7 +30,11 @@ export const metadata: Metadata = {
 const BOOT = `try{var d=document.documentElement,m=localStorage.getItem("bs-motion");if(m==="calm")d.dataset.motion="calm";var sd=navigator.connection&&navigator.connection.saveData;if(m!=="calm"&&!sd&&!sessionStorage.getItem("bs-intro")){d.dataset.intro="on";sessionStorage.setItem("bs-intro","1");setTimeout(function(){d.dataset.intro="done"},1600)}}catch(e){}`;
 
 /** The balasanka.in company site: one typeface (Hind Madurai, drawn for Tamil and Latin) in two weights, the logo's indigo and red. */
-export default function GroupLayout({ children }: { children: React.ReactNode }) {
+// Edits on the Website page refresh pages at once; this hourly refresh is only a safety net.
+export const revalidate = 3600;
+
+export default async function GroupLayout({ children }: { children: React.ReactNode }) {
+  const site = await getSite();
   return (
     <>
       <script dangerouslySetInnerHTML={{ __html: BOOT }} />
@@ -39,9 +44,9 @@ export default function GroupLayout({ children }: { children: React.ReactNode })
       </div>
       <div className="g-site min-h-screen bg-white font-['Hind_Madurai',ui-sans-serif,system-ui,sans-serif] text-[17px] text-[#1b1640] antialiased">
         <div aria-hidden className="g-progress" />
-        <SiteHeader />
+        <SiteHeader site={site} />
         <main>{children}</main>
-        <SiteFooter />
+        <SiteFooter site={site} />
         <ScrollReveal />
       </div>
     </>

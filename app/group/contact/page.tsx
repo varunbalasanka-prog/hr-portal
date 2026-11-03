@@ -1,26 +1,29 @@
 import type { Metadata } from "next";
-import { CAREERS_SITE, CONTACT_EMAIL, TOWNS, groupHref, pageMeta, townSlug } from "@/lib/group";
+import { CAREERS_SITE, groupHref, pageMeta, townSlug } from "@/lib/group";
+import { getSite } from "@/lib/site-data";
 import { EmailLink } from "../email-link";
 import { WRAP } from "../ui";
 
 export const metadata: Metadata = pageMeta("Contact | Balasanka Group", "How to reach the Balasanka Group: email, showroom addresses and jobs.", "/contact");
 
 /** Three ways to reach us, each as a row: what it is for on the left, how on the right. */
-export default function ContactPage() {
+export default async function ContactPage() {
+  const site = await getSite();
+  const c = site.contact;
   const rows: [string, React.ReactNode][] = [
     ["Write to us", <>
-      <EmailLink email={CONTACT_EMAIL} className="text-2xl font-semibold sm:text-3xl" />
-      <p className="mt-3 max-w-[44ch] text-lg leading-relaxed text-[#4a4666]">For questions about the group, our companies or working with us as a brand partner.</p>
+      <EmailLink email={c.email} className="text-2xl font-semibold sm:text-3xl" />
+      <p className="mt-3 max-w-[44ch] text-lg leading-relaxed text-[#4a4666]">{c.write}</p>
     </>],
     ["Visit a showroom", <>
       <ul className="flex flex-wrap gap-x-6 gap-y-2 text-xl font-semibold">
-        {TOWNS.map((t) => <li key={t}><a className="inline-block py-1.5 hover:underline" href={groupHref(`/showrooms/${townSlug(t)}`)}>{t}</a></li>)}
+        {site.towns.map((t) => <li key={t}><a className="inline-block py-1.5 hover:underline" href={groupHref(`/showrooms/${townSlug(t)}`)}>{t}</a></li>)}
       </ul>
-      <p className="mt-3 max-w-[44ch] text-lg leading-relaxed text-[#4a4666]">For a purchase, an order or a service booking, the showroom near you can help directly.</p>
+      <p className="mt-3 max-w-[44ch] text-lg leading-relaxed text-[#4a4666]">{c.visit}</p>
     </>],
     ["Find a job", <>
       <a className="inline-flex h-12 items-center rounded-md bg-[#d9261c] px-7 text-lg font-semibold text-white hover:bg-[#b81f17]" href={`${CAREERS_SITE}/careers`}>See open jobs</a>
-      <p className="mt-3 max-w-[44ch] text-lg leading-relaxed text-[#4a4666]">Every open job at our showrooms, with an online application that takes about five minutes.</p>
+      <p className="mt-3 max-w-[44ch] text-lg leading-relaxed text-[#4a4666]">{c.jobs}</p>
     </>],
   ];
   return (

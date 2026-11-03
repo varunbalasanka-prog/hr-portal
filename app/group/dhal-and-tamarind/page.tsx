@@ -1,15 +1,21 @@
 import type { Metadata } from "next";
-import { CONTACT_EMAIL, FOODS, GROUP_SITE, breadcrumbSchema, ldJson, pageMeta } from "@/lib/group";
+import { FOODS_PAGE, GROUP_SITE, breadcrumbSchema, ldJson, pageMeta } from "@/lib/group";
+import { getSite } from "@/lib/site-data";
 import { BusinessArt } from "../art";
 import { EmailLink } from "../email-link";
 import { BusinessLinks, CHAPTER, WRAP } from "../ui";
 
-const DESCRIPTION = `${FOODS.brands.map((b) => b.name).join(", ")}: toor, urad and moong dhal and seedless tamarind from the Balasanka Group factory in Theni, Tamil Nadu. Wholesale and factory outlet.`;
-
-export const metadata: Metadata = pageMeta(`${FOODS.title} | Balasanka Group`, DESCRIPTION, `/${FOODS.slug}`);
+export async function generateMetadata(): Promise<Metadata> {
+  const f = (await getSite()).foods;
+  const description = `${f.brands.map((b) => b.name).join(", ")}: ${f.products.join(", ").toLowerCase()} from the Balasanka Group factory in Theni, Tamil Nadu. Wholesale and factory outlet.`;
+  return pageMeta(`${f.title} | Balasanka Group`, description, `/${FOODS_PAGE.slug}`);
+}
 
 /** The food business: what we make, our brands, and how to buy. Same layout as the showroom business pages. */
-export default function FoodsPage() {
+export default async function FoodsPage() {
+  const site = await getSite();
+  const FOODS = { ...site.foods, ...FOODS_PAGE };
+  const CONTACT_EMAIL = site.contact.email;
   const c = CHAPTER[FOODS.key];
   const schema = [
     {
@@ -57,7 +63,7 @@ export default function FoodsPage() {
         <section aria-labelledby="f-brands" className="mt-14 grid gap-6 sm:mt-16 md:grid-cols-12">
           <div data-reveal className="md:col-span-5">
             <h2 id="f-brands" className="text-3xl font-semibold sm:text-4xl">Our brands</h2>
-            <p className="mt-3 max-w-[34ch] text-lg leading-relaxed text-[#4a4666]">All four are our own, made in Theni.</p>
+            <p className="mt-3 max-w-[34ch] text-lg leading-relaxed text-[#4a4666]">All are our own, made in Theni.</p>
           </div>
           <ul data-reveal className="grid gap-x-10 sm:grid-cols-2 md:col-span-7">
             {FOODS.brands.map((b) => (
@@ -81,7 +87,7 @@ export default function FoodsPage() {
         </section>
       </div>
 
-      <BusinessLinks except={FOODS.key} />
+      <BusinessLinks site={site} except={FOODS.key} />
     </>
   );
 }
