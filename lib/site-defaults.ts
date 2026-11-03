@@ -37,7 +37,7 @@ const STORY: SiteContent["about"]["story"] = [
   {
     year: "1966",
     title: "SGT",
-    text: "Mr. S. Thirupathi Nadar starts SGT, a small tamarind business in Theni. Honest weight and fair grading become the family's way of doing business. Our seedless tamarind is sold today as Akshaya Tamarind.",
+    text: "Mr. S. Thirupathi Nadar starts SGT, a small tamarind business in Theni. Honest weight and fair grading become the family's way of doing business. Our tamarind is sold today as Akshaya Tamarind.",
   },
   {
     year: "1991",
@@ -130,10 +130,10 @@ export const DEFAULT_CONTENT: SiteContent = {
   { name: "Fastrack", note: "Franchise store" },
   { name: "Titan Eye+", note: "Franchise store" },
   { name: "Akshaya Dhal", note: "Our own dhal" },
-  { name: "Akshaya Tamarind", note: "Our own seedless tamarind" },
+  { name: "Akshaya Tamarind", note: "Our own tamarind" },
 ],
   home: {
-    intro: "Two-wheelers, jewellery, watches and eyewear at {showrooms} showrooms in {towns} towns of South Tamil Nadu, from Theni to Tirunelveli, and dhal and seedless tamarind from our factories in Theni. A Theni family business since 1966.",
+    intro: "Two-wheelers, jewellery, watches and eyewear at {showrooms} showrooms in {towns} towns of South Tamil Nadu, from Theni to Tirunelveli, and dhal and tamarind from our factories in Theni. A Theni family business since 1966.",
     careers: "We hire for sales, service, accounts and customer care at our showrooms, and freshers are welcome. Apply online in about five minutes.",
   },
   /**
@@ -142,8 +142,8 @@ export const DEFAULT_CONTENT: SiteContent = {
    */
   about: {
     intro: [
-      "Balasanka Group began in Theni in 1966 as a small tamarind processing unit. Sixty years later, the same family runs two-wheeler dealerships, jewellery houses and lifestyle stores across {town list}, and still makes dhal and seedless tamarind at its factories in Theni.",
-      "Our own brands are Akshaya Dhal for dhal, Akshaya Tamarind for seedless tamarind, and the jewellery house Akshaya Velli with its luxury line Zora. We run them alongside dealerships and franchise stores for TVS, Honda, Tanishq, Mia by Tanishq, CaratLane, Titan, Titan Eye+ and Fastrack.",
+      "Balasanka Group began in Theni in 1966 as a small tamarind processing unit. Sixty years later, the same family runs two-wheeler dealerships, jewellery houses and lifestyle stores across {town list}, and still makes dhal and tamarind at its factories in Theni.",
+      "Our own brands are Akshaya Dhal for dhal, Akshaya Tamarind for tamarind, and the jewellery house Akshaya Velli with its luxury line Zora. We run them alongside dealerships and franchise stores for TVS, Honda, Tanishq, Mia by Tanishq, CaratLane, Titan, Titan Eye+ and Fastrack.",
     ],
     story: STORY,
     values: VALUES,
@@ -155,18 +155,18 @@ export const DEFAULT_CONTENT: SiteContent = {
     jobs: "Every open job at our showrooms, with an online application that takes about five minutes.",
   },
   /**
-   * The food business (varun, 3 Nov 2026): dhal and seedless tamarind from the group's factory in Theni,
+   * The food business (varun, 3 Nov 2026): dhal and tamarind (block, chappati and seedless) from the group's factory in Theni,
    * sold wholesale to shops and traders and at the factory outlet. Sri Balasanka Mills is no longer running.
-   * No chana dhal and no plain (with-seed) tamarind.
+   * No chana dhal.
    */
   foods: {
   title: "Dhal and tamarind",
   tamil: "பருப்பு, புளி",
-  blurb: "Toor, urad and moong dhal sold as Akshaya Dhal, and seedless tamarind sold as Akshaya Tamarind, from our factories in Theni for shops, traders and families.",
-  products: ["Toor dhal", "Urad dhal", "Moong dhal", "Seedless tamarind"],
+  blurb: "Toor, urad and moong dhal sold as Akshaya Dhal, and block, chappati and seedless tamarind sold as Akshaya Tamarind, from our factories in Theni for shops, traders and families.",
+  products: ["Toor dhal", "Urad dhal", "Moong dhal", "Block tamarind", "Chappati tamarind", "Seedless tamarind"],
   brands: [
     { name: "Akshaya Dhal", note: "Our toor, urad and moong dhal." },
-    { name: "Akshaya Tamarind", note: "Our seedless tamarind. The tamarind business began as SGT in 1966." },
+    { name: "Akshaya Tamarind", note: "Our block, chappati and seedless tamarind. The tamarind business began as SGT in 1966." },
   ],
 },
 };

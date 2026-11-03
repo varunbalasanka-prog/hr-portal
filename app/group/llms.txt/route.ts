@@ -12,7 +12,7 @@ export async function GET() {
   const lines = [
     "# Balasanka Group of Companies",
     "",
-    `> Family business founded in 1966 in Theni, Tamil Nadu, India. Runs two-wheeler dealerships, jewellery showrooms and watch and eyewear stores in ${TOWNS.join(", ")}, and makes dhal and seedless tamarind in Theni.`,
+    `> Family business founded in 1966 in Theni, Tamil Nadu, India. Runs two-wheeler dealerships, jewellery showrooms and watch and eyewear stores in ${TOWNS.join(", ")}, and makes dhal and tamarind (block, chappati and seedless) in Theni.`,
     "",
     "## Pages",
     "",
