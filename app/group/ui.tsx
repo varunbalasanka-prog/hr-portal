@@ -60,7 +60,7 @@ export function SiteFooter() {
           <p className="text-3xl font-semibold">Balasanka Group of Companies</p>
           <p lang="ta" className="mt-1 text-lg">பாலசங்கா குழுமம்</p>
           <p className="mt-5 max-w-[42ch] leading-relaxed">
-            {ALL_SHOWROOMS.length} showrooms in {TOWNS.join(", ").replace(/, ([^,]*)$/, " and $1")}, and our dhal and tamarind factory in Theni.
+            {ALL_SHOWROOMS.length} showrooms in {TOWNS.join(", ").replace(/, ([^,]*)$/, " and $1")}, and our Akshaya Dhal factories in Theni.
           </p>
           <p className="mt-4">Write to us at <EmailLink email={CONTACT_EMAIL} className="inline-block py-1 font-semibold" /></p>
         </div>

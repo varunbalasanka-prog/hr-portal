@@ -30,7 +30,7 @@ const STORY: { year: string; title: string; text: string }[] = [
   {
     year: "1991",
     title: "Balasanka Dhal",
-    text: "The family starts processing pulses, and sets up Asia's first solar dryer for pulses. Sanka Dhal follows in 1995 and Akshaya Dhal in 2016.",
+    text: "The family opens its first pulses factory, Balasanka Dhal, and sets up Asia's first solar dryer for pulses. A second factory, Sanka Dhal, follows in 1995, and in 2016 the Akshaya Dhal brand, which now carries all our dhal and seedless tamarind.",
   },
   {
     year: "1997",
@@ -105,11 +105,11 @@ export default function AboutPage() {
                 processing unit. Sixty years later, the same family runs
                 two-wheeler dealerships, jewellery houses and lifestyle stores
                 across {list(TOWNS)}, and still makes dhal and seedless
-                tamarind at its factory in Theni.
+                tamarind at its factories in Theni.
               </p>
               <p className="max-w-[48ch]">
-                Our own brands are Akshaya Dhal, Balasanka Dhal, Sanka Dhal
-                and SGT tamarind, and the jewellery house Akshaya Velli with its luxury line Zora. We run them
+                Our own brands are Akshaya Dhal, for dhal and seedless tamarind,
+                and the jewellery house Akshaya Velli with its luxury line Zora. We run them
                 alongside dealerships and franchise stores for TVS, Honda,
                 Tanishq, Mia by Tanishq, CaratLane, Titan, Titan Eye+ and
                 Fastrack.

@@ -4,7 +4,7 @@ import { BusinessArt } from "../art";
 import { EmailLink } from "../email-link";
 import { BusinessLinks, CHAPTER, WRAP } from "../ui";
 
-const DESCRIPTION = `${FOODS.brands.map((b) => b.name).join(", ")}: toor, urad and moong dhal and seedless tamarind from the Balasanka Group factory in Theni, Tamil Nadu. Wholesale and factory outlet.`;
+const DESCRIPTION = `${FOODS.brands[0].name} toor, urad and moong dhal and seedless tamarind from the Balasanka Group factories in Theni, Tamil Nadu. Wholesale and factory outlet.`;
 
 export const metadata: Metadata = pageMeta(`${FOODS.title} | Balasanka Group`, DESCRIPTION, `/${FOODS.slug}`);
 
@@ -18,7 +18,7 @@ export default function FoodsPage() {
       name: "Balasanka Group dhal and tamarind",
       url: `${GROUP_SITE}/${FOODS.slug}`,
       parentOrganization: { "@id": `${GROUP_SITE}/#org` },
-      brand: FOODS.brands.map((b) => ({ "@type": "Brand", name: b.name })),
+      brand: { "@type": "Brand", name: FOODS.brands[0].name },
       address: { "@type": "PostalAddress", addressLocality: "Theni", addressRegion: "Tamil Nadu", addressCountry: "IN" },
       email: CONTACT_EMAIL,
       makesOffer: FOODS.products.map((p) => ({ "@type": "Offer", itemOffered: { "@type": "Product", name: p } })),
@@ -34,7 +34,7 @@ export default function FoodsPage() {
             <h1 className="text-4xl font-semibold leading-tight sm:text-5xl">{FOODS.title}</h1>
             <p lang="ta" className="mt-2 text-xl text-[#4a4666]">{FOODS.tamil}</p>
             <p className="mt-5 max-w-[46ch] text-lg leading-relaxed text-[#4a4666]">
-              {FOODS.blurb} The group began with tamarind in Theni in 1966, and the family still runs the factory today.
+              {FOODS.blurb} The group began with tamarind in Theni in 1966, as SGT, and the family still runs the factories today.
             </p>
           </div>
           <div className="flex md:col-span-5 md:justify-center">
@@ -47,7 +47,7 @@ export default function FoodsPage() {
         <section aria-labelledby="f-what" className="grid gap-6 md:grid-cols-12">
           <div data-reveal className="md:col-span-5">
             <h2 id="f-what" className="text-3xl font-semibold sm:text-4xl">What we make</h2>
-            <p className="mt-3 max-w-[34ch] text-lg leading-relaxed text-[#4a4666]">Made at our factory in Theni.</p>
+            <p className="mt-3 max-w-[34ch] text-lg leading-relaxed text-[#4a4666]">Made at our factories in Theni.</p>
           </div>
           <ul data-reveal className="grid gap-x-10 gap-y-1 sm:grid-cols-2 md:col-span-7">
             {FOODS.products.map((p) => <li key={p} className="py-3 text-lg font-semibold">{p}</li>)}
@@ -56,8 +56,8 @@ export default function FoodsPage() {
 
         <section aria-labelledby="f-brands" className="mt-14 grid gap-6 sm:mt-16 md:grid-cols-12">
           <div data-reveal className="md:col-span-5">
-            <h2 id="f-brands" className="text-3xl font-semibold sm:text-4xl">Our brands</h2>
-            <p className="mt-3 max-w-[34ch] text-lg leading-relaxed text-[#4a4666]">All four are our own, made in Theni.</p>
+            <h2 id="f-brands" className="text-3xl font-semibold sm:text-4xl">Our brand and factories</h2>
+            <p className="mt-3 max-w-[34ch] text-lg leading-relaxed text-[#4a4666]">Everything we sell carries the Akshaya Dhal name.</p>
           </div>
           <ul data-reveal className="grid gap-x-10 sm:grid-cols-2 md:col-span-7">
             {FOODS.brands.map((b) => (
