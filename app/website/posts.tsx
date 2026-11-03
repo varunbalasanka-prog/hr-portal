@@ -3,8 +3,8 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { deletePost, savePost } from "@/app/actions/website";
 import { Badge, Field, Flash } from "@/components/ui";
-import { PostBody } from "@/app/group/blog/post-parts";
-import { parseBody, showDate } from "@/lib/blog-format";
+import { showDate } from "@/lib/blog-format";
+import { RichEditor } from "./rich-editor";
 import { POST_CATEGORIES, checkPost, slugFromTitle, type PostCategory, type PostRow } from "@/lib/site";
 
 type Msg = { ok: boolean; message: string } | null;
@@ -17,7 +17,7 @@ function stateOf(p: PostRow) {
   return { label: "Live", tone: "green" as const };
 }
 
-/** The blog: every post with its state, and an editor with a live preview. Drafts are never shown to visitors. */
+/** The blog: every post with its state, and an editor that shows the post as it will look. Drafts are never shown to visitors. */
 export function PostsEditor({ rows, ready, viewBase }: { rows: PostRow[]; ready: boolean; viewBase: string }) {
   const [open, setOpen] = useState<PostRow | null>(null);
   const [msg, setMsg] = useState<Msg>(null);
@@ -58,10 +58,8 @@ function PostForm({ start, viewBase, ready, onClose }: { start: PostRow; viewBas
   const [slugTouched, setSlugTouched] = useState(!!start.id);
   const [msg, setMsg] = useState<Msg>(null);
   const [pending, run] = useTransition();
-  const [tab, setTab] = useState<"write" | "preview">("write");
   const wasLive = start.status === "published";
   const set = <K extends keyof PostRow>(k: K, v: PostRow[K]) => setP((x) => ({ ...x, [k]: v }));
-  const blocks = useMemo(() => parseBody(p.body), [p.body]);
   const words = p.body.split(/\s+/).filter(Boolean).length;
 
   const save = (status: PostRow["status"], close = false) => {
@@ -107,33 +105,10 @@ function PostForm({ start, viewBase, ready, onClose }: { start: PostRow; viewBas
       </div>
       {wasLive && p.slug !== start.slug && <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">Changing the web address of a live post breaks links people and Google already have.</p>}
 
-      <div className="mt-4 flex gap-1 border-b border-slate-200 text-sm lg:hidden" role="tablist">
-        {(["write", "preview"] as const).map((t) => (
-          <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)} className={`-mb-px border-b-2 px-3 py-2 font-semibold ${tab === t ? "border-brand text-brand" : "border-transparent text-slate-500"}`}>{t === "write" ? "Write" : "Preview"}</button>
-        ))}
-      </div>
-      <div className="mt-3 grid gap-4 lg:grid-cols-2">
-        <div className={tab === "preview" ? "hidden lg:block" : ""}>
-          <Field label={`Post text (${words} words)`}>
-            <textarea className="input min-h-[28rem] font-mono !text-[13px] leading-relaxed" value={p.body} onChange={(e) => set("body", e.target.value)} />
-          </Field>
-          <details className="mt-2 text-xs text-slate-600">
-            <summary className="cursor-pointer font-semibold">How to format</summary>
-            <ul className="mt-2 space-y-1">
-              <li>Leave an empty line between paragraphs.</li>
-              <li><code>## Heading</code> for a heading, <code>### Smaller heading</code> under it.</li>
-              <li><code>- item</code> on each line for a bullet list, <code>1. item</code> for a numbered list.</li>
-              <li><code>**words**</code> for bold. <code>[words](/jewellery)</code> links to our page, <code>[words](https://…)</code> to another site.</li>
-              <li><code>&gt; text</code> for a shaded note box.</li>
-            </ul>
-          </details>
-        </div>
-        <div className={`rounded-xl border border-slate-200 bg-white p-4 sm:p-6 ${tab === "write" ? "hidden lg:block" : ""}`} aria-label="Preview">
-          <p className="mb-1 text-xs font-semibold uppercase text-slate-400">Preview</p>
-          <h2 className="text-3xl font-semibold leading-tight text-[#2b2177]">{p.title || "Title"}</h2>
-          <p className="mt-3 text-lg leading-relaxed text-[#4a4666]">{p.description}</p>
-          <div className="mt-4 border-t border-[#1b1640]/10 pt-1"><PostBody blocks={blocks} /></div>
-        </div>
+      <div className="mt-4">
+        <p className="label mb-1.5">Post text ({words} words)</p>
+        <p className="mb-2 text-xs text-slate-500">Type as normal. To change some words, select them and tap a button: <b>Heading</b>, <b>Bold</b>, <b>List</b>, <b>Link</b> or <b>Note box</b>. Tap the same button again to undo it. It looks here as it will on the website.</p>
+        <RichEditor value={start.body} onChange={(md) => set("body", md)} />
       </div>
 
       <div className="mt-4"><Flash msg={msg} /></div>
