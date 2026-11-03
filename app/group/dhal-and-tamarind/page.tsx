@@ -7,7 +7,7 @@ import { BusinessLinks, CHAPTER, WRAP } from "../ui";
 
 export async function generateMetadata(): Promise<Metadata> {
   const f = (await getSite()).foods;
-  const description = `${f.brands[0]?.name ?? ""} ${f.products.join(", ").toLowerCase()} from the Balasanka Group factories in Theni, Tamil Nadu. Wholesale and factory outlet.`;
+  const description = `${f.products.join(", ")} (${f.brands.map((b) => b.name).join(", ")}) from the Balasanka Group factories in Theni, Tamil Nadu. Wholesale and factory outlet.`;
   return pageMeta(`${f.title} | Balasanka Group`, description, `/${FOODS_PAGE.slug}`);
 }
 
@@ -24,7 +24,7 @@ export default async function FoodsPage() {
       name: "Balasanka Group dhal and tamarind",
       url: `${GROUP_SITE}/${FOODS.slug}`,
       parentOrganization: { "@id": `${GROUP_SITE}/#org` },
-      brand: { "@type": "Brand", name: FOODS.brands[0]?.name },
+      brand: FOODS.brands.map((b) => ({ "@type": "Brand", name: b.name })),
       address: { "@type": "PostalAddress", addressLocality: "Theni", addressRegion: "Tamil Nadu", addressCountry: "IN" },
       email: CONTACT_EMAIL,
       makesOffer: FOODS.products.map((p) => ({ "@type": "Offer", itemOffered: { "@type": "Product", name: p } })),
@@ -62,8 +62,8 @@ export default async function FoodsPage() {
 
         <section aria-labelledby="f-brands" className="mt-14 grid gap-6 sm:mt-16 md:grid-cols-12">
           <div data-reveal className="md:col-span-5">
-            <h2 id="f-brands" className="text-3xl font-semibold sm:text-4xl">{FOODS.brands.length > 1 ? "Our brand and factories" : "Our brand"}</h2>
-            <p className="mt-3 max-w-[34ch] text-lg leading-relaxed text-[#4a4666]">Everything we sell carries the {FOODS.brands[0]?.name ?? "Akshaya Dhal"} name.</p>
+            <h2 id="f-brands" className="text-3xl font-semibold sm:text-4xl">{FOODS.brands.length > 1 ? "Our brands" : "Our brand"}</h2>
+            <p className="mt-3 max-w-[34ch] text-lg leading-relaxed text-[#4a4666]">Our dhal and our tamarind each have their own name.</p>
           </div>
           <ul data-reveal className="grid gap-x-10 sm:grid-cols-2 md:col-span-7">
             {FOODS.brands.map((b) => (
