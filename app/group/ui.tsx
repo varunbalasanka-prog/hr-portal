@@ -18,6 +18,7 @@ export { LINK };
 const NAV: [string, string][] = [
   ...SHOWROOM_GROUPS.map((g) => [g.title.replace(" and cycles", ""), groupHref(`/${g.slug}`)] as [string, string]),
   ["Showrooms", groupHref("/showrooms")],
+  ["Blog", groupHref("/blog")],
   ["About", groupHref("/about")],
   ["Contact", groupHref("/contact")],
 ];
