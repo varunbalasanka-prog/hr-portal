@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { CONTACT_EMAIL, FOODS, GROUP_SITE, breadcrumbSchema, ldJson, pageMeta } from "@/lib/group";
 import { BusinessArt } from "../art";
-import { BusinessLinks, CHAPTER, LINK, WRAP } from "../ui";
+import { EmailLink } from "../email-link";
+import { BusinessLinks, CHAPTER, WRAP } from "../ui";
 
 const DESCRIPTION = `${FOODS.brands.map((b) => b.name).join(", ")}: toor, urad and moong dhal and seedless tamarind from the Balasanka Group factory in Theni, Tamil Nadu. Wholesale and factory outlet.`;
 
@@ -75,7 +76,7 @@ export default function FoodsPage() {
           <div data-reveal className="space-y-4 text-lg leading-relaxed text-[#4a4666] md:col-span-7">
             <p><span className="font-semibold text-[#1b1640]">Shops and traders:</span> we sell wholesale. Write to us for prices and orders.</p>
             <p><span className="font-semibold text-[#1b1640]">Families:</span> buy at our factory outlet in Theni.</p>
-            <p>Write to <a className={`inline-block py-1 font-semibold text-[#1b1640] ${LINK}`} href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a></p>
+            <p>Write to <EmailLink email={CONTACT_EMAIL} className="inline-block py-1 font-semibold text-[#1b1640]" /></p>
           </div>
         </section>
       </div>

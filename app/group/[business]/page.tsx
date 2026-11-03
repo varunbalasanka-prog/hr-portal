@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { BRAND_NOTES, SHOWROOM_GROUPS, brandsOf, ldJson, pageMeta, pageSchema } from "@/lib/group";
+import { allPosts } from "@/lib/blog";
+import { BRAND_NOTES, SHOWROOM_GROUPS, brandsOf, groupHref, ldJson, pageMeta, pageSchema } from "@/lib/group";
 import { BusinessArt } from "../art";
-import { BusinessLinks, CHAPTER, ShowroomRow, WRAP } from "../ui";
+import { PostList } from "../blog/post-parts";
+import { BusinessLinks, CHAPTER, LINK, ShowroomRow, WRAP } from "../ui";
 
 export const dynamicParams = false;
 export const generateStaticParams = () => SHOWROOM_GROUPS.map((g) => ({ business: g.slug }));
@@ -22,6 +24,7 @@ export default async function BusinessPage({ params }: { params: Promise<{ busin
   if (!g) notFound();
   const c = CHAPTER[g.key];
   const towns = [...new Set(g.showrooms.map((s) => s.town))];
+  const posts = allPosts().filter((p) => p.category === g.key).slice(0, 3);
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ldJson(pageSchema(g.showrooms, [[g.title, `/${g.slug}`]])) }} />
@@ -56,6 +59,14 @@ export default async function BusinessPage({ params }: { params: Promise<{ busin
           );
         })}
       </div>
+
+      {posts.length > 0 && (
+        <section aria-labelledby="h-guides" className={`${WRAP} pt-14 sm:pt-20`}>
+          <h2 data-reveal id="h-guides" className="text-2xl font-semibold sm:text-3xl">Guides from our blog</h2>
+          <PostList posts={posts} href={(s) => groupHref(`/blog/${s}`)} headingLevel={3} />
+          <a href={groupHref("/blog")} className={`inline-block py-2 text-lg ${LINK}`}>All posts</a>
+        </section>
+      )}
 
       <BusinessLinks except={g.key} />
     </>

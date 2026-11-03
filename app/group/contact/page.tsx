@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { CAREERS_SITE, CONTACT_EMAIL, TOWNS, groupHref, pageMeta, townSlug } from "@/lib/group";
-import { LINK, WRAP } from "../ui";
+import { EmailLink } from "../email-link";
+import { WRAP } from "../ui";
 
 export const metadata: Metadata = pageMeta("Contact | Balasanka Group", "How to reach the Balasanka Group: email, showroom addresses and jobs.", "/contact");
 
@@ -8,7 +9,7 @@ export const metadata: Metadata = pageMeta("Contact | Balasanka Group", "How to 
 export default function ContactPage() {
   const rows: [string, React.ReactNode][] = [
     ["Write to us", <>
-      <a className={`text-2xl font-semibold sm:text-3xl ${LINK}`} href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+      <EmailLink email={CONTACT_EMAIL} className="text-2xl font-semibold sm:text-3xl" />
       <p className="mt-3 max-w-[44ch] text-lg leading-relaxed text-[#4a4666]">For questions about the group, our companies or working with us as a brand partner.</p>
     </>],
     ["Visit a showroom", <>

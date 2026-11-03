@@ -1,3 +1,4 @@
+import { EmailLink } from "./email-link";
 import { MotionToggle } from "./motion-toggle";
 import { ALL_SHOWROOMS, BRAND_STRIP, CAREERS_SITE, COMPANIES, CONTACT_EMAIL, FOODS, SHOWROOM_GROUPS, TOWNS, groupHref, type Showroom, fullAddress, mapLink } from "@/lib/group";
 
@@ -20,6 +21,7 @@ const NAV: [string, string][] = [
   ...SHOWROOM_GROUPS.map((g) => [g.title.replace(" and cycles", ""), groupHref(`/${g.slug}`)] as [string, string]),
   ["Dhal and tamarind", groupHref(`/${FOODS.slug}`)],
   ["Showrooms", groupHref("/showrooms")],
+  ["Blog", groupHref("/blog")],
   ["About", groupHref("/about")],
   ["Contact", groupHref("/contact")],
 ];
@@ -60,7 +62,7 @@ export function SiteFooter() {
           <p className="mt-5 max-w-[42ch] leading-relaxed">
             {ALL_SHOWROOMS.length} showrooms in {TOWNS.join(", ").replace(/, ([^,]*)$/, " and $1")}, and our dhal and tamarind factory in Theni.
           </p>
-          <p className="mt-4">Write to us at <a className={`inline-block py-1 font-semibold ${LINK}`} href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a></p>
+          <p className="mt-4">Write to us at <EmailLink email={CONTACT_EMAIL} className="inline-block py-1 font-semibold" /></p>
         </div>
         <div className="md:col-span-4">
           <h2 className="font-semibold">Group companies</h2>
