@@ -11,8 +11,8 @@ export const metadata: Metadata = pageMeta(
 );
 
 /** Every post, newest first. */
-export default function BlogPage() {
-  const posts = allPosts();
+export default async function BlogPage() {
+  const posts = await allPosts();
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ldJson(breadcrumbSchema([["Blog", "/blog"]])) }} />

@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { allPosts, parseBody, parseInline, parsePost } from "../lib/blog";
+import { vi } from "vitest";
+vi.mock("server-only", () => ({}));
+import { parseBody, parseInline, parsePost } from "../lib/blog-format";
+import { filePosts as allPosts } from "../lib/blog";
 
 const post = (front: string, body = "Hello.") => `---\n${front}\n---\n${body}`;
 const ok = "title: T\ndescription: D\ndate: 2026-11-03\ncategory: jewellery";

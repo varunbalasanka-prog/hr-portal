@@ -1,15 +1,21 @@
 import type { Metadata } from "next";
-import { CONTACT_EMAIL, FOODS, GROUP_SITE, breadcrumbSchema, ldJson, pageMeta } from "@/lib/group";
+import { FOODS_PAGE, GROUP_SITE, breadcrumbSchema, ldJson, pageMeta } from "@/lib/group";
+import { getSite } from "@/lib/site-data";
 import { BusinessArt } from "../art";
 import { EmailLink } from "../email-link";
 import { BusinessLinks, CHAPTER, WRAP } from "../ui";
 
-const DESCRIPTION = `${FOODS.brands[0].name} toor, urad and moong dhal and seedless tamarind from the Balasanka Group factories in Theni, Tamil Nadu. Wholesale and factory outlet.`;
-
-export const metadata: Metadata = pageMeta(`${FOODS.title} | Balasanka Group`, DESCRIPTION, `/${FOODS.slug}`);
+export async function generateMetadata(): Promise<Metadata> {
+  const f = (await getSite()).foods;
+  const description = `${f.brands[0]?.name ?? ""} ${f.products.join(", ").toLowerCase()} from the Balasanka Group factories in Theni, Tamil Nadu. Wholesale and factory outlet.`;
+  return pageMeta(`${f.title} | Balasanka Group`, description, `/${FOODS_PAGE.slug}`);
+}
 
 /** The food business: what we make, our brands, and how to buy. Same layout as the showroom business pages. */
-export default function FoodsPage() {
+export default async function FoodsPage() {
+  const site = await getSite();
+  const FOODS = { ...site.foods, ...FOODS_PAGE };
+  const CONTACT_EMAIL = site.contact.email;
   const c = CHAPTER[FOODS.key];
   const schema = [
     {
@@ -18,7 +24,7 @@ export default function FoodsPage() {
       name: "Balasanka Group dhal and tamarind",
       url: `${GROUP_SITE}/${FOODS.slug}`,
       parentOrganization: { "@id": `${GROUP_SITE}/#org` },
-      brand: { "@type": "Brand", name: FOODS.brands[0].name },
+      brand: { "@type": "Brand", name: FOODS.brands[0]?.name },
       address: { "@type": "PostalAddress", addressLocality: "Theni", addressRegion: "Tamil Nadu", addressCountry: "IN" },
       email: CONTACT_EMAIL,
       makesOffer: FOODS.products.map((p) => ({ "@type": "Offer", itemOffered: { "@type": "Product", name: p } })),
@@ -56,8 +62,8 @@ export default function FoodsPage() {
 
         <section aria-labelledby="f-brands" className="mt-14 grid gap-6 sm:mt-16 md:grid-cols-12">
           <div data-reveal className="md:col-span-5">
-            <h2 id="f-brands" className="text-3xl font-semibold sm:text-4xl">Our brand and factories</h2>
-            <p className="mt-3 max-w-[34ch] text-lg leading-relaxed text-[#4a4666]">Everything we sell carries the Akshaya Dhal name.</p>
+            <h2 id="f-brands" className="text-3xl font-semibold sm:text-4xl">{FOODS.brands.length > 1 ? "Our brand and factories" : "Our brand"}</h2>
+            <p className="mt-3 max-w-[34ch] text-lg leading-relaxed text-[#4a4666]">Everything we sell carries the {FOODS.brands[0]?.name ?? "Akshaya Dhal"} name.</p>
           </div>
           <ul data-reveal className="grid gap-x-10 sm:grid-cols-2 md:col-span-7">
             {FOODS.brands.map((b) => (
@@ -81,7 +87,7 @@ export default function FoodsPage() {
         </section>
       </div>
 
-      <BusinessLinks except={FOODS.key} />
+      <BusinessLinks site={site} except={FOODS.key} />
     </>
   );
 }

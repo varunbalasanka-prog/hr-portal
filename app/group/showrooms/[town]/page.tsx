@@ -1,17 +1,18 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { ALL_SHOWROOMS, SHOWROOM_GROUPS, TOWNS, groupHref, ldJson, pageMeta, pageSchema, townSlug } from "@/lib/group";
+import { groupHref, ldJson, pageMeta, pageSchema, townSlug } from "@/lib/group";
+import { getSite } from "@/lib/site-data";
 import { CHAPTER, ShowroomRow, WRAP } from "../../ui";
 
-export const dynamicParams = false;
-export const generateStaticParams = () => TOWNS.map((t) => ({ town: townSlug(t) }));
+// A town added on the Website page gets its page on first visit.
+export const generateStaticParams = async () => (await getSite()).towns.map((t) => ({ town: townSlug(t) }));
 
-const find = (slug: string) => TOWNS.find((t) => townSlug(t) === slug);
+const find = async (slug: string) => (await getSite()).towns.find((t) => townSlug(t) === slug);
 
 export async function generateMetadata({ params }: { params: Promise<{ town: string }> }): Promise<Metadata> {
-  const town = find((await params).town);
+  const town = await find((await params).town);
   if (!town) return {};
-  const brands = [...new Set(ALL_SHOWROOMS.filter((s) => s.town === town).map((s) => s.brand))];
+  const brands = [...new Set((await getSite()).all.filter((s) => s.town === town).map((s) => s.brand))];
   return pageMeta(
     `Showrooms in ${town} | Balasanka Group`,
     `Addresses and directions for Balasanka Group showrooms in ${town}, Tamil Nadu: ${brands.join(", ")}.`,
@@ -21,9 +22,10 @@ export async function generateMetadata({ params }: { params: Promise<{ town: str
 
 /** One town: its showrooms grouped by business, each business on its own colour. */
 export default async function TownPage({ params }: { params: Promise<{ town: string }> }) {
-  const town = find((await params).town);
+  const site = await getSite();
+  const town = await find((await params).town);
   if (!town) notFound();
-  const groups = SHOWROOM_GROUPS.map((g) => ({ g, rooms: g.showrooms.filter((s) => s.town === town) })).filter((x) => x.rooms.length);
+  const groups = site.groups.map((g) => ({ g, rooms: g.showrooms.filter((s) => s.town === town) })).filter((x) => x.rooms.length);
   const total = groups.reduce((n, x) => n + x.rooms.length, 0);
   return (
     <>
@@ -53,7 +55,7 @@ export default async function TownPage({ params }: { params: Promise<{ town: str
       <nav aria-labelledby="other-towns" className={`${WRAP} py-14 sm:py-16`}>
         <h2 data-reveal id="other-towns" className="text-2xl font-semibold sm:text-3xl">Other towns</h2>
         <ul className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-xl font-semibold">
-          {TOWNS.filter((t) => t !== town).map((t) => <li key={t}><a href={groupHref(`/showrooms/${townSlug(t)}`)} className="inline-block py-1.5 hover:underline">{t}</a></li>)}
+          {site.towns.filter((t) => t !== town).map((t) => <li key={t}><a href={groupHref(`/showrooms/${townSlug(t)}`)} className="inline-block py-1.5 hover:underline">{t}</a></li>)}
         </ul>
       </nav>
     </>

@@ -1,17 +1,22 @@
 import type { Metadata } from "next";
-import { ALL_SHOWROOMS, SHOWROOM_GROUPS, TOWNS, groupHref, pageMeta, townSlug } from "@/lib/group";
+import { groupHref, pageMeta, townSlug } from "@/lib/group";
+import { getSite } from "@/lib/site-data";
 import { LINK, NEUTRAL, WRAP } from "../ui";
 
-export const metadata: Metadata = pageMeta(
-  "Showrooms | Balasanka Group",
-  `Addresses and directions for all ${ALL_SHOWROOMS.length} Balasanka Group showrooms in ${TOWNS.length} towns of South Tamil Nadu: ${TOWNS.join(", ")}.`,
-  "/showrooms",
-);
-
-const kindOf = (brand: string) => SHOWROOM_GROUPS.find((g) => g.showrooms.some((s) => s.brand === brand))!.title.toLowerCase();
+export async function generateMetadata(): Promise<Metadata> {
+  const site = await getSite();
+  return pageMeta(
+    "Showrooms | Balasanka Group",
+    `Addresses and directions for all ${site.all.length} Balasanka Group showrooms in ${site.towns.length} towns of South Tamil Nadu: ${site.towns.join(", ")}.`,
+    "/showrooms",
+  );
+}
 
 /** Every town, each as a row: the town on the left, its showrooms by name on the right. */
-export default function ShowroomsPage() {
+export default async function ShowroomsPage() {
+  const site = await getSite();
+  const ALL_SHOWROOMS = site.all, TOWNS = site.towns;
+  const kindOf = (s: (typeof ALL_SHOWROOMS)[number]) => site.groups.find((g) => g.key === s.business)!.title.toLowerCase();
   return (
     <>
       <section className={`${WRAP} pb-8 pt-10 sm:pt-14`}>
@@ -31,7 +36,7 @@ export default function ShowroomsPage() {
               <div className="md:col-span-8">
                 <p className="text-lg leading-relaxed">
                   {rooms.map((s, j) => (
-                    <span key={s.street + s.brand}>{j ? ", " : ""}<span className="font-semibold">{s.brand}</span> <span className="text-[#4a4666]">({kindOf(s.brand)})</span></span>
+                    <span key={s.street + s.brand}>{j ? ", " : ""}<span className="font-semibold">{s.brand}</span> <span className="text-[#4a4666]">({kindOf(s)})</span></span>
                   ))}
                 </p>
                 <a href={groupHref(`/showrooms/${townSlug(t)}`)} className={`mt-3 inline-block text-lg font-normal ${LINK}`}>Addresses in {t}</a>

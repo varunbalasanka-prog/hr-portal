@@ -5,11 +5,11 @@ import { CAREERS_SITE, GROUP_SITE, breadcrumbSchema, groupHref, ldJson, pageMeta
 import { LINK, WRAP } from "../../ui";
 import { PostBody, PostList, PostMeta } from "../post-parts";
 
-export const dynamicParams = false;
-export const generateStaticParams = () => allPosts().map((p) => ({ slug: p.slug }));
+// A post published on the Website page gets its page on first visit.
+export const generateStaticParams = async () => (await allPosts()).map((p) => ({ slug: p.slug }));
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
-  const p = findPost((await params).slug);
+  const p = await findPost((await params).slug);
   if (!p) return {};
   const meta = pageMeta(`${p.title} | Balasanka Group`, p.description, `/blog/${p.slug}`);
   return {
@@ -20,11 +20,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 /** One post: title, meta line, body, then where to go next (a showroom page or the jobs) and two more posts. */
 export default async function PostPage({ params }: { params: Promise<{ slug: string }> }) {
-  const p = findPost((await params).slug);
+  const p = await findPost((await params).slug);
   if (!p) notFound();
+  const posts = await allPosts();
   const cat = BLOG_CATEGORIES[p.category];
   const url = `${GROUP_SITE}/blog/${p.slug}`;
-  const more = [...allPosts().filter((x) => x.slug !== p.slug && x.category === p.category), ...allPosts().filter((x) => x.category !== p.category)].slice(0, 2);
+  const more = [...posts.filter((x) => x.slug !== p.slug && x.category === p.category), ...posts.filter((x) => x.category !== p.category)].slice(0, 2);
   const article = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",

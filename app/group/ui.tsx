@@ -1,6 +1,7 @@
 import { EmailLink } from "./email-link";
 import { MotionToggle } from "./motion-toggle";
-import { ALL_SHOWROOMS, BRAND_STRIP, CAREERS_SITE, COMPANIES, CONTACT_EMAIL, FOODS, SHOWROOM_GROUPS, TOWNS, groupHref, type Showroom, fullAddress, mapLink } from "@/lib/group";
+import { CAREERS_SITE, FOODS_PAGE, groupHref, listOf, type Showroom, type Site, fullAddress, mapLink } from "@/lib/group";
+import { LINK } from "./style";
 
 /** Each business has its own muted tint, told apart by warmth: cool grey-indigo, warm cream, soft neutral. */
 export const CHAPTER: Record<string, { field: string; ink: string; soft: string; link: string }> = {
@@ -14,19 +15,20 @@ export const NEUTRAL = "bg-[#f4f4f6]";
 
 // One content column for the whole site: backgrounds run full width, content always starts on the same left edge.
 export const WRAP = "px-[max(1.25rem,calc((100%-70rem)/2))]";
-const LINK = "underline decoration-[0.08em] underline-offset-[0.2em] hover:decoration-[0.16em]";
 export { LINK };
 
-const NAV: [string, string][] = [
-  ...SHOWROOM_GROUPS.map((g) => [g.title.replace(" and cycles", ""), groupHref(`/${g.slug}`)] as [string, string]),
-  ["Dhal and tamarind", groupHref(`/${FOODS.slug}`)],
+/** The menu: each business by its (editable) title, then the fixed pages. */
+const navOf = (site: Site): [string, string][] => [
+  ...site.groups.map((g) => [g.title.replace(" and cycles", ""), groupHref(`/${g.slug}`)] as [string, string]),
+  [site.foods.title, groupHref(`/${FOODS_PAGE.slug}`)],
   ["Showrooms", groupHref("/showrooms")],
   ["Blog", groupHref("/blog")],
   ["About", groupHref("/about")],
   ["Contact", groupHref("/contact")],
 ];
 
-export function SiteHeader() {
+export function SiteHeader({ site }: { site: Site }) {
+  const NAV = navOf(site);
   return (
     <header className={`${WRAP} pt-[max(0.75rem,env(safe-area-inset-top))] sticky top-0 z-40 flex items-center justify-between gap-6 bg-white pb-3 shadow-[0_1px_0_rgba(27,22,64,0.06)]`}>
       <a href={groupHref("/")} aria-label="Balasanka Group home" className="shrink-0">
@@ -50,7 +52,8 @@ export function SiteHeader() {
   );
 }
 
-export function SiteFooter() {
+export function SiteFooter({ site }: { site: Site }) {
+  const NAV = navOf(site);
   return (
     <>
     <div aria-hidden className="g-border" />
@@ -60,13 +63,13 @@ export function SiteFooter() {
           <p className="text-3xl font-semibold">Balasanka Group of Companies</p>
           <p lang="ta" className="mt-1 text-lg">பாலசங்கா குழுமம்</p>
           <p className="mt-5 max-w-[42ch] leading-relaxed">
-            {ALL_SHOWROOMS.length} showrooms in {TOWNS.join(", ").replace(/, ([^,]*)$/, " and $1")}, and our Akshaya Dhal factories in Theni.
+            {site.all.length} showrooms in {listOf(site.towns)}, and our {site.foods.brands[0]?.name ?? "Akshaya Dhal"} factories in Theni.
           </p>
-          <p className="mt-4">Write to us at <EmailLink email={CONTACT_EMAIL} className="inline-block py-1 font-semibold" /></p>
+          <p className="mt-4">Write to us at <EmailLink email={site.contact.email} className="inline-block py-1 font-semibold" /></p>
         </div>
         <div className="md:col-span-4">
           <h2 className="font-semibold">Group companies</h2>
-          <ul className="mt-3 space-y-2 text-[15px] leading-snug sm:text-[16px]">{COMPANIES.map((c) => <li key={c}>{c}</li>)}</ul>
+          <ul className="mt-3 space-y-2 text-[15px] leading-snug sm:text-[16px]">{site.companies.map((c) => <li key={c}>{c}</li>)}</ul>
         </div>
         <div className="md:col-span-3">
           <h2 className="font-semibold">Pages</h2>
@@ -96,15 +99,16 @@ export function ShowroomRow({ s, showTown = false, tone = "light" }: { s: Showro
   );
 }
 
+type Card = { key: string; title: string; sub: string; href: string };
 /** Every business as a card: title, one line under it, and where it links. */
-const CARDS = [
-  ...SHOWROOM_GROUPS.map((g) => ({ key: g.key, title: g.title, sub: `${g.showrooms.length} showrooms`, href: groupHref(`/${g.slug}`) })),
-  { key: FOODS.key, title: FOODS.title, sub: "Factory in Theni", href: groupHref(`/${FOODS.slug}`) },
+const cardsOf = (site: Site): Card[] => [
+  ...site.groups.filter((g) => g.showrooms.length).map((g) => ({ key: g.key, title: g.title, sub: `${g.showrooms.length} ${g.showrooms.length === 1 ? "showroom" : "showrooms"}`, href: groupHref(`/${g.slug}`) })),
+  { key: FOODS_PAGE.key, title: site.foods.title, sub: "Factory in Theni", href: groupHref(`/${FOODS_PAGE.slug}`) },
 ];
 
 /** The businesses as linked tinted cards, used at the foot of pages to move between them. */
-export function BusinessLinks({ except }: { except?: string }) {
-  const list = CARDS.filter((g) => g.key !== except);
+export function BusinessLinks({ site, except }: { site: Site; except?: string }) {
+  const list = cardsOf(site).filter((g) => g.key !== except);
   return (
     <section aria-labelledby="h-our-businesses" className={`${WRAP} py-14 sm:py-20`}>
       <h2 data-reveal id="h-our-businesses" className="text-2xl font-semibold sm:text-3xl">{except ? "Our other businesses" : "Our businesses"}</h2>
@@ -115,7 +119,7 @@ export function BusinessLinks({ except }: { except?: string }) {
   );
 }
 
-function BusinessBlock({ g }: { g: (typeof CARDS)[number] }) {
+function BusinessBlock({ g }: { g: Card }) {
   const c = CHAPTER[g.key];
   return (
     <a href={g.href} className={`${c.field} ${c.ink} group flex items-center justify-between gap-4 rounded-xl px-6 py-5 hover:brightness-[0.97]`}>
@@ -132,11 +136,11 @@ function BusinessBlock({ g }: { g: (typeof CARDS)[number] }) {
  * The brands our showrooms sell, drifting slowly sideways (it rests only while off screen
  * and becomes a still list when animations are paused). The second copy only closes the loop.
  */
-export function BrandStrip() {
+export function BrandStrip({ site }: { site: Site }) {
   const row = (hidden: boolean) => (
     <ul aria-hidden={hidden || undefined} className="flex shrink-0 items-center">
-      {BRAND_STRIP.map((b) => (
-        <li key={b.name} className="flex items-center gap-10 px-5 sm:px-7">
+      {site.brand_strip.map((b, i) => (
+        <li key={`${b.name}-${i}`} className="flex items-center gap-10 px-5 sm:px-7">
           <span className="block text-center">
             {b.logo
               // eslint-disable-next-line @next/next/no-img-element

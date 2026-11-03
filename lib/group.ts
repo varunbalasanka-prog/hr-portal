@@ -1,13 +1,12 @@
 /**
- * The company homepage (balasanka.in). Showroom list copied from the branches table on 29 Oct 2026;
- * update it here when a showroom opens, closes or moves.
+ * The company website (balasanka.in): addresses, links and search-engine details. The showrooms and words
+ * themselves are edited on the Website page (lib/site.ts, lib/site-data.ts), so nothing here needs a code change.
  */
+import { FOODS_KEY, FOODS_SLUG, townSlug, type Showroom, type ShowroomGroup, type Site } from "./site";
+export { townSlug, listOf, type Showroom, type ShowroomGroup, type Site } from "./site";
 export const GROUP_SITE = "https://balasanka.in";
 export const CAREERS_SITE = "https://hr.balasanka.in";
-export const CONTACT_EMAIL = "support@balasanka.in";
 
-export type Showroom = { brand: string; town: string; company: string; street: string; pin: string };
-export type ShowroomGroup = { key: string; slug: string; title: string; tamil: string; blurb: string; showrooms: Showroom[] };
 
 /**
  * Pages live under /group on the HR site (and its previews); on balasanka.in the middleware serves them from the root,
@@ -15,128 +14,19 @@ export type ShowroomGroup = { key: string; slug: string; title: string; tamil: s
  */
 export const GROUP_BASE = process.env.VERCEL_ENV === "production" ? "" : "/group";
 export const groupHref = (path: string) => (path === "/" ? GROUP_BASE || "/" : `${GROUP_BASE}${path}`);
-export const townSlug = (town: string) => town.toLowerCase();
+/** The food business has its own page (no showrooms). */
+export const FOODS_PAGE = { key: FOODS_KEY, slug: FOODS_SLUG };
 
-/** One plain line per brand, shown on the business pages. Facts only: nothing here is a claim about quality or size. */
-export const BRAND_NOTES: Record<string, string> = {
-  "Akshaya Velli": "Our own jewellery house. Velli is the Tamil word for silver.",
-  Zora: "Zora by Akshaya Velli, its more luxurious line: silver jewellery, silver gifts and pooja articles.",
-  Tanishq: "Tanishq gold and diamond jewellery, a Titan Company brand, in a franchise showroom run by us.",
-  "Mia by Tanishq": "Light, everyday jewellery from Tanishq.",
-  CaratLane: "Diamond and gold jewellery from CaratLane, a Titan Company brand.",
-  Titan: "Titan watches, in a franchise store run by us.",
-  "Titan Eye+": "Spectacles, sunglasses and eye tests from Titan Eye+.",
-  Fastrack: "Fastrack watches, bags and accessories.",
-  "Balasanka TVS": "TVS motorcycles and scooters, with service and genuine spares.",
-  "Shri Murugesan TVS": "TVS motorcycles and scooters, with service and genuine spares.",
-  "Yasotha Motors": "Two-wheeler sales and service in Theni.",
-  "Mukesh Honda": "Honda motorcycles and scooters, with service and genuine spares.",
-  "Balasanka Cycle Bazar": "Bicycles and cycle accessories.",
-};
-
-
-/**
- * The brands sold at our showrooms, in the homepage's moving strip, in business order.
- * Shown as plain names until the official logo files from each brand's dealer kit are added (logo: "/brands/<file>").
- * Partner logos must be used as supplied: never recoloured or redrawn.
- */
-/**
- * The food business (varun, 3 Nov 2026): dhal and seedless tamarind from the group's factory in Theni,
- * sold wholesale to shops and traders and at the factory outlet. Sri Balasanka Mills is no longer running.
- * No chana dhal and no plain (with-seed) tamarind.
- * Everything is sold under one brand, Akshaya Dhal. Balasanka Dhal and Sanka Dhal are factory names, not brands,
- * and SGT is where the tamarind trade began in 1966 (history, not a current brand). varun, 3 Nov 2026.
- */
-export const FOODS = {
-  key: "foods",
-  slug: "dhal-and-tamarind",
-  title: "Dhal and tamarind",
-  tamil: "பருப்பு, புளி",
-  blurb: "Akshaya Dhal toor, urad and moong dhal and seedless tamarind, made at our factories in Theni for shops, traders and families.",
-  products: ["Toor dhal", "Urad dhal", "Moong dhal", "Seedless tamarind"],
-  /** The one brand first, then the two factory names, each with one line. */
-  brands: [
-    { name: "Akshaya Dhal", note: "Our brand for every dhal and our seedless tamarind." },
-    { name: "Balasanka Dhal", note: "Our first pulses factory in Theni, since 1991." },
-    { name: "Sanka Dhal", note: "Our second factory in Theni, since 1995." },
-  ],
-};
-
-export const BRAND_STRIP: { name: string; note: string; logo?: string }[] = [
-  { name: "TVS", note: "Authorised dealer" },
-  { name: "Honda", note: "Authorised dealer" },
-  { name: "Balasanka Cycle Bazar", note: "Our own store" },
-  { name: "Akshaya Velli", note: "Our own jewellery house" },
-  { name: "Zora", note: "Akshaya Velli's luxury line" },
-  { name: "Tanishq", note: "Franchise store" },
-  { name: "Mia by Tanishq", note: "Franchise store" },
-  { name: "CaratLane", note: "Franchise store" },
-  { name: "Titan", note: "Franchise store" },
-  { name: "Fastrack", note: "Franchise store" },
-  { name: "Titan Eye+", note: "Franchise store" },
-  { name: "Akshaya Dhal", note: "Our own brand" },
-];
-
-export const SHOWROOM_GROUPS: ShowroomGroup[] = [
-  {
-    key: "vehicles", slug: "two-wheelers", title: "Two-wheelers and cycles", tamil: "இருசக்கர வாகனங்கள்",
-    blurb: "TVS and Honda dealerships with sales, service and spares, and a cycle showroom in Theni.",
-    showrooms: [
-      { brand: "Balasanka TVS", town: "Sivakasi", company: "Balasanka Motor Private Ltd", street: "No 441 Virudhunagar Road", pin: "626123" },
-      { brand: "Balasanka TVS", town: "Virudhunagar", company: "Balasanka Motor Private Ltd", street: "97/2 Katcheri Road", pin: "626001" },
-      { brand: "Balasanka TVS", town: "Tenkasi", company: "Balasanka Automobiles LLP", street: "No 18 Housing Board Colony, Madurai Road", pin: "627811" },
-      { brand: "Shri Murugesan TVS", town: "Theni", company: "Shri Murugesan Motor LLP", street: "W8/158 Rathinam Nagar, Periyakulam Road", pin: "625531" },
-      { brand: "Yasotha Motors", town: "Theni", company: "Yasotha Motors", street: "336/2 Periyakulam Road, Unjampatti", pin: "625531" },
-      { brand: "Mukesh Honda", town: "Rajapalayam", company: "Mukesh Motor", street: "1064/A Tenkasi Road, Near Cotton Market", pin: "626117" },
-      { brand: "Mukesh Honda", town: "Sivakasi", company: "Mukesh Motor", street: "462/1 Virudhunagar Road, Thiruthangal", pin: "626130" },
-      { brand: "Mukesh Honda", town: "Srivilliputhur", company: "Mukesh Motor", street: "61/2 61/3 61/4 Madurai Main Road, Ramakrishnapuram", pin: "626135" },
-      { brand: "Balasanka Cycle Bazar", town: "Theni", company: "Balasanka Cycle Bazar", street: "No 339 Rathnam Nagar, Periyakulam Road", pin: "625531" },
-    ],
-  },
-  {
-    key: "jewellery", slug: "jewellery", title: "Jewellery", tamil: "நகைகள்",
-    blurb: "Our own Akshaya Velli showrooms and its luxury line Zora, and Tanishq, Mia by Tanishq and CaratLane stores.",
-    showrooms: [
-      { brand: "Akshaya Velli", town: "Theni", company: "Balasanka Akshaya Velli LLP", street: "No 441/2A Balasanka Plaza, Periyakulam Road", pin: "625531" },
-      { brand: "Akshaya Velli", town: "Rajapalayam", company: "Balasanka Akshaya Velli LLP", street: "Madurai Road, Cotton Market", pin: "626117" },
-      { brand: "Akshaya Velli", town: "Sivakasi", company: "Balasanka Akshaya Velli LLP", street: "200 B Tiruthangal Road", pin: "626123" },
-      { brand: "Akshaya Velli", town: "Tenkasi", company: "Balasanka Akshaya Velli LLP", street: "No 154/42/20 Railway Road", pin: "627811" },
-      { brand: "Akshaya Velli", town: "Tirunelveli", company: "Balasanka Akshaya Velli LLP", street: "167 Trivandrum Road, Murugankuruchi, Palayamkottai", pin: "627002" },
-      { brand: "Zora", town: "Theni", company: "Balasanka Akshaya Velli LLP", street: "1396 Nehruji Road, Periyakulam Main Road", pin: "625531" },
-      { brand: "Tanishq", town: "Theni", company: "Balasanka Jewellery LLP", street: "No 554/3 And 1693/2C Periyakulam Road", pin: "625531" },
-      { brand: "Mia by Tanishq", town: "Madurai", company: "Balasanka Jewellery LLP", street: "11 Anna Salai 80 ft Road, Bye Pass Main Road, KK Nagar", pin: "625020" },
-      { brand: "CaratLane", town: "Theni", company: "Balasanka Jewellery LLP", street: "No 1539/2 Nehruji Road, Periyakulam Main Road, opposite Municipal Office", pin: "625531" },
-      { brand: "CaratLane", town: "Sivakasi", company: "Balasanka Jewellery LLP", street: "200 A Thiruthangal Main Road", pin: "626123" },
-      { brand: "CaratLane", town: "Tirunelveli", company: "Balasanka Jewellery LLP", street: "166 Trivandrum Road, Palayamkottai, Murugankuruchi", pin: "627002" },
-    ],
-  },
-  {
-    key: "watches", slug: "watches-and-eyewear", title: "Watches and eyewear", tamil: "கடிகாரங்கள், கண்ணாடிகள்",
-    blurb: "Titan, Fastrack and Titan Eye+ stores for watches, accessories and eye care.",
-    showrooms: [
-      { brand: "Titan", town: "Tenkasi", company: "Balasanka Jewellery LLP", street: "154/21 Railway Road", pin: "627811" },
-      { brand: "Titan Eye+", town: "Tenkasi", company: "Balasanka Jewellery LLP", street: "154/21 Railway Road", pin: "627811" },
-      { brand: "Fastrack", town: "Madurai", company: "Balasanka Jewellery LLP", street: "11 Anna Salai 80 ft Road, Bye Pass Main Road, KK Nagar", pin: "625020" },
-    ],
-  },
-];
-
-export const ALL_SHOWROOMS = SHOWROOM_GROUPS.flatMap((g) => g.showrooms);
-export const TOWNS = [...new Set(ALL_SHOWROOMS.map((s) => s.town))].sort();
-
-/** Brands in each business, in the order shown. */
+/** Brands in a business, in the order shown. */
 export const brandsOf = (g: ShowroomGroup) => [...new Set(g.showrooms.map((s) => s.brand))];
-/** The group's companies, named on store addresses. */
-export const COMPANIES = [...new Set(ALL_SHOWROOMS.map((s) => s.company))].sort();
 
 export const fullAddress = (s: Showroom) => `${s.street}, ${s.town}, Tamil Nadu ${s.pin}`;
 export const mapLink = (s: Showroom) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${s.brand} ${fullAddress(s)}`)}`;
 
 const ORG_ID = `${GROUP_SITE}/#org`;
-const groupOf = (s: Showroom) => SHOWROOM_GROUPS.find((g) => g.showrooms.includes(s))!;
 /** The closest schema.org shop type for each business, so search engines know what each showroom sells. */
 const storeType = (s: Showroom) =>
-  s.brand === "Balasanka Cycle Bazar" ? "BikeStore" : ({ vehicles: "MotorcycleDealer", jewellery: "JewelryStore" } as Record<string, string>)[groupOf(s).key] ?? "Store";
+  /cycle/i.test(s.brand) ? "BikeStore" : ({ vehicles: "MotorcycleDealer", jewellery: "JewelryStore" } as Record<string, string>)[s.business] ?? "Store";
 
 /** One showroom as a schema.org shop with its address, linked to its town page and to the group. */
 export function storeSchema(s: Showroom) {
@@ -153,7 +43,7 @@ export function storeSchema(s: Showroom) {
 }
 
 /** schema.org WebSite + Organization (founding facts confirmed by varun on 2 Nov 2026), with each showroom as a department. */
-export function groupSchema() {
+export function groupSchema(site: Site) {
   return [
     {
       "@context": "https://schema.org",
@@ -173,12 +63,12 @@ export function groupSchema() {
       alternateName: ["Balasanka Group", "பாலசங்கா குழுமம்"],
       url: `${GROUP_SITE}/`,
       logo: `${GROUP_SITE}/balasanka_logo.png`,
-      email: CONTACT_EMAIL,
+      email: site.contact.email,
       foundingDate: "1966",
       foundingLocation: { "@type": "Place", name: "Theni, Tamil Nadu" },
       founder: { "@type": "Person", name: "S. Thirupathi Nadar" },
-      areaServed: TOWNS.map((t) => ({ "@type": "City", name: t })),
-      department: ALL_SHOWROOMS.map(storeSchema),
+      areaServed: site.towns.map((t) => ({ "@type": "City", name: t })),
+      department: site.all.map(storeSchema),
     },
   ];
 }

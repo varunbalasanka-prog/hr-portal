@@ -34,6 +34,7 @@ export function staffSections(role: Role, counts: NavCounts = {}): NavSection[] 
         { key: "posters", label: "Hiring posters (QR)", icon: "file", href: "/careers/poster" } as NavItem,
         { key: "admin", label: "Admin settings", icon: "settings", href: "/admin" } as NavItem,
       ] : []),
+      ...(role === "superadmin" ? [{ key: "website", label: "Website (balasanka.in)", icon: "file", href: "/website" } as NavItem] : []),
     ] },
   ];
 }
