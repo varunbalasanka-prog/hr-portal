@@ -37,12 +37,12 @@ const STORY: SiteContent["about"]["story"] = [
   {
     year: "1966",
     title: "SGT",
-    text: "Mr. S. Thirupathi Nadar starts SGT, a small tamarind business in Theni. Honest weight and fair grading become the family's way of doing business.",
+    text: "Mr. S. Thirupathi Nadar starts SGT, a small tamarind business in Theni. Honest weight and fair grading become the family's way of doing business. Our seedless tamarind is sold today as Akshaya Tamarind.",
   },
   {
     year: "1991",
     title: "Balasanka Dhal",
-    text: "The family opens its first pulses factory, Balasanka Dhal, and sets up Asia's first solar dryer for pulses. A second factory, Sanka Dhal, follows in 1995, and in 2016 the Akshaya Dhal brand, which now carries all our dhal and seedless tamarind.",
+    text: "The family opens its first pulses factory, Balasanka Dhal, and sets up Asia's first solar dryer for pulses. A second factory, Sanka Dhal, follows in 1995, and in 2016 our dhal goes on sale as Akshaya Dhal.",
   },
   {
     year: "1997",
@@ -129,10 +129,11 @@ export const DEFAULT_CONTENT: SiteContent = {
   { name: "Titan", note: "Franchise store" },
   { name: "Fastrack", note: "Franchise store" },
   { name: "Titan Eye+", note: "Franchise store" },
-  { name: "Akshaya Dhal", note: "Our own brand" },
+  { name: "Akshaya Dhal", note: "Our own dhal" },
+  { name: "Akshaya Tamarind", note: "Our own seedless tamarind" },
 ],
   home: {
-    intro: "Two-wheelers, jewellery, watches and eyewear at {showrooms} showrooms in {towns} towns of South Tamil Nadu, from Theni to Tirunelveli, and Akshaya Dhal dhal and seedless tamarind from our factories in Theni. A Theni family business since 1966.",
+    intro: "Two-wheelers, jewellery, watches and eyewear at {showrooms} showrooms in {towns} towns of South Tamil Nadu, from Theni to Tirunelveli, and dhal and seedless tamarind from our factories in Theni. A Theni family business since 1966.",
     careers: "We hire for sales, service, accounts and customer care at our showrooms, and freshers are welcome. Apply online in about five minutes.",
   },
   /**
@@ -142,7 +143,7 @@ export const DEFAULT_CONTENT: SiteContent = {
   about: {
     intro: [
       "Balasanka Group began in Theni in 1966 as a small tamarind processing unit. Sixty years later, the same family runs two-wheeler dealerships, jewellery houses and lifestyle stores across {town list}, and still makes dhal and seedless tamarind at its factories in Theni.",
-      "Our own brands are Akshaya Dhal, for dhal and seedless tamarind, and the jewellery house Akshaya Velli with its luxury line Zora. We run them alongside dealerships and franchise stores for TVS, Honda, Tanishq, Mia by Tanishq, CaratLane, Titan, Titan Eye+ and Fastrack.",
+      "Our own brands are Akshaya Dhal for dhal, Akshaya Tamarind for seedless tamarind, and the jewellery house Akshaya Velli with its luxury line Zora. We run them alongside dealerships and franchise stores for TVS, Honda, Tanishq, Mia by Tanishq, CaratLane, Titan, Titan Eye+ and Fastrack.",
     ],
     story: STORY,
     values: VALUES,
@@ -161,12 +162,11 @@ export const DEFAULT_CONTENT: SiteContent = {
   foods: {
   title: "Dhal and tamarind",
   tamil: "பருப்பு, புளி",
-  blurb: "Akshaya Dhal toor, urad and moong dhal and seedless tamarind, made at our factories in Theni for shops, traders and families.",
+  blurb: "Toor, urad and moong dhal sold as Akshaya Dhal, and seedless tamarind sold as Akshaya Tamarind, from our factories in Theni for shops, traders and families.",
   products: ["Toor dhal", "Urad dhal", "Moong dhal", "Seedless tamarind"],
   brands: [
-    { name: "Akshaya Dhal", note: "Our brand for every dhal and our seedless tamarind." },
-    { name: "Balasanka Dhal", note: "Our first pulses factory in Theni, since 1991." },
-    { name: "Sanka Dhal", note: "Our second factory in Theni, since 1995." },
+    { name: "Akshaya Dhal", note: "Our toor, urad and moong dhal." },
+    { name: "Akshaya Tamarind", note: "Our seedless tamarind. The tamarind business began as SGT in 1966." },
   ],
 },
 };
