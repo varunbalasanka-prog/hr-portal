@@ -15,7 +15,15 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://hr.balasanka.in"),
   title: "Balasanka HR Portal",
   description: "Recruitment and onboarding portal for Balasanka Group of Companies",
-  icons: { icon: "/balasanka_logo.png" },
+  // Square icons: Google shows a favicon beside search results only if it is square (a multiple of 48px).
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "48x48" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: { url: "/icon-192.png", sizes: "192x192" },
+  },
   applicationName: "Balasanka Group",
   openGraph: { siteName: "Balasanka Group" },
   // Codes from Google Search Console and Bing Webmaster Tools ("HTML tag" method), set in Vercel.
