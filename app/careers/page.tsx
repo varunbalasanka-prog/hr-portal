@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   title: "Careers · Balasanka Group of Companies",
   description: "Open jobs at Balasanka Group showrooms across South Tamil Nadu. Apply online in 5 minutes. / வேலைவாய்ப்புகள்.",
   openGraph: { title: "Careers at Balasanka Group · வேலைவாய்ப்புகள்", description: "Open jobs at our showrooms. Apply online in 5 minutes.", images: ["/balasanka_logo.png"], locale: "en_IN", siteName: SITE_NAME },
-  alternates: { canonical: "/careers" },
+  alternates: { canonical: "/" },
 };
 
 export default async function CareersPage() {
