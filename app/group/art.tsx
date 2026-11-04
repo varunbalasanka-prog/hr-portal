@@ -68,7 +68,7 @@ export function Scooter() {
 }
 
 /**
- * A brass bowl heaped with split toor dhal, with a block of seedless tamarind beside it.
+ * A brass bowl heaped with split toor dhal, with a block of tamarind beside it.
  * Dhal yellow and tamarind brown are the products' own colours, so the picture reads as food at a glance.
  */
 export function DhalBowl() {
@@ -84,7 +84,7 @@ export function DhalBowl() {
     if (((x - 176) / 82) ** 2 + ((y - 262) / 62) ** 2 < 0.92) grains.push([x, y, rnd() * 180, shades[grains.length % 4]]);
   }
   return (
-    <svg viewBox="0 0 400 400" role="img" aria-label="Drawing of a bowl of toor dhal and a block of seedless tamarind" className="w-full">
+    <svg viewBox="0 0 400 400" role="img" aria-label="Drawing of a bowl of toor dhal and a block of tamarind" className="w-full">
       <Stage />
       <Line d="M90 262C102 220 138 198 176 196C214 198 250 220 262 262Z" fill={DHAL} />
       <g className="g-fill">
