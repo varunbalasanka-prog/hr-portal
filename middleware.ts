@@ -42,10 +42,16 @@ export async function middleware(request: NextRequest) {
   });
   const { data: { user } } = await supabase.auth.getUser();
   const isPublic = path === "/" ? false : PUBLIC_PREFIXES.some((p) => path.startsWith(p));
+  if (!user && path === "/") {
+    // Visitors (and search engines) opening the bare domain see the jobs at "/" itself, with no redirect,
+    // so Google can read the home page's WebSite name ("Balasanka Group") for the site name in results.
+    const url = request.nextUrl.clone();
+    url.pathname = "/careers";
+    return NextResponse.rewrite(url);
+  }
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();
-    // Visitors (and search engines) opening the bare domain see the jobs; staff use the login link there.
-    url.pathname = path === "/" ? "/careers" : "/login";
+    url.pathname = "/login";
     return NextResponse.redirect(url);
   }
   return response;
