@@ -54,3 +54,6 @@ body { background: #f5f6fa; color: #101828; }
 .post-editor ul li::marker { color: #d9261c; }
 .post-editor blockquote { border-radius: 0.5rem; background: #f4f4f6; padding: 0.9rem 1.2rem; color: #3d3866; }
 .post-editor:empty::before, .post-editor > p:only-child:has(> br:only-child)::before { content: "Start writing here…"; color: #94a3b8; pointer-events: none; }
+.post-editor blockquote > p + p { margin-top: 0.5rem; }
+.post-editor li > p { margin: 0; }
+.post-editor p.is-editor-empty:first-child::before { content: attr(data-placeholder); color: #94a3b8; float: left; height: 0; pointer-events: none; }

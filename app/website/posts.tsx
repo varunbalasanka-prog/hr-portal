@@ -107,7 +107,7 @@ function PostForm({ start, viewBase, ready, onClose }: { start: PostRow; viewBas
 
       <div className="mt-4">
         <p className="label mb-1.5">Post text ({words} words)</p>
-        <p className="mb-2 text-xs text-slate-500">Type as normal. To change some words, select them and tap a button: <b>Heading</b>, <b>Bold</b>, <b>List</b>, <b>Link</b> or <b>Note box</b>. Tap the same button again to undo it. It looks here as it will on the website.</p>
+        <p className="mb-2 text-xs text-slate-500">Type as normal. Tap <b>Heading</b>, <b>List</b> or <b>Note box</b> for the line you are on, and tap it again to turn it off. It looks here as it does on the website.</p>
         <RichEditor value={start.body} onChange={(md) => set("body", md)} />
       </div>
 
