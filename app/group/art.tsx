@@ -1,7 +1,7 @@
 /**
  * Drawings of what each business sells, made in code to the rulebook in art-kit.tsx (no photographs).
  */
-import { GOLD, GOLD_PALE, INK, Line, RED, Stage, circle, rect } from "./art-kit";
+import { GOLD, GOLD_PALE, INK, Line, PALE, RED, Stage, circle, rect } from "./art-kit";
 import { WatchFace } from "./watch-face";
 
 /** A temple jhumka hanging in its arch: ruby stud, short chain, a gold dome and a fringe of pearls. */
@@ -37,32 +37,38 @@ export function Jhumka() {
   );
 }
 
-/** A scooter in side view standing in its arch: red body, indigo seat and tyres, wheels that turn. */
-export function Scooter() {
+/** A commuter motorcycle in side view standing in its arch: pale tank and engine, indigo seat and tyres, wheels that turn. */
+export function Motorbike() {
   const wheel = (cx: number) => (
     <g key={cx}>
-      <Line d={circle(cx, 330, 38)} fill={INK} />
-      <Line d={circle(cx, 330, 22)} fill="#ffffff" />
+      <Line d={circle(cx, 334, 38)} fill={INK} />
+      <Line d={circle(cx, 334, 20)} fill="#ffffff" />
       <g className="g-spin">
-        <path d={`M${cx - 16} 330H${cx + 16}M${cx} 314V346`} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-        <circle cx={cx} cy={330} r={5} fill={INK} />
+        <path d={`M${cx - 14} 334H${cx + 14}M${cx} 320V348`} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+        <circle cx={cx} cy={334} r={5} fill={INK} />
       </g>
     </g>
   );
   return (
-    <svg viewBox="0 0 400 400" role="img" aria-label="Drawing of a scooter" className="w-full">
+    <svg viewBox="0 0 400 400" role="img" aria-label="Drawing of a motorcycle" className="w-full">
       <Stage />
-      {wheel(105)}
+      <Line d="M58 318A50 50 0 0 1 148 292" />
+      <Line d="M258 312A46 46 0 0 1 340 306" />
+      {wheel(108)}
       {wheel(300)}
-      <Line d="M264 320A38 38 0 0 1 338 316" />
-      <Line d="M58 312C60 262 100 240 160 238L235 240C246 241 250 252 246 262L238 312Z" fill={RED} />
-      <Line d={rect(236, 300, 66, 14, 4)} fill={RED} />
-      <Line d="M282 312C286 268 292 236 304 210L322 210C318 246 322 282 340 312Z" fill={RED} />
-      <Line d="M314 214L300 330" />
-      <Line d="M108 236C112 220 140 216 170 217L228 220C238 221 238 235 228 236Z" fill={INK} />
-      <Line d="M292 200L344 194" />
-      <Line d={circle(313, 228, 7)} fill="#ffffff" width={3} />
-      <Line d={rect(52, 280, 12, 10, 3)} fill="#ffffff" width={3} />
+      <Line d="M108 334L176 318" />
+      <Line d="M124 318L142 278" />
+      <Line d="M300 334L258 236" />
+      <Line d="M250 262L230 290" />
+      <Line d={rect(160, 284, 70, 44, 10)} fill={PALE} />
+      <Line d="M172 296H218M172 308H218M172 320H218" width={3} />
+      <Line d={rect(142, 340, 110, 12, 6)} fill="#ffffff" />
+      <Line d="M96 270C98 256 128 252 170 260L174 278L104 282C96 282 94 276 96 270Z" fill={INK} />
+      <Line d="M168 262C176 238 216 232 248 242C262 246 262 264 252 274L178 280C168 280 166 270 168 262Z" fill={PALE} />
+      <Line d="M194 256L240 250" stroke={RED} width={6} />
+      <Line d="M250 232L278 222" />
+      <Line d={circle(272, 252, 12)} fill="#ffffff" />
+      <Line d={rect(70, 276, 14, 9, 3)} fill={RED} width={3} />
     </svg>
   );
 }
@@ -121,7 +127,7 @@ export function DhalBowl() {
 export function BusinessArt({ k, className = "" }: { k: string; className?: string }) {
   return (
     <div data-reveal="draw" data-live className={`w-full max-w-[10rem] md:max-w-[20rem] ${className}`}>
-      {k === "jewellery" ? <Jhumka /> : k === "watches" ? <WatchFace /> : k === "foods" ? <DhalBowl /> : <Scooter />}
+      {k === "jewellery" ? <Jhumka /> : k === "watches" ? <WatchFace /> : k === "foods" ? <DhalBowl /> : <Motorbike />}
     </div>
   );
 }
