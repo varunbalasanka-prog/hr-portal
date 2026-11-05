@@ -1,6 +1,6 @@
 "use server";
 import { createPublicClient } from "@/lib/supabase/public";
-import { checkAnswer, fieldName, isVisible } from "@/lib/apply-questions";
+import { checkAnswer, fieldName, isVisible, normalizeMobile } from "@/lib/apply-questions";
 import { CONSENT_VERSION } from "@/lib/privacy";
 import { clientIp } from "@/lib/client-ip";
 import { verifyTurnstile } from "@/lib/turnstile";
@@ -43,14 +43,14 @@ export async function startApplication(turnstileToken: string): Promise<{ ok: tr
  *  Answers are checked against the questions live right now and saved under their current labels. */
 export async function submitApplication(fd: FormData): Promise<SubmitResult> {
   const name = text(fd, "name", 120);
-  const mobile = text(fd, "mobile", 20).replace(/\D/g, "").slice(-10);
+  const mobile = normalizeMobile(text(fd, "mobile", 20)) ?? "";
   const post = text(fd, "post", 120);
   const branchId = text(fd, "branch_id", 40);
   const fatherName = text(fd, "father_name", 120);
   const address = text(fd, "address");
   const marital = text(fd, "marital_status", 40);
   const folder = text(fd, "folder", 40);
-  for (const [k, v] of [["branch_id", branchId], ["post", post], ["name", name], ["mobile", mobile], ["father_name", fatherName], ["marital_status", marital], ["address", address]]) {
+  for (const [k, v] of [["branch_id", branchId], ["post", post], ["name", name], ["mobile", text(fd, "mobile", 20)], ["father_name", fatherName], ["marital_status", marital], ["address", address]]) {
     if (!v) return { ok: false, message: MESSAGES.missing, field: k };
   }
   if (!/^[6-9]\d{9}$/.test(mobile)) return { ok: false, message: MESSAGES.bad_mobile, field: "mobile" };

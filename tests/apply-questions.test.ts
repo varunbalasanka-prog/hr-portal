@@ -96,3 +96,23 @@ describe("minimum age", () => {
 it("cleanBranchPosts keeps master order and drops removed posts", () => {
   expect(cleanBranchPosts({ a: ["Helper", "Gone", "Cashier"] }, ["Cashier", "Helper"], ["a", "b"])).toEqual({ a: ["Cashier", "Helper"], b: [] });
 });
+
+import { isRealDate, normalizeMobile } from "../lib/apply-questions";
+
+describe("normalizeMobile", () => {
+  it.each(["9876543210", "98765 43210", "+91 98765 43210", "+919876543210", "09876543210", "98765-43210"])("accepts %s", (v) => {
+    expect(normalizeMobile(v)).toBe("9876543210");
+  });
+  it.each(["0000000000", "++++++++++", "1234567890", "987654321", "98765432101"])("rejects %s", (v) => {
+    expect(normalizeMobile(v)).toBeNull();
+  });
+});
+
+describe("isRealDate", () => {
+  it("rejects dates that don't exist", () => {
+    expect(isRealDate("2000-02-31")).toBe(false);
+    expect(isRealDate("2001-02-29")).toBe(false);
+    expect(isRealDate("2000-02-29")).toBe(true);
+    expect(isRealDate("1999-12-31")).toBe(true);
+  });
+});

@@ -48,6 +48,21 @@ export function groupBySection<T extends { section: string }>(qs: T[]): [string,
   return [...out];
 }
 
+/** Indian mobile from whatever was typed: spaces, dashes, +91 or a leading 0 are fine; returns null unless it's 10 digits starting 6-9. */
+export function normalizeMobile(raw: string): string | null {
+  let d = (raw ?? "").replace(/\D/g, "");
+  if (d.length === 12 && d.startsWith("91")) d = d.slice(2);
+  else if (d.length === 11 && d.startsWith("0")) d = d.slice(1);
+  return /^[6-9]\d{9}$/.test(d) ? d : null;
+}
+
+/** True only for a date that exists on the calendar ("2000-02-31" is false). */
+export function isRealDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const t = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(t.getTime()) && t.toISOString().slice(0, 10) === value;
+}
+
 /** Checks one typed answer. Returns an error message or null. */
 export function checkAnswer(q: ApplyQuestion, value: string, today = todayInIndia()): string | null {
   if (!value) return q.required ? `Please answer / பதிலளிக்கவும்: ${q.label}` : null;
@@ -55,7 +70,7 @@ export function checkAnswer(q: ApplyQuestion, value: string, today = todayInIndi
   if (value.length > MAX_ANSWER[q.type]) return `Answer is too long / பதில் மிக நீளம்: ${q.label}`;
   if (q.type === "choice" && !q.options.includes(value)) return `Please choose an option / ஒன்றைத் தேர்வு செய்யவும்: ${q.label}`;
   if (q.type === "number" && !/^\d[\d,.]*$/.test(value)) return `Please enter a number / எண்ணை உள்ளிடவும்: ${q.label}`;
-  if (q.type === "date" && !/^\d{4}-\d{2}-\d{2}$/.test(value)) return `Please enter a date / தேதியை உள்ளிடவும்: ${q.label}`;
+  if (q.type === "date" && !isRealDate(value)) return `Please enter a date / தேதியை உள்ளிடவும்: ${q.label}`;
   if (q.type === "date" && q.min_age && value > latestDate(q.min_age, today)) {
     return `You must be at least ${q.min_age} years old / குறைந்தது ${q.min_age} வயது இருக்க வேண்டும்: ${q.label}`;
   }

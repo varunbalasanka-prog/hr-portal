@@ -1,13 +1,8 @@
 import { localInputToIso, todayIst } from "./dates";
-import { latestDate } from "./apply-questions";
+import { latestDate, normalizeMobile } from "./apply-questions";
 
-/** Indian mobile from whatever was typed: spaces, dashes, +91 or a leading 0 are fine; returns null unless it's 10 digits starting 6-9. */
-export function normalizeMobile(raw: string): string | null {
-  let d = (raw ?? "").replace(/\D/g, "");
-  if (d.length === 12 && d.startsWith("91")) d = d.slice(2);
-  else if (d.length === 11 && d.startsWith("0")) d = d.slice(1);
-  return /^[6-9]\d{9}$/.test(d) ? d : null;
-}
+export { normalizeMobile };
+
 
 /** "15,000", "₹ 15000", "15000.00" -> 15000. Empty -> 0. Anything else -> null (so it's never silently dropped). */
 export function parseRupees(raw: string | undefined): number | null {
