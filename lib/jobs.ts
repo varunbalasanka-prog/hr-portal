@@ -44,7 +44,7 @@ export function findJob(jobs: Job[], town: string, slug: string) {
 /** "a" or "an" by sound: an automobile, a jewellery, an office, a cycle. */
 export const article = (word: string) => (/^[aeio]/i.test(word) || /^u(?!ni|se|su|ro)/i.test(word) ? "an" : "a");
 
-const KIND: Record<string, string> = { Jewellery: "jewellery showroom", Automobiles: "automobile showroom", Cycles: "cycle showroom", Office: "office" };
+const KIND: Record<string, string> = { Jewellery: "jewellery showroom", "Watches & eyewear": "watch and eyewear showroom", Automobiles: "automobile showroom", Cycles: "cycle showroom", Office: "office" };
 export const placeKind = (businessType: string) => KIND[businessType] ?? `${businessType.toLowerCase()} showroom`;
 
 const lines = (s: string | undefined) => (s ?? "").split("\n").map((l) => l.trim()).filter(Boolean);

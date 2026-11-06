@@ -4,7 +4,7 @@ import { saveAppraisalForm } from "@/app/actions/appraisals";
 import { DEFAULT_FORMS, FIELD_TYPES, LOCKED_FIELDS, type AppraisalForm, type FieldType, type FormKind } from "@/lib/appraisal";
 import { Flash, Modal } from "@/components/ui";
 
-const KINDS: { kind: FormKind; label: string }[] = [{ kind: "jewellery", label: "Jewellery stores" }, { kind: "automobile", label: "Automobile stores" }];
+const KINDS: { kind: FormKind; label: string }[] = [{ kind: "jewellery", label: "Jewellery, watch & eyewear stores" }, { kind: "automobile", label: "Automobile stores" }];
 const YEARS_NOTE = { past: "Filled for each of the last two years", next: "Targets for the appraisal year" } as const;
 
 /** Admin edits the appraisal forms: reword, add, remove and reorder questions. Past appraisals keep their own copy. */

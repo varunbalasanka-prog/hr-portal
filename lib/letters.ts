@@ -14,6 +14,7 @@ export async function loadLetter(token: string) {
   return { expired: false as const, c, branch, address, companyName };
 }
 
-/** Jewellery stores (Akshaya Velli, Tanishq, Caratlane…) get their own letter wording; everything else is Automobiles. */
+/** Jewellery stores (Akshaya Velli, Tanishq, Caratlane…) and watch and eyewear stores (Titan, Fastrack, Titan Eye+) get the
+ *  showroom letter wording; everything else is Automobiles. */
 export const isJewellery = (branch: { business_type: string } | null, address: string) =>
-  (branch?.business_type ?? "").toLowerCase().includes("jewellery") || address.toLowerCase().includes("velli");
+  /jewellery|watches/.test((branch?.business_type ?? "").toLowerCase()) || address.toLowerCase().includes("velli");
