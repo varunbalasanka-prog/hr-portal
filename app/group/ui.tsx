@@ -2,6 +2,7 @@ import { EmailLink } from "./email-link";
 import { MotionToggle } from "./motion-toggle";
 import { CAREERS_SITE, FOODS_PAGE, groupHref, listOf, type Showroom, type Site, fullAddress, mapLink } from "@/lib/group";
 import { LINK } from "./style";
+import { phoneText, telHref } from "@/lib/site";
 
 /** Each business has its own muted tint, told apart by warmth: cool grey-indigo, warm cream, soft neutral. */
 export const CHAPTER: Record<string, { field: string; ink: string; soft: string; link: string }> = {
@@ -94,7 +95,10 @@ export function ShowroomRow({ s, showTown = false, tone = "light" }: { s: Showro
     <li className="py-3.5">
       <p className="text-lg font-semibold">{showTown ? s.town : s.brand}</p>
       <address className={`mt-0.5 max-w-[52ch] not-italic leading-relaxed ${soft}`}>{fullAddress(s)}</address>
-      <a href={mapLink(s)} target="_blank" rel="noopener" className={`mt-0.5 inline-block py-2 font-normal ${LINK}`}>Directions on Google Maps</a>
+      <p className="mt-0.5 flex flex-wrap gap-x-6">
+        {s.phone && telHref(s.phone) && <a href={telHref(s.phone)!} className={`inline-block py-2 font-semibold ${LINK}`}>Call {phoneText(s.phone)}</a>}
+        <a href={mapLink(s)} target="_blank" rel="noopener" className={`inline-block py-2 font-normal ${LINK}`}>Directions on Google Maps</a>
+      </p>
     </li>
   );
 }

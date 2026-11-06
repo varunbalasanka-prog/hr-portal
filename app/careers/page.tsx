@@ -26,6 +26,7 @@ export default async function CareersPage() {
         <h1 className="font-serif text-xl font-extrabold uppercase tracking-wide">Work with Balasanka Group</h1>
         <p className="text-sm text-slate-200">பாலசங்கா குழுமத்தில் பணியாற்றுங்கள்</p>
         <p className="mt-2 text-sm text-slate-200">Jewellery and automobile showrooms in {towns.join(", ") || "South Tamil Nadu"}.</p>
+        <p lang="ta" className="text-sm text-slate-200">தென் தமிழ்நாட்டில் நகை மற்றும் வாகன ஷோரூம்கள்.</p>
         {/* No general "Apply now" here: applicants pick a showroom below, so the form opens locked to it. */}
         <p className="mt-3 text-sm font-semibold">Choose a showroom below to apply. / விண்ணப்பிக்க கீழே ஒரு கிளையைத் தேர்ந்தெடுக்கவும்.</p>
       </header>
@@ -43,11 +44,11 @@ export default async function CareersPage() {
                   {b.posts.map((p) => {
                     const href = pathOf(b.id, p);
                     return <li key={p}>{href
-                      ? <Link href={href} className="block rounded border border-sky-200 bg-sky-50 px-2 py-0.5 text-sky-900 hover:bg-sky-100">{p}</Link>
+                      ? <Link href={href} className="block rounded border border-sky-200 bg-sky-50 px-2.5 py-1 text-sky-900 hover:bg-sky-100">{p}</Link>
                       : <span className="block rounded border border-slate-200 bg-slate-50 px-2 py-0.5">{p}</span>}</li>;
                   })}
                 </ul>
-                <Link href={`/apply?branch=${b.id}&src=careers`} className="btn-primary mt-auto self-start">Apply at this branch</Link>
+                <Link href={`/apply?branch=${b.id}&src=careers`} className="btn-primary mt-auto self-start">Apply at this branch / இங்கே விண்ணப்பிக்கவும்</Link>
               </article>
             ))}
           </div>

@@ -2,7 +2,7 @@
  * The company website (balasanka.in): addresses, links and search-engine details. The showrooms and words
  * themselves are edited on the Website page (lib/site.ts, lib/site-data.ts), so nothing here needs a code change.
  */
-import { FOODS_KEY, FOODS_SLUG, townSlug, type Showroom, type ShowroomGroup, type Site } from "./site";
+import { FOODS_KEY, FOODS_SLUG, phoneDigits, townSlug, type Showroom, type ShowroomGroup, type Site } from "./site";
 export { townSlug, listOf, type Showroom, type ShowroomGroup, type Site } from "./site";
 export const GROUP_SITE = "https://balasanka.in";
 export const CAREERS_SITE = "https://hr.balasanka.in";
@@ -38,6 +38,7 @@ export function storeSchema(s: Showroom) {
     image: `${GROUP_SITE}/balasanka_logo.png`,
     address: { "@type": "PostalAddress", streetAddress: s.street, addressLocality: s.town, addressRegion: "Tamil Nadu", postalCode: s.pin, addressCountry: "IN" },
     hasMap: mapLink(s),
+    ...(phoneDigits(s.phone) ? { telephone: `+91${phoneDigits(s.phone)}` } : {}),
     parentOrganization: { "@id": ORG_ID },
   };
 }

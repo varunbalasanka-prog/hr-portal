@@ -64,3 +64,41 @@ describe("website content", () => {
     expect(townSlug("Theni Allinagaram")).toBe("theni-allinagaram");
   });
 });
+
+describe("showroom and outlet phones", () => {
+  it("accepts the usual ways of writing an Indian number", async () => {
+    const { phoneDigits, telHref, phoneText } = await import("../lib/site");
+    for (const raw of ["9876543210", "98765 43210", "+91 98765 43210", "+91-98765-43210", "09876543210", "919876543210"]) expect(phoneDigits(raw)).toBe("9876543210");
+    expect(phoneDigits("04546 252525")).toBe("4546252525");
+    expect(phoneDigits("091 4546 252525")).toBe("4546252525");
+    expect(telHref("+91 98765 43210")).toBe("tel:+919876543210");
+    expect(phoneText("+91-98765-43210")).toBe("98765 43210");
+    expect(phoneText("04546 252525")).toBe("04546 252525");
+  });
+  it("rejects numbers that are not 10 digits", async () => {
+    const { phoneDigits } = await import("../lib/site");
+    for (const raw of ["987654321", "0000000000", "1234567890", "++++", "", "98765432101"]) expect(phoneDigits(raw)).toBeNull();
+  });
+  it("checks a showroom's phone but lets it be empty", async () => {
+    const { checkShowroom } = await import("../lib/site");
+    const base = { business: "jewellery" as const, brand: "Akshaya Velli", town: "Theni", company: "", street: "Periyakulam Road", pin: "625531" };
+    expect(checkShowroom(base)).toMatchObject({ ok: true, value: { phone: null } });
+    expect(checkShowroom({ ...base, phone: " 98765  43210 " })).toMatchObject({ ok: true, value: { phone: "98765 43210" } });
+    expect(checkShowroom({ ...base, phone: "12345" }).ok).toBe(false);
+  });
+  it("checks the factory outlet fields only when filled", async () => {
+    const { checkContent } = await import("../lib/site");
+    const { DEFAULT_CONTENT } = await import("../lib/site-defaults");
+    const foods = DEFAULT_CONTENT.foods;
+    expect(checkContent("foods", foods)).toBeNull();
+    expect(checkContent("foods", { ...foods, outlet: { street: "Bypass Road", pin: "625531", hours: "9 am to 7 pm", phone: "04546 252525" } })).toBeNull();
+    expect(checkContent("foods", { ...foods, outlet: { ...foods.outlet, pin: "123" } })).toMatch(/PIN/);
+    expect(checkContent("foods", { ...foods, outlet: { ...foods.outlet, phone: "555" } })).toMatch(/phone/);
+  });
+  it("keeps a stored food page without outlet fields working", async () => {
+    const { mergeContent } = await import("../lib/site");
+    const { DEFAULT_CONTENT } = await import("../lib/site-defaults");
+    const { outlet: _drop, ...stored } = DEFAULT_CONTENT.foods;
+    expect(mergeContent(DEFAULT_CONTENT, [{ key: "foods", value: stored }]).foods.outlet).toEqual({ street: "", pin: "", hours: "", phone: "" });
+  });
+});

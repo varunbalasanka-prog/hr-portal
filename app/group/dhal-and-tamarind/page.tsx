@@ -3,7 +3,8 @@ import { FOODS_PAGE, GROUP_SITE, breadcrumbSchema, ldJson, pageMeta } from "@/li
 import { getSite } from "@/lib/site-data";
 import { BusinessArt } from "../art";
 import { EmailLink } from "../email-link";
-import { BusinessLinks, CHAPTER, WRAP } from "../ui";
+import { BusinessLinks, CHAPTER, LINK, WRAP } from "../ui";
+import { phoneDigits, phoneText, telHref } from "@/lib/site";
 
 export async function generateMetadata(): Promise<Metadata> {
   const f = (await getSite()).foods;
@@ -17,6 +18,10 @@ export default async function FoodsPage() {
   const FOODS = { ...site.foods, ...FOODS_PAGE };
   const CONTACT_EMAIL = site.contact.email;
   const c = CHAPTER[FOODS.key];
+  const outlet = FOODS.outlet ?? { street: "", pin: "", hours: "", phone: "" };
+  const outletAddress = outlet.street.trim() ? `${outlet.street.trim()}, Theni, Tamil Nadu${outlet.pin.trim() ? ` ${outlet.pin.trim()}` : ""}` : "";
+  const outletMap = outletAddress ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`Balasanka factory outlet ${outletAddress}`)}` : "";
+  const outletTel = outlet.phone ? telHref(outlet.phone) : null;
   const schema = [
     {
       "@context": "https://schema.org",
@@ -25,7 +30,11 @@ export default async function FoodsPage() {
       url: `${GROUP_SITE}/${FOODS.slug}`,
       parentOrganization: { "@id": `${GROUP_SITE}/#org` },
       brand: FOODS.brands.map((b) => ({ "@type": "Brand", name: b.name })),
-      address: { "@type": "PostalAddress", addressLocality: "Theni", addressRegion: "Tamil Nadu", addressCountry: "IN" },
+      address: {
+        "@type": "PostalAddress", addressLocality: "Theni", addressRegion: "Tamil Nadu", addressCountry: "IN",
+        ...(outlet.street.trim() ? { streetAddress: outlet.street.trim() } : {}), ...(outlet.pin.trim() ? { postalCode: outlet.pin.trim() } : {}),
+      },
+      ...(phoneDigits(outlet.phone) ? { telephone: `+91${phoneDigits(outlet.phone)}` } : {}),
       email: CONTACT_EMAIL,
       makesOffer: FOODS.products.map((p) => ({ "@type": "Offer", itemOffered: { "@type": "Product", name: p } })),
     },
@@ -81,7 +90,17 @@ export default async function FoodsPage() {
           </div>
           <div data-reveal className="space-y-4 text-lg leading-relaxed text-[#4a4666] md:col-span-7">
             <p><span className="font-semibold text-[#1b1640]">Shops and traders:</span> we sell wholesale. Write to us for prices and orders.</p>
-            <p><span className="font-semibold text-[#1b1640]">Families:</span> buy at our factory outlet in Theni.</p>
+            <div>
+              <p><span className="font-semibold text-[#1b1640]">Families:</span> buy at our factory outlet in Theni.</p>
+              {outletAddress && <address className="mt-1 not-italic">{outletAddress}</address>}
+              {outlet.hours.trim() && <p className="mt-1">Open {outlet.hours.trim()}</p>}
+              {(outletTel || outletMap) && (
+                <p className="mt-0.5 flex flex-wrap gap-x-6">
+                  {outletTel && <a href={outletTel} className={`inline-block py-2 font-semibold text-[#1b1640] ${LINK}`}>Call {phoneText(outlet.phone)}</a>}
+                  {outletMap && <a href={outletMap} target="_blank" rel="noopener" className={`inline-block py-2 text-[#1b1640] ${LINK}`}>Directions on Google Maps</a>}
+                </p>
+              )}
+            </div>
             <p>Write to <EmailLink email={CONTACT_EMAIL} className="inline-block py-1 font-semibold text-[#1b1640]" /></p>
           </div>
         </section>

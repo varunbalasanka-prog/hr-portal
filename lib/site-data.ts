@@ -16,7 +16,7 @@ const fetchSite = unstable_cache(
     const db = createPublicClient();
     const [content, showrooms] = await Promise.all([
       db.from("site_content").select("key, value"),
-      db.from("site_showrooms").select("id, business, brand, town, company, street, pin, sort"),
+      db.from("site_showrooms").select("*"),
     ]);
     // Throwing (instead of returning the defaults) keeps a failed read out of the cache.
     if (content.error || showrooms.error) throw new Error(content.error?.message ?? showrooms.error?.message);
