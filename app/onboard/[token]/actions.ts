@@ -65,8 +65,8 @@ export async function submitOnboarding(token: string, formData: FormData): Promi
     if (REQUIRED_DETAILS.some((k) => !details[k])) return { ok: false, message: REQUIRED };
     if (MANDATORY_DOCS.some((k) => !files[k])) return { ok: false, message: RESULT_MESSAGES.missing_docs };
 
-    // ESI if the gross salary is ₹21,000 or less, otherwise UAN (PF). Having the number skips the family section.
-    const q = insuranceQuestion(Number(c.basic_salary || 0) + Number(c.allowances || 0));
+    // ESI if the basic salary is under ₹21,000, otherwise UAN (PF). Having the number skips the family section.
+    const q = insuranceQuestion(Number(c.basic_salary || 0));
     const status = details[`${q}_status`];
     if (status !== "Yes" && status !== "No") return { ok: false, message: REQUIRED };
     for (const k of ["esi", "uan"].filter((x) => x !== q)) { delete details[`${k}_status`]; delete details[`${k}_number`]; }

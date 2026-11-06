@@ -48,7 +48,7 @@ export default async function OnboardPage({ params, searchParams }: Props) {
         </div>
       )}
       <OnboardingForm token={token} flagged={sub?.status === "pending" ? sub.missing_docs : null}
-        question={insuranceQuestion(Number(c.basic_salary || 0) + Number(c.allowances || 0))} aadhaarCheck={aadhaarCheckEnabled() && !c.aadhaar_checked} digilocker={digilockerEnabled()} fetched={fetchedPaths(token, sp.dl)} fetchError={!!sp.dl_error} cand={{
+        question={insuranceQuestion(Number(c.basic_salary || 0))} aadhaarCheck={aadhaarCheckEnabled() && !c.aadhaar_checked} digilocker={digilockerEnabled()} fetched={fetchedPaths(token, sp.dl)} fetchError={!!sp.dl_error} cand={{
         name: c.name, mobile: c.mobile, branch: branch?.name ?? c.applied_locations[0] ?? "", address: c.address ?? "",
         father_name: c.father_name ?? "", marital_status: normalizeMarital(c.marital_status), email: c.email ?? "",
       }} />
