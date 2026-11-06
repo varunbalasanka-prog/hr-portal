@@ -25,8 +25,8 @@ export default async function CareersPage() {
         <img src="/balasanka_logo.png" alt="" className="mx-auto mb-2 h-14 w-auto rounded bg-white p-1" />
         <h1 className="font-serif text-xl font-extrabold uppercase tracking-wide">Work with Balasanka Group</h1>
         <p className="text-sm text-slate-200">பாலசங்கா குழுமத்தில் பணியாற்றுங்கள்</p>
-        <p className="mt-2 text-sm text-slate-200">Jewellery and automobile showrooms in {towns.join(", ") || "South Tamil Nadu"}.</p>
-        <p lang="ta" className="text-sm text-slate-200">தென் தமிழ்நாட்டில் நகை மற்றும் வாகன ஷோரூம்கள்.</p>
+        <p className="mt-2 text-sm text-slate-200">Jewellery, watch and automobile showrooms in {towns.join(", ") || "South Tamil Nadu"}.</p>
+        <p lang="ta" className="text-sm text-slate-200">தென் தமிழ்நாட்டில் நகை, கடிகாரம் மற்றும் வாகன ஷோரூம்கள்.</p>
         {/* No general "Apply now" here: applicants pick a showroom below, so the form opens locked to it. */}
         <p className="mt-3 text-sm font-semibold">Choose a showroom below to apply. / விண்ணப்பிக்க கீழே ஒரு கிளையைத் தேர்ந்தெடுக்கவும்.</p>
       </header>
