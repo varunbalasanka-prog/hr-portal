@@ -14,7 +14,7 @@ const en = (label: string) => splitBilingual(label)[0];
 const YES_NO = ["Yes / ஆம்", "No / இல்லை"];
 
 /** Files upload from the browser into "<token>/" in private storage; the server only receives their paths.
- *  ESI (gross up to ₹21,000) or UAN (above): a candidate who already has the number skips the family section;
+ *  ESI (basic under ₹21,000) or UAN (otherwise): a candidate who already has the number skips the family section;
  *  otherwise the family details and their documents are required. A re-upload link shows only what HR flagged. */
 export function OnboardingForm({ token, cand, flagged, question, aadhaarCheck, digilocker, fetched, fetchError }: {
   token: string; cand: Cand; flagged: string[] | null; question: "esi" | "uan"; aadhaarCheck: boolean; digilocker: boolean; fetched: Record<string, string>; fetchError: boolean;

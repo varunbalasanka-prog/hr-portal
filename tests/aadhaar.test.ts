@@ -75,10 +75,11 @@ describe("Aadhaar offline e-KYC", () => {
 });
 
 describe("onboarding rules", () => {
-  it("asks ESI up to ₹21,000 gross, UAN above", () => {
-    expect(insuranceQuestion(21000)).toBe("esi");
+  it("asks ESI when basic is under ₹21,000, UAN otherwise (same as the letters)", () => {
+    expect(insuranceQuestion(20999)).toBe("esi");
+    expect(insuranceQuestion(16000)).toBe("esi");
     expect(insuranceQuestion(0)).toBe("esi");
-    expect(insuranceQuestion(21001)).toBe("uan");
+    expect(insuranceQuestion(21000)).toBe("uan");
   });
   it("family section depends on marital status", () => {
     expect(familyRequirements("Unmarried", 0)).toEqual({ fields: ["mother_name"], docs: ["father_aadhar", "father_photo", "mother_aadhar", "mother_photo"] });

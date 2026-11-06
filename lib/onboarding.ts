@@ -1,3 +1,5 @@
+import { esiApplies } from "./salary";
+
 /** Documents collected by the candidate onboarding form. Key = form field and storage key.
  *  Labels are "English / Tamil"; staff screens show the English part. */
 export const DOC_LABELS: Record<string, string> = {
@@ -53,9 +55,8 @@ export const MAX_FILE_BYTES = 5 * 1024 * 1024;
 export const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 export const RELATIONSHIPS = ["Father / தந்தை", "Mother / தாய்", "Spouse / வாழ்க்கைத் துணை", "Brother / சகோதரர்", "Sister / சகோதரி", "Friend / நண்பர்", "Other / மற்றவை"];
 
-/** Gross above this is outside ESI, so the form asks for a UAN (PF) number instead of an ESI number. */
-export const ESI_GROSS_LIMIT = 21000;
-export const insuranceQuestion = (gross: number): "esi" | "uan" => (gross > ESI_GROSS_LIMIT ? "uan" : "esi");
+/** Same rule as the salary breakup on the letters: ESI when basic is under ₹21,000, otherwise a UAN (PF) number. */
+export const insuranceQuestion = (basic: number): "esi" | "uan" => (esiApplies(basic) ? "esi" : "uan");
 
 /** "Single" in older records means unmarried. Returns "" when not known. */
 export function normalizeMarital(v?: string | null): "Married" | "Unmarried" | "" {

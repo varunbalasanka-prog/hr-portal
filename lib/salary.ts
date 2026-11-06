@@ -1,3 +1,7 @@
+/** ESI applies when the BASIC salary is under ₹21,000 (varun, 2026-11-06). Used by the letters and the onboarding form. */
+export const ESI_BASIC_LIMIT = 21000;
+export const esiApplies = (basic: number) => basic < ESI_BASIC_LIMIT;
+
 export interface SalaryBreakup {
   basic: number;
   allowances: number;
@@ -19,11 +23,11 @@ export function calculateSalary(basicIn: number | string, allowancesIn: number |
   const basic = Math.round(Number(basicIn) || 0);
   const allowances = Math.round(Number(allowancesIn) || 0);
   const gross = basic + allowances;
-  const esiEmployee = basic < 21000 ? Math.round(basic * 0.0075) : 0;
+  const esiEmployee = esiApplies(basic) ? Math.round(basic * 0.0075) : 0;
   const pfBase = Math.min(basic, 25000);
   const pfEmployee = Math.round(pfBase * 0.12);
   const takeHome = Math.round(gross - (esiEmployee + pfEmployee));
-  const esiEmployer = basic < 21000 ? Math.round(basic * 0.0325) : 0;
+  const esiEmployer = esiApplies(basic) ? Math.round(basic * 0.0325) : 0;
   const pfEmployer = Math.round(pfBase * 0.12);
   const totalCtc = Math.round(gross + esiEmployer + pfEmployer);
   return { basic, allowances, gross, esiEmployee, pfEmployee, takeHome, esiEmployer, pfEmployer, totalCtc };
