@@ -3,10 +3,10 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { deleteShowroom, orderShowrooms, saveShowroom } from "@/app/actions/website";
 import { Field, Flash, Modal } from "@/components/ui";
-import { BUSINESS_KEYS, checkShowroom, type BusinessKey, type Showroom, type SiteContent } from "@/lib/site";
+import { BUSINESS_KEYS, checkShowroom, phoneText, type BusinessKey, type Showroom, type SiteContent } from "@/lib/site";
 
 type Msg = { ok: boolean; message: string } | null;
-const EMPTY: Showroom = { business: "jewellery", brand: "", town: "", company: "", street: "", pin: "" };
+const EMPTY: Showroom = { business: "jewellery", brand: "", town: "", company: "", street: "", pin: "", phone: "" };
 
 /** Every showroom on balasanka.in, by business: add, change, remove and reorder. Changes are live on save. */
 export function ShowroomsEditor({ rows, businesses, ready }: { rows: Showroom[]; businesses: SiteContent["businesses"]; ready: boolean }) {
@@ -34,7 +34,7 @@ export function ShowroomsEditor({ rows, businesses, ready }: { rows: Showroom[];
   return (
     <section className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm text-slate-600">{rows.length} showrooms in {lists.town.length} towns. Town pages, counts, the footer and Google&apos;s shop details update by themselves.</p>
+        <p className="text-sm text-slate-600">{rows.length} showrooms in {lists.town.length} towns, {rows.filter((r) => r.phone).length} with a phone number. Town pages, counts, the footer and Google&apos;s shop details update by themselves.</p>
         <button className="btn-primary" disabled={!ready} onClick={() => { setMsg(null); setEdit({ ...EMPTY }); }}>+ Add showroom</button>
       </div>
       {!edit && <Flash msg={msg} />}
@@ -50,6 +50,7 @@ export function ShowroomsEditor({ rows, businesses, ready }: { rows: Showroom[];
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-slate-900">{s.brand} <span className="font-normal text-slate-500">· {s.town}</span></p>
                     <p className="truncate text-slate-600">{s.street}, {s.pin}{s.company ? ` · ${s.company}` : ""}</p>
+                    <p className={s.phone ? "text-slate-600" : "text-amber-700"}>{s.phone ? `Phone ${phoneText(s.phone)}` : "No phone yet"}</p>
                   </div>
                   <div className="flex items-center gap-1">
                     <button className="btn-ghost !px-2" aria-label={`Move ${s.brand} ${s.town} up`} disabled={!ready || pending || i === 0} onClick={() => move(key, i, -1)}>↑</button>
@@ -104,10 +105,13 @@ function ShowroomForm({ s: start, lists, businesses, pending, msg, onSave, onDel
         <Field label="PIN code *"><input className="input" value={s.pin} onChange={set("pin")} inputMode="numeric" maxLength={7} placeholder="625531" /></Field>
         <Field label="Company that runs it"><input className="input" list="ws-companies" value={s.company} onChange={set("company")} placeholder="Balasanka Jewellery LLP" /></Field>
       </div>
+      <Field label="Phone number">
+        <input className="input" type="tel" inputMode="tel" maxLength={20} value={s.phone ?? ""} onChange={set("phone")} placeholder="98765 43210 or 04546 252525" />
+      </Field>
       <datalist id="ws-brands">{lists.brand.map((x) => <option key={x} value={x} />)}</datalist>
       <datalist id="ws-towns">{lists.town.map((x) => <option key={x} value={x} />)}</datalist>
       <datalist id="ws-companies">{lists.company.map((x) => <option key={x} value={x} />)}</datalist>
-      <p className="text-xs text-slate-500">The Google Maps link is made from the brand and address. The company name appears in the footer and on the About page.</p>
+      <p className="text-xs text-slate-500">The phone shows under the address as a tap-to-call link, and in Google&apos;s shop details. Leave it empty to show no phone. The Google Maps link is made from the brand and address. The company name appears in the footer and on the About page.</p>
       <Flash msg={local ?? msg} />
       <div className="flex flex-wrap gap-2">
         <button className="btn-primary" disabled={pending}>{pending ? "Saving…" : "Save"}</button>

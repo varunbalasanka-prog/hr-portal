@@ -12,13 +12,15 @@ export const BUSINESS_SLUGS: Record<BusinessKey, string> = { vehicles: "two-whee
 export const FOODS_KEY = "foods";
 export const FOODS_SLUG = "dhal-and-tamarind";
 
-export type Showroom = { id?: string; business: BusinessKey; brand: string; town: string; company: string; street: string; pin: string; sort?: number };
+export type Showroom = { id?: string; business: BusinessKey; brand: string; town: string; company: string; street: string; pin: string; phone?: string | null; sort?: number };
 export type ShowroomGroup = { key: BusinessKey; slug: string; title: string; tamil: string; blurb: string; showrooms: Showroom[] };
 export type BusinessText = { title: string; tamil: string; blurb: string };
 export type BrandChip = { name: string; note: string; logo?: string };
 export type StoryItem = { year: string; title: string; text: string };
 export type ValueItem = { title: string; text: string };
-export type Foods = { title: string; tamil: string; blurb: string; products: string[]; brands: { name: string; note: string }[] };
+/** The factory outlet families can visit. Empty fields are simply not shown. */
+export type Outlet = { street: string; pin: string; hours: string; phone: string };
+export type Foods = { title: string; tamil: string; blurb: string; products: string[]; brands: { name: string; note: string }[]; outlet: Outlet };
 
 /** Everything on the site that is words, one entry per site_content key. */
 export type SiteContent = {
@@ -103,11 +105,31 @@ export const POST_SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const clean = (s: unknown) => (typeof s === "string" ? s.replace(/\s+/g, " ").trim() : "");
 
+/**
+ * An Indian phone number as its 10 digits (mobile, or landline with its STD code), or null if it isn't one.
+ * Accepts the ways people write it: "98765 43210", "+91 98765-43210", "04546 252525", "091 4546 252525".
+ */
+export function phoneDigits(raw: unknown): string | null {
+  let d = typeof raw === "string" ? raw.replace(/\D/g, "") : "";
+  if (d.length === 12 && d.startsWith("91")) d = d.slice(2);
+  else if (d.length === 13 && d.startsWith("091")) d = d.slice(3);
+  else if (d.length === 11 && d.startsWith("0")) d = d.slice(1);
+  return /^[2-9]\d{9}$/.test(d) ? d : null;
+}
+/** The number for a tap-to-call link and for Google: +91 and the 10 digits. */
+export const telHref = (raw: string) => { const d = phoneDigits(raw); return d ? `tel:+91${d}` : null; };
+/** A number written the usual way: mobiles as "98765 43210", landlines as typed (their STD code length varies). */
+export function phoneText(raw: string) {
+  const d = phoneDigits(raw);
+  return d && /^[6-9]/.test(d) ? `${d.slice(0, 5)} ${d.slice(5)}` : clean(raw);
+}
+
 /** A showroom from the form, tidied, or what is wrong with it. */
 export function checkShowroom(x: Partial<Showroom>): { ok: true; value: Showroom } | { ok: false; message: string } {
   const value: Showroom = {
     business: x.business as BusinessKey,
     brand: clean(x.brand), town: clean(x.town), company: clean(x.company), street: clean(x.street), pin: clean(x.pin).replace(/\s/g, ""),
+    phone: clean(x.phone) || null,
     sort: Number.isFinite(x.sort) ? Math.round(x.sort!) : 0,
   };
   if (!BUSINESS_KEYS.includes(value.business)) return { ok: false, message: "Choose the business." };
@@ -116,6 +138,7 @@ export function checkShowroom(x: Partial<Showroom>): { ok: true; value: Showroom
   if (!/^[A-Za-z][A-Za-z .'-]*$/.test(value.town)) return { ok: false, message: "Write the town in English letters, like Theni." };
   if (!value.street) return { ok: false, message: "Street address is needed." };
   if (!PIN.test(value.pin)) return { ok: false, message: "PIN code must be 6 digits." };
+  if (value.phone && (!phoneDigits(value.phone) || value.phone.length > 20)) return { ok: false, message: "Phone must be a 10-digit mobile, or a landline with its STD code (like 04546 252525)." };
   if (value.brand.length > 80 || value.town.length > 60 || value.company.length > 120 || value.street.length > 200) return { ok: false, message: "One of the fields is too long." };
   return { ok: true, value };
 }
@@ -204,6 +227,12 @@ export function checkContent<K extends ContentKey>(key: K, v: SiteContent[K]): s
       if (e) return e;
       if (!f.products?.length || f.products.some((p) => !p.trim() || p.length > 60)) return "List at least one product (60 letters each at most).";
       for (const b of f.brands ?? []) { const x = words(b.name, "A food brand name", 40) ?? (b.note.length <= 200 ? null : `The line for ${b.name} is too long.`); if (x) return x; }
+      const o = f.outlet;
+      if (o) {
+        if (o.street.length > 200 || o.hours.length > 120) return "The outlet address or hours are too long.";
+        if (o.pin && !PIN.test(o.pin.trim())) return "Outlet PIN code must be 6 digits.";
+        if (o.phone && !phoneDigits(o.phone)) return "Outlet phone must be a 10-digit mobile, or a landline with its STD code.";
+      }
       return null;
     }
   }

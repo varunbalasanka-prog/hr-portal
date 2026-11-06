@@ -113,6 +113,13 @@ export function WordsEditor({ content, showrooms, ready }: { content: SiteConten
         <p className="label">Food brands (one line each)</p>
         <List items={c.foods.brands} onChange={(v) => put("foods", { ...c.foods, brands: v })} blank={() => ({ name: "", note: "" })} addLabel="Add line" max={12}
           render={(b, set) => <div className="grid gap-2 sm:grid-cols-2"><Text label="Name" max={40} value={b.name} onChange={(v) => set({ ...b, name: v })} /><Text label="Line under it" max={200} value={b.note} onChange={(v) => set({ ...b, note: v })} /></div>} />
+        <p className="label pt-2">Factory outlet (under &quot;How to buy&quot;; empty boxes are not shown)</p>
+        <div className="grid gap-2 rounded-lg border border-slate-200 p-3 sm:grid-cols-2">
+          <div className="sm:col-span-2"><Text label="Street address (Theni is added for you)" max={200} value={c.foods.outlet.street} onChange={(v) => put("foods", { ...c.foods, outlet: { ...c.foods.outlet, street: v } })} /></div>
+          <Text label="PIN code" max={7} value={c.foods.outlet.pin} onChange={(v) => put("foods", { ...c.foods, outlet: { ...c.foods.outlet, pin: v } })} />
+          <Text label="Phone number" max={20} value={c.foods.outlet.phone} onChange={(v) => put("foods", { ...c.foods, outlet: { ...c.foods.outlet, phone: v } })} />
+          <div className="sm:col-span-2"><Text label="Opening hours, like: Monday to Saturday, 9 am to 7 pm" max={120} value={c.foods.outlet.hours} onChange={(v) => put("foods", { ...c.foods, outlet: { ...c.foods.outlet, hours: v } })} /></div>
+        </div>
       </Part>
 
       <Part k="about" title="About page" value={c.about} ready={ready} help={COUNTS}>

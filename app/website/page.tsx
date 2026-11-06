@@ -11,7 +11,7 @@ export default async function WebsitePage() {
   const { supabase, profile } = await requireSuperAdmin();
   const [content, showrooms, posts] = await Promise.all([
     supabase.from("site_content").select("key, value"),
-    supabase.from("site_showrooms").select("id, business, brand, town, company, street, pin, sort").order("sort"),
+    supabase.from("site_showrooms").select("*").order("sort"),
     supabase.from("site_posts").select("id, slug, title, description, category, body, published_on, checked_on, status, updated_at").order("published_on", { ascending: false }),
   ]);
   const ready = !content.error && !showrooms.error && !posts.error;

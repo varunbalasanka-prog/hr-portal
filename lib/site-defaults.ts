@@ -42,7 +42,7 @@ const STORY: SiteContent["about"]["story"] = [
   {
     year: "1991",
     title: "Balasanka Dhal",
-    text: "The family opens its first pulses factory, Balasanka Dhal, and sets up Asia's first solar dryer for pulses. A second factory, Sanka Dhal, follows in 1995, and in 2016 our dhal goes on sale as Akshaya Dhal.",
+    text: "The family opens its first pulses factory, Balasanka Dhal, and sets up an early solar dryer for pulses. A second factory, Sanka Dhal, follows in 1995, and in 2016 our dhal goes on sale as Akshaya Dhal.",
   },
   {
     year: "1997",
@@ -168,5 +168,7 @@ export const DEFAULT_CONTENT: SiteContent = {
     { name: "Akshaya Dhal", note: "Our toor, urad and moong dhal." },
     { name: "Akshaya Tamarind", note: "Our block, chappati and seedless tamarind. The tamarind business began as SGT in 1966." },
   ],
+  // Filled in by varun on the Website page; until then the page just says "in Theni".
+  outlet: { street: "", pin: "", hours: "", phone: "" },
 },
 };

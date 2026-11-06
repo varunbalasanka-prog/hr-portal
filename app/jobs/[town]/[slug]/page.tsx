@@ -45,17 +45,18 @@ export default async function JobPage(props: Props) {
         </header>
         <div className="space-y-4 p-4 text-sm leading-relaxed sm:p-6">
           <p>{c.intro}{c.summary && ` ${c.summary}`}</p>
+          <p lang="ta" className="text-slate-700">{c.introTa}</p>
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
-            {c.salary && <><dt className="font-semibold">Salary</dt><dd>{c.salary}</dd></>}
-            {c.shift && <><dt className="font-semibold">Working hours</dt><dd>{c.shift}</dd></>}
-            <dt className="font-semibold">Address</dt><dd>{c.address}</dd>
-            <dt className="font-semibold">Posted</dt><dd>{formatDate(istDate(job.opened_at))}</dd>
-            {job.closes_on && <><dt className="font-semibold">Apply by</dt><dd>{formatDate(job.closes_on)}</dd></>}
+            {c.salary && <><Term en="Salary" ta="சம்பளம்" /><dd>{c.salary}</dd></>}
+            {c.shift && <><Term en="Working hours" ta="வேலை நேரம்" /><dd>{c.shift}</dd></>}
+            <Term en="Address" ta="முகவரி" /><dd>{c.address}</dd>
+            <Term en="Posted" ta="வெளியான தேதி" /><dd>{formatDate(istDate(job.opened_at))}</dd>
+            {job.closes_on && <><Term en="Apply by" ta="கடைசி தேதி" /><dd>{formatDate(job.closes_on)}</dd></>}
           </dl>
-          <List head="Duties" items={c.duties} />
-          <List head="Requirements" items={c.requirements} />
-          <List head="Benefits" items={c.benefits} />
-          <p>Apply online in about 5 minutes.</p>
+          <List head="Duties" ta="பணிகள்" items={c.duties} />
+          <List head="Requirements" ta="தகுதிகள்" items={c.requirements} />
+          <List head="Benefits" ta="சலுகைகள்" items={c.benefits} />
+          <p>Apply online in about 5 minutes. <span lang="ta">சுமார் 5 நிமிடங்களில் ஆன்லைனில் விண்ணப்பிக்கலாம்.</span></p>
           <Link href={apply} className="btn-primary h-11 w-full text-base sm:w-auto">Apply for this job / விண்ணப்பிக்கவும்</Link>
         </div>
       </article>
@@ -63,11 +64,16 @@ export default async function JobPage(props: Props) {
   );
 }
 
-function List({ head, items }: { head: string; items: string[] }) {
+/** English label with its Tamil beside it, as on the apply form. */
+function Term({ en, ta }: { en: string; ta: string }) {
+  return <dt className="font-semibold">{en} <span lang="ta" className="font-normal text-slate-600">/ {ta}</span></dt>;
+}
+
+function List({ head, ta, items }: { head: string; ta: string; items: string[] }) {
   if (!items.length) return null;
   return (
     <section>
-      <h2 className="font-bold text-brand">{head}</h2>
+      <h2 className="font-bold text-brand">{head} <span lang="ta" className="font-semibold text-slate-600">/ {ta}</span></h2>
       <ul className="ml-5 list-disc">{items.map((i) => <li key={i}>{i}</li>)}</ul>
     </section>
   );

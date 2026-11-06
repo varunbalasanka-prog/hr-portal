@@ -57,6 +57,8 @@ export function jobContent(j: Job) {
   return {
     title: `${j.post} – ${brand}, ${j.branch.town}`,
     intro,
+    // Tamil line under the English one (post and brand names stay as the showroom writes them).
+    introTa: `${j.branch.town} ${brand} கிளையில் ${j.post} வேலை. முழு நேர வேலை.`,
     summary: j.role?.summary?.trim() || "",
     duties: lines(j.role?.duties),
     requirements: lines(j.role?.requirements),

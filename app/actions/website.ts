@@ -14,7 +14,9 @@ function refreshSite() {
 }
 
 const failed = (e: { message: string; code?: string } | null): Result =>
-  e?.code === "42P01" || /relation .* does not exist|schema cache/.test(e?.message ?? "")
+  /'phone' column|column .*phone/.test(e?.message ?? "")
+    ? { ok: false, message: "Phones can't be saved yet. Run 0032_showroom_phones.sql in Supabase first." }
+    : e?.code === "42P01" || /relation .* does not exist|schema cache/.test(e?.message ?? "")
     ? { ok: false, message: "The website tables are not set up yet. Run 0029_website_content.sql in Supabase first." }
     : e?.code === "23505" ? { ok: false, message: "Another post already uses this web address. Change it slightly." }
     : { ok: false, message: e?.message ?? "Could not save." };
