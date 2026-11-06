@@ -66,3 +66,10 @@ describe("appraisal form", () => {
     expect(risePct({ current_basic: null, current_allowances: null, proposed_basic: 11000, proposed_allowances: 0 })).toBeNull();
   });
 });
+
+
+describe("Watches & eyewear stores", () => {
+  it("use the jewellery appraisal form", () => {
+    expect(kindFor("Watches & eyewear")).toBe("jewellery");
+  });
+});

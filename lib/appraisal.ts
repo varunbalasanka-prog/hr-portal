@@ -165,9 +165,12 @@ export function currentForms(saved: { kind: string; form: AppraisalForm }[] | nu
   return out;
 }
 
-/** Same mapping as appraisal_kind() in 0022_appraisal_forms.sql. */
+/** Watch and eyewear stores (Titan, Fastrack, Titan Eye+) use the jewellery form: same retail floor, same sales roles. */
+export const WATCHES = "Watches & eyewear";
+
+/** Same mapping as appraisal_kind() in 0032_watches_group.sql. */
 export function kindFor(businessType: string | null | undefined): FormKind | null {
-  return businessType === "Jewellery" ? "jewellery" : businessType === "Automobiles" || businessType === "Cycles" ? "automobile" : null;
+  return businessType === "Jewellery" || businessType === WATCHES ? "jewellery" : businessType === "Automobiles" || businessType === "Cycles" ? "automobile" : null;
 }
 
 /** Fields the approval steps rely on. Admins can reword them but not remove them or change their type. */
