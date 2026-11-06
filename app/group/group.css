@@ -2,8 +2,8 @@
  * balasanka.in company site: motion and texture. Loaded only by the group layout.
  *
  * One motion family: every entrance uses EASE, rises at most 16px, lasts 500-700ms and plays once.
- * Loops only run while their drawing is on screen ([data-live].is-live) and stop when the visitor
- * picks "Pause animations" (html[data-motion="calm"]). The top of each page is never hidden.
+ * Loops only run while their drawing is on screen ([data-live].is-live). varun chose (6 Nov 2026) to have no
+ * pause control. The top of each page is never hidden.
  */
 :root { --g-ease: cubic-bezier(0.2, 0, 0, 1); --g-ink: #2b2177; }
 /* Anchor links land below the sticky header. */
@@ -66,16 +66,6 @@ html[data-intro="on"] .g-intro img {
 @keyframes g-intro-in { from { opacity: 0; transform: translateY(8px) scale(0.97); } to { opacity: 1; transform: none; } }
 @keyframes g-intro-lift { to { transform: scale(1.06); } }
 @keyframes g-intro-out { to { opacity: 0; visibility: hidden; } }
-
-/* ---------- Calm mode: no loops, no intro, reveals fade only, drawings shown whole ---------- */
-html[data-motion="calm"] .g-site * { animation: none !important; }
-html[data-motion="calm"] .reveal-ready [data-reveal] { transform: none; }
-html[data-motion="calm"] .reveal-ready [data-reveal="draw"] .g-line { stroke-dashoffset: 0; fill-opacity: 1; transition: none; }
-html[data-motion="calm"] .reveal-ready [data-reveal="draw"] .g-fill { opacity: 1; transition: none; }
-html[data-motion="calm"] .g-strip { mask-image: none; }
-html[data-motion="calm"] .g-marquee { width: auto; }
-html[data-motion="calm"] .g-marquee > ul { flex-wrap: wrap; flex-shrink: 1; justify-content: center; row-gap: 1.25rem; }
-html[data-motion="calm"] .g-marquee [aria-hidden="true"] { display: none; }
 
 /* ---------- Scroll progress line (browsers without scroll timelines skip it) ---------- */
 .g-progress { display: none; }

@@ -1,5 +1,4 @@
 import { EmailLink } from "./email-link";
-import { MotionToggle } from "./motion-toggle";
 import { CAREERS_SITE, FOODS_PAGE, groupHref, listOf, type Showroom, type Site, fullAddress, mapLink } from "@/lib/group";
 import { LINK } from "./style";
 import { phoneText, telHref } from "@/lib/site";
@@ -78,7 +77,6 @@ export function SiteFooter({ site }: { site: Site }) {
             {NAV.map(([label, href]) => <li key={href}><a className="inline-block py-2 hover:underline md:py-1" href={href}>{label}</a></li>)}
             <li><a className="inline-block py-2 hover:underline md:py-1" href={`${CAREERS_SITE}/careers`}>Careers</a></li>
             <li><a className="inline-block py-2 hover:underline md:py-1" href={`${CAREERS_SITE}/privacy`}>Privacy</a></li>
-            <li className="py-2 md:py-1"><MotionToggle /></li>
           </ul>
         </div>
       </div>
