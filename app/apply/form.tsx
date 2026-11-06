@@ -1,7 +1,7 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { fieldName, groupBySection, isVisible, latestDate, MAX_ANSWER, splitBilingual, todayInIndia, type ApplyQuestion } from "@/lib/apply-questions";
+import { fieldName, groupBySection, isVisible, latestDate, MAX_ANSWER, normalizeMobile, splitBilingual, todayInIndia, type ApplyQuestion } from "@/lib/apply-questions";
 import { browserStorage, checkFile, extFor, shrinkImage } from "@/lib/upload-client";
 import { startApplication, submitApplication } from "./actions";
 import type { ApplyConfig } from "./config";
@@ -16,6 +16,22 @@ const wide = (q: ApplyQuestion) =>
   q.type === "long_text" || splitBilingual(q.label)[0].length > 42 || q.options.some((o) => o.length > 24);
 
 type FieldError = { field?: string; message: string } | null;
+
+const BAD_MOBILE = "Please enter a valid 10-digit mobile number. / சரியான 10 இலக்க கைபேசி எண்ணை உள்ளிடவும்.";
+
+/** The browser's own "Please fill in this field" bubbles are English only, so give every box a Tamil + English message. */
+function bilingualMessage(el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement): string {
+  const v = el.validity;
+  if (v.valueMissing) {
+    if (el instanceof HTMLInputElement && el.type === "checkbox") return "Please tick this box to continue. / தொடர இந்தப் பெட்டியில் டிக் செய்யவும்.";
+    if (el instanceof HTMLInputElement && el.type === "file") return "Please attach this file. / இந்தக் கோப்பை இணைக்கவும்.";
+    if (el instanceof HTMLSelectElement) return "Please choose one. / ஒன்றைத் தேர்வு செய்யவும்.";
+    return "Please fill this in. / இதை நிரப்பவும்.";
+  }
+  if (v.typeMismatch && el.type === "email") return "Please enter a valid email, like name@gmail.com. / சரியான மின்னஞ்சலை உள்ளிடவும்.";
+  if (v.tooLong) return "This answer is too long. / இந்தப் பதில் மிக நீளம்.";
+  return "Please check this answer. / இந்தப் பதிலைச் சரிபார்க்கவும்.";
+}
 
 /** Fixed fields (branch, post, name, mobile, father's name, marital status, email, address) feed the candidate record and
  *  letters, so they can't be removed. Everything else comes from the questions the admin manages.
@@ -32,6 +48,21 @@ export function ApplyForm({ branches, questions, initialBranch, initialPost, loc
   const [captcha, setCaptcha] = useState("");
   const [captchaKey, setCaptchaKey] = useState(0);
   const formRef = useRef<HTMLFormElement>(null);
+  // Submit stays off until the page's code has loaded, so an early tap can't send the form the plain-HTML way.
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    setReady(true);
+    // "invalid" doesn't bubble, so listen on the way down (capture) to swap in the bilingual message before the browser shows it.
+    const form = formRef.current;
+    if (!form) return;
+    const onInvalid = (e: Event) => {
+      const el = e.target as HTMLInputElement;
+      el.setCustomValidity("");
+      if (!el.validity.valid) el.setCustomValidity(bilingualMessage(el));
+    };
+    form.addEventListener("invalid", onInvalid, true);
+    return () => form.removeEventListener("invalid", onInvalid, true);
+  }, [doneRef]);
   const towns = [...new Set(branches.map((b) => b.town))];
   const visible = questions.filter((q) => isVisible(q, choices, questions));
   const sections = groupBySection(visible);
@@ -85,6 +116,9 @@ export function ApplyForm({ branches, questions, initialBranch, initialPost, loc
     if (progress) return;
     setError(null);
     const fd = new FormData(e.currentTarget);
+    const mobile = normalizeMobile(String(fd.get("mobile") ?? ""));
+    if (!mobile) return fail({ field: "mobile", message: BAD_MOBILE });
+    fd.set("mobile", mobile);
     const fileQs = visible.filter((q) => q.type === "file");
     const picked = fileQs.map((q) => [q, fd.get(fieldName(q))] as const).filter((x): x is [ApplyQuestion, File] => x[1] instanceof File && x[1].size > 0);
     for (const q of questions.filter((x) => x.type === "file")) fd.delete(fieldName(q));
@@ -117,7 +151,9 @@ export function ApplyForm({ branches, questions, initialBranch, initialPost, loc
   }
 
   return (
-    <form ref={formRef} className="space-y-5" onSubmit={onSubmit} noValidate={false}>
+    <form ref={formRef} method="post" className="space-y-5" onSubmit={onSubmit} noValidate={false}
+      onInputCapture={(e) => (e.target as HTMLInputElement).setCustomValidity?.("")}
+      onChangeCapture={(e) => (e.target as HTMLInputElement).setCustomValidity?.("")}>
       {error && <div role="alert" className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error.message}</div>}
       <p className="text-xs text-slate-600">Fields marked <span className="text-red-700">*</span> are required. / <span className="text-red-700">*</span> குறியிட்டவை கட்டாயம்.</p>
 
@@ -153,7 +189,7 @@ export function ApplyForm({ branches, questions, initialBranch, initialPost, loc
       <Section n={2} title={ABOUT_YOU}>
         <Field label="Full name / முழுப் பெயர்" required error={errFor("name")}><input name="name" className="input h-10" required maxLength={120} autoComplete="name" /></Field>
         <Field label="Mobile number / கைபேசி எண்" required error={errFor("mobile")}>
-          <input name="mobile" className="input h-10" type="tel" inputMode="numeric" pattern="[0-9+ ]{10,14}" required autoComplete="tel" placeholder="10 digits / 10 இலக்கங்கள்" />
+          <input name="mobile" className="input h-10" type="tel" inputMode="tel" maxLength={20} required autoComplete="tel" placeholder="10 digits / 10 இலக்கங்கள்" />
         </Field>
         <Field label="Father's / husband's name / தந்தை / கணவர் பெயர்" required error={errFor("father_name")}><input name="father_name" className="input h-10" required maxLength={120} /></Field>
         {aboutYou.map(question)}
@@ -208,7 +244,7 @@ export function ApplyForm({ branches, questions, initialBranch, initialPost, loc
         <br />புகைப்படம் அல்லது PDF மட்டும், ஒவ்வொன்றும் 5 MB வரை. பெரிய புகைப்படங்கள் தானாகச் சிறியதாக்கப்படும்.
       </p>
       <Turnstile key={captchaKey} onToken={setCaptcha} />
-      <button className="btn-primary h-12 w-full text-base" disabled={!!progress} aria-live="polite">
+      <button className="btn-primary h-12 w-full text-base" disabled={!!progress || !ready} aria-live="polite">
         {progress || "Submit application / விண்ணப்பத்தைச் சமர்ப்பிக்கவும்"}
       </button>
     </form>
@@ -253,18 +289,22 @@ function DateParts({ name, required, latest }: { name: string; required: boolean
   const [y, setY] = useState("");
   const maxYear = Number(latest.slice(0, 4));
   const years = Array.from({ length: 60 }, (_, i) => maxYear - i);
+  // Only days that exist in the chosen month (no 31 February); 29 Feb only in leap years.
+  const daysIn = (mm: string, yy: string) => (mm ? new Date(Number(yy) || 2000, Number(mm), 0).getDate() : 31);
+  const maxDay = daysIn(m, y);
+  const pick = (mm: string, yy: string) => { if (Number(d) > daysIn(mm, yy)) setD(""); };
   const value = d && m && y ? `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}` : "";
   return (
     <div className="grid grid-cols-[1fr_1.4fr_1.2fr] gap-2">
       <select className="input h-10" aria-label="Day / நாள்" required={required} value={d} onChange={(e) => setD(e.target.value)}>
         <option value="">Day</option>
-        {Array.from({ length: 31 }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{n}</option>)}
+        {Array.from({ length: maxDay }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{n}</option>)}
       </select>
-      <select className="input h-10" aria-label="Month / மாதம்" required={required} value={m} onChange={(e) => setM(e.target.value)}>
+      <select className="input h-10" aria-label="Month / மாதம்" required={required} value={m} onChange={(e) => { setM(e.target.value); pick(e.target.value, y); }}>
         <option value="">Month</option>
         {MONTHS.map((label, i) => <option key={label} value={i + 1}>{label}</option>)}
       </select>
-      <select className="input h-10" aria-label="Year / ஆண்டு" required={required} value={y} onChange={(e) => setY(e.target.value)}>
+      <select className="input h-10" aria-label="Year / ஆண்டு" required={required} value={y} onChange={(e) => { setY(e.target.value); pick(m, e.target.value); }}>
         <option value="">Year</option>
         {years.map((n) => <option key={n} value={n}>{n}</option>)}
       </select>
