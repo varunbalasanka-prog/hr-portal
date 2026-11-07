@@ -13,7 +13,7 @@ export async function GET() {
     "# Balasanka Group of Companies: jobs",
     "",
     "> Jewellery, watch and automobile showrooms in South Tamil Nadu, India, hiring full-time staff. Apply online at the links below;",
-    "> the form takes about 5 minutes and is in English and Tamil. Candidates must be 18 or older.",
+    "> the form takes about 1 minute and is in English and Tamil. Candidates must be 18 or older.",
     "",
     `- Careers page: ${base}/careers`,
     `- Apply (any branch): ${base}/apply`,

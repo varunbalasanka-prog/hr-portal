@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { checkAnswer, cleanPosts, cleanQuestion, groupBySection, isVisible, splitBilingual, latestDate, cleanBranchPosts, type AdminQuestion } from "../lib/apply-questions";
 
 const q = (id: string, extra: Partial<AdminQuestion> = {}): AdminQuestion => ({
-  id, section: "Experience", label: id, type: "text", options: [], required: false, show_when: null, min_age: null, sort_order: 0, active: true, ...extra,
+  id, section: "Experience", label: id, type: "text", options: [], required: false, show_when: null, min_age: null, sort_order: 0, active: true, ask_at: "apply", ...extra,
 });
 const exp = q("exp", { type: "choice", options: ["Fresher", "Experienced"], required: true });
 const company = q("company", { required: true, show_when: { question_id: "exp", equals: "Experienced" } });
@@ -29,10 +29,41 @@ describe("checkAnswer", () => {
     expect(checkAnswer(q("d", { type: "date" }), "2001-05-04")).toBeNull();
     expect(checkAnswer(q("d", { type: "date" }), "4/5/01")).toMatch(/date/);
   });
+  it("treats a number with a minimum age as an age in years", () => {
+    const age = q("age", { type: "number", min_age: 18, required: true });
+    expect(checkAnswer(age, "")).toMatch(/Please answer/);
+    expect(checkAnswer(age, "17")).toMatch(/at least 18/);
+    expect(checkAnswer(age, "18")).toBeNull();
+    expect(checkAnswer(age, "45")).toBeNull();
+    expect(checkAnswer(age, "18.5")).toMatch(/age in years/);
+    expect(checkAnswer(age, "150")).toMatch(/age in years/);
+  });
+});
+
+describe("cleanQuestion: when it is asked", () => {
+  const base = { section: "Experience", label: "Notice period", type: "text", options: [], required: false, show_when: null, min_age: null };
+  it("keeps the step and defaults to the apply page", () => {
+    const r = cleanQuestion({ ...base, ask_at: "after_interview" }, all);
+    expect(r.ok && r.value.ask_at).toBe("after_interview");
+    const d = cleanQuestion({ ...base, ask_at: "bogus" as never }, all);
+    expect(d.ok && d.value.ask_at).toBe("apply");
+  });
+  it("only lets a question depend on one asked at the same time", () => {
+    expect(cleanQuestion({ ...base, ask_at: "after_interview", show_when: { question_id: "exp", equals: "Experienced" } }, all).ok).toBe(false);
+    const later = [{ ...exp, ask_at: "after_interview" as const }, { ...company, ask_at: "after_interview" as const }];
+    expect(cleanQuestion({ ...base, ask_at: "after_interview", show_when: { question_id: "exp", equals: "Experienced" } }, later).ok).toBe(true);
+  });
+  it("won't move a question away from the questions that depend on it", () => {
+    expect(cleanQuestion({ ...base, label: "exp", type: "choice", options: ["Fresher", "Experienced"], ask_at: "after_interview" }, all, "exp").ok).toBe(false);
+  });
+  it("allows a minimum age on a number (an age question)", () => {
+    const r = cleanQuestion({ ...base, label: "Age", type: "number", min_age: 18, ask_at: "apply" }, all);
+    expect(r.ok && r.value.min_age).toBe(18);
+  });
 });
 
 describe("cleanQuestion", () => {
-  const base = { section: " Experience ", label: "  Notice   period ", type: "text", options: [], required: false, show_when: null, min_age: null };
+  const base = { section: " Experience ", label: "  Notice   period ", type: "text", options: [], required: false, show_when: null, min_age: null, ask_at: "apply" as const };
   it("tidies spacing", () => {
     const r = cleanQuestion(base, all);
     expect(r.ok && r.value).toMatchObject({ label: "Notice period", section: "Experience" });
@@ -85,8 +116,8 @@ describe("minimum age", () => {
     expect(checkAnswer(dob, "2008-10-24", "2026-10-24")).toBeNull();
     expect(checkAnswer(dob, "2008-10-25", "2026-10-24")).toMatch(/at least 18/);
   });
-  it("only applies to date questions", () => {
-    const base = { section: "x", label: "When", type: "text", options: [], required: false, show_when: null, min_age: 18 };
+  it("only applies to date and number questions", () => {
+    const base = { section: "x", label: "When", type: "text", options: [], required: false, show_when: null, min_age: 18, ask_at: "apply" as const };
     const r = cleanQuestion(base, all);
     expect(r.ok && r.value.min_age).toBeNull();
     expect(cleanQuestion({ ...base, type: "date", min_age: 0.5 }, all).ok).toBe(false);

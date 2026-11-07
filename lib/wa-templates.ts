@@ -22,6 +22,10 @@ export const WA_TEMPLATES: WaTemplate[] = [
     text: (c) => `நினைவூட்டல்: ${c.name}, உங்கள் நேர்காணல் ${c.when} அன்று ${c.branch}-இல் நடைபெறும். வர இயலாவிட்டால் தயவுசெய்து தெரிவிக்கவும்.\n\nReminder: ${c.name}, your interview is on ${c.when} at ${c.branch}. If you can't come, please let us know.${sign(c)}`,
   },
   {
+    key: "details", label: "After-interview details form", needs: ["link"],
+    text: (c) => `வணக்கம் ${c.name}, நேர்காணலில் கலந்துகொண்டதற்கு நன்றி. ${c.post} பதவிக்கான அடுத்த படிக்கு, இந்த இணைப்பில் உங்கள் விவரங்களை நிரப்பவும்:\n${c.link}\n\nHello ${c.name}, thank you for attending the interview. For the next step for ${c.post}, please fill your details here:\n${c.link}${sign(c)}`,
+  },
+  {
     key: "offer", label: "Offer letter", needs: ["link"],
     text: (c) => `வாழ்த்துகள் ${c.name}! ${c.branch}-இல் ${c.post} பதவிக்கு நீங்கள் தேர்ந்தெடுக்கப்பட்டுள்ளீர்கள். உங்கள் பணி வாய்ப்புக் கடிதத்தைப் பார்த்து, ஏற்றுக்கொள்வதை இங்கே உறுதிப்படுத்தவும்:\n${c.link}\n\nCongratulations ${c.name}! You have been selected for ${c.post} at ${c.branch}. Please view your offer letter and accept it here:\n${c.link}${sign(c)}`,
   },

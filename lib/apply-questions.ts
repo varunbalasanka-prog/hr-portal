@@ -24,8 +24,15 @@ export type ApplyQuestion = {
   min_age: number | null;
 };
 
+/** Where a question is asked: on the /apply page, or on the after-interview details link (/details/<link>). */
+export const ASK_AT = {
+  apply: "Apply page (before the interview)",
+  after_interview: "After the interview (details link)",
+} as const;
+export type AskAt = keyof typeof ASK_AT;
+
 /** Admin view of a question, including deleted ones. */
-export type AdminQuestion = ApplyQuestion & { sort_order: number; active: boolean };
+export type AdminQuestion = ApplyQuestion & { sort_order: number; active: boolean; ask_at: AskAt };
 
 export const MAX_ANSWER = { text: 300, long_text: 1000, number: 20, date: 10, choice: 200 } as const;
 
@@ -70,6 +77,11 @@ export function checkAnswer(q: ApplyQuestion, value: string, today = todayInIndi
   if (value.length > MAX_ANSWER[q.type]) return `Answer is too long / பதில் மிக நீளம்: ${q.label}`;
   if (q.type === "choice" && !q.options.includes(value)) return `Please choose an option / ஒன்றைத் தேர்வு செய்யவும்: ${q.label}`;
   if (q.type === "number" && !/^\d[\d,.]*$/.test(value)) return `Please enter a number / எண்ணை உள்ளிடவும்: ${q.label}`;
+  // a number with a minimum age is an age in years (e.g. "Age")
+  if (q.type === "number" && q.min_age) {
+    if (!/^\d{1,3}$/.test(value) || Number(value) > 100) return `Please enter your age in years / வயதை ஆண்டுகளில் உள்ளிடவும்: ${q.label}`;
+    if (Number(value) < q.min_age) return `You must be at least ${q.min_age} years old / குறைந்தது ${q.min_age} வயது இருக்க வேண்டும்: ${q.label}`;
+  }
   if (q.type === "date" && !isRealDate(value)) return `Please enter a date / தேதியை உள்ளிடவும்: ${q.label}`;
   if (q.type === "date" && q.min_age && value > latestDate(q.min_age, today)) {
     return `You must be at least ${q.min_age} years old / குறைந்தது ${q.min_age} வயது இருக்க வேண்டும்: ${q.label}`;
@@ -85,6 +97,7 @@ export type QuestionInput = {
   required: boolean;
   show_when: ShowWhen;
   min_age: number | null;
+  ask_at: AskAt;
 };
 
 /** Cleans what the admin typed. Returns the clean question or an error message. */
@@ -95,6 +108,7 @@ export function cleanQuestion(input: QuestionInput, others: AdminQuestion[], sel
   if (label.length > 300) return { ok: false, message: "Keep the question under 300 characters." };
   if (section.length > 80) return { ok: false, message: "Keep the section name under 80 characters." };
   if (!(input.type in QUESTION_TYPES)) return { ok: false, message: "Choose a question type." };
+  const ask_at: AskAt = input.ask_at === "after_interview" ? "after_interview" : "apply";
   const clash = others.find((o) => o.active && o.id !== selfId && o.label.trim().toLowerCase() === label.toLowerCase());
   if (clash) return { ok: false, message: "Another question already has this label. Use a different one." };
 
@@ -104,12 +118,15 @@ export function cleanQuestion(input: QuestionInput, others: AdminQuestion[], sel
 
   const child = others.find((o) => o.active && selfId && o.show_when?.question_id === selfId && !options.includes(o.show_when.equals));
   if (child) return { ok: false, message: `"${child.label}" only appears for the answer "${child.show_when!.equals}". Keep that option or change that question first.` };
+  const apart = others.find((o) => o.active && selfId && o.show_when?.question_id === selfId && (o.ask_at ?? "apply") !== ask_at);
+  if (apart) return { ok: false, message: `"${apart.label}" depends on this question and is asked at the other time. Move both together.` };
 
   let show_when: ShowWhen = null;
   if (input.show_when?.question_id) {
     const parent = others.find((o) => o.id === input.show_when!.question_id && o.active);
     if (!parent || parent.type !== "choice" || parent.id === selfId) return { ok: false, message: "'Only ask when' must point to another 'choose one' question." };
     if (!parent.options.includes(input.show_when.equals)) return { ok: false, message: "Pick which answer makes this question appear." };
+    if ((parent.ask_at ?? "apply") !== ask_at) return { ok: false, message: "'Only ask when' must point to a question asked at the same time (apply page or after the interview)." };
     // no loops: the parent's own chain must not lead back to this question
     for (let p: AdminQuestion | undefined = parent; p?.show_when; p = others.find((o) => o.id === p!.show_when!.question_id)) {
       if (p.show_when.question_id === selfId) return { ok: false, message: "Those conditions would loop back to this question." };
@@ -117,11 +134,11 @@ export function cleanQuestion(input: QuestionInput, others: AdminQuestion[], sel
     show_when = { question_id: parent.id, equals: input.show_when.equals };
   }
   let min_age: number | null = null;
-  if (input.type === "date" && input.min_age) {
+  if ((input.type === "date" || input.type === "number") && input.min_age) {
     if (!Number.isInteger(input.min_age) || input.min_age < 1 || input.min_age > 100) return { ok: false, message: "Minimum age must be a whole number from 1 to 100." };
     min_age = input.min_age;
   }
-  return { ok: true, value: { section, label, type: input.type, options, required: input.required, show_when, min_age } };
+  return { ok: true, value: { section, label, type: input.type, options, required: input.required, show_when, min_age, ask_at } };
 }
 
 /** Admin-entered post list: one per line, trimmed, no blanks or repeats. */

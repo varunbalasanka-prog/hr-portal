@@ -1,11 +1,11 @@
 "use client";
 import { useState, useTransition } from "react";
-import { QUESTION_TYPES, splitBilingual, type AdminQuestion, type QuestionInput } from "@/lib/apply-questions";
+import { ASK_AT, QUESTION_TYPES, splitBilingual, type AdminQuestion, type QuestionInput } from "@/lib/apply-questions";
 import { moveQuestion, saveQuestion, setQuestionActive } from "@/app/actions/questions";
 import { Badge, Field, Flash, Modal, Select } from "@/components/ui";
 
 type Msg = { ok: boolean; message: string } | null;
-const EMPTY: QuestionInput = { section: "More details / கூடுதல் விவரங்கள்", label: "", type: "text", options: [], required: false, show_when: null, min_age: null };
+const EMPTY: QuestionInput = { section: "More details / கூடுதல் விவரங்கள்", label: "", type: "text", options: [], required: false, show_when: null, min_age: null, ask_at: "apply" };
 
 export function QuestionsAdmin({ questions, posts }: { questions: AdminQuestion[]; posts: string[] }) {
   const [msg, setMsg] = useState<Msg>(null);
@@ -27,13 +27,14 @@ export function QuestionsAdmin({ questions, posts }: { questions: AdminQuestion[
         </div>
       </div>
       <p className="mb-2 text-xs text-slate-500">
-        Branch, post, name, mobile, father&apos;s name, marital status, email and address are always asked. Changes here only affect new
-        applications: every past application keeps the questions and answers exactly as they were when it was sent.
+        Branch, post, name, mobile and address are always asked on the apply page. Questions marked &quot;After the interview&quot; go on a
+        separate link that HR sends once a candidate is selected or put on hold (candidate › After-interview details). Changes here only
+        affect new answers: every past application keeps the questions and answers exactly as they were when it was sent.
       </p>
       <Flash msg={msg} />
 
       <table className="w-full text-sm">
-        <thead><tr className="border-b text-left text-xs text-slate-500"><th className="w-16">Order</th><th>Question</th><th>Section</th><th>Type</th><th /></tr></thead>
+        <thead><tr className="border-b text-left text-xs text-slate-500"><th className="w-16">Order</th><th>Question</th><th>Asked</th><th>Section</th><th>Type</th><th /></tr></thead>
         <tbody>{live.map((q, i) => (
           <tr key={q.id} className="border-b align-top last:border-0">
             <td className="py-1.5 whitespace-nowrap">
@@ -43,9 +44,10 @@ export function QuestionsAdmin({ questions, posts }: { questions: AdminQuestion[
             <td className="py-1.5 pr-2">
               <b>{q.label}</b> {q.required && <Badge tone="red">required</Badge>}
               {q.type === "choice" && <div className="text-xs text-slate-500">Options: {q.options.join(", ")}</div>}
-              {q.min_age && <div className="text-xs text-slate-500">Must be at least {q.min_age} years ago</div>}
+              {q.min_age && <div className="text-xs text-slate-500">{q.type === "number" ? `At least ${q.min_age}` : `Must be at least ${q.min_age} years ago`}</div>}
               {q.show_when && <div className="text-xs text-amber-700">Only asked when &quot;{labelOf(q.show_when.question_id)}&quot; is {q.show_when.equals}</div>}
             </td>
+            <td className="pr-2 text-xs">{q.ask_at === "after_interview" ? <Badge tone="sky">After interview</Badge> : <Badge tone="slate">Apply page</Badge>}</td>
             <td className="pr-2 text-xs">{q.section}</td>
             <td className="pr-2 text-xs">{QUESTION_TYPES[q.type]}</td>
             <td className="whitespace-nowrap text-right">
@@ -101,7 +103,9 @@ function QuestionEditor({ initial, isNew, parents, sections, pending, error, onC
 }) {
   const [q, setQ] = useState(initial);
   const [optionText, setOptionText] = useState(initial.options.join("\n"));
-  const parent = parents.find((p) => p.id === q.show_when?.question_id);
+  // "only ask when" can only point at a question asked at the same time
+  const sameTime = parents.filter((p) => (p.ask_at ?? "apply") === q.ask_at);
+  const parent = sameTime.find((p) => p.id === q.show_when?.question_id);
   const set = (patch: Partial<QuestionInput>) => setQ((s) => ({ ...s, ...patch }));
   return (
     <Modal open onClose={onClose} title={isNew ? "Add question" : "Edit question"}>
@@ -123,12 +127,16 @@ function QuestionEditor({ initial, isNew, parents, sections, pending, error, onC
             <datalist id="question-sections">{["About you / உங்களைப் பற்றி", ...sections].filter((s, i, a) => a.indexOf(s) === i).map((s) => <option key={s} value={s} />)}</datalist>
           </Field>
         </div>
+        <Field label="When is it asked?">
+          <Select value={q.ask_at} onChange={(v) => set({ ask_at: v === "after_interview" ? "after_interview" : "apply", show_when: null })}
+            options={Object.entries(ASK_AT).map(([value, label]) => ({ value, label }))} />
+        </Field>
         {q.type === "choice" && (
           <Field label="Options (one per line, e.g. Male / ஆண்)"><textarea className="input" rows={4} value={optionText} onChange={(e) => setOptionText(e.target.value)} /></Field>
         )}
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={q.required} onChange={(e) => set({ required: e.target.checked })} /> Required</label>
-        {q.type === "date" && (
-          <Field label="Minimum age in years (optional, e.g. 18 for date of birth)">
+        {(q.type === "date" || q.type === "number") && (
+          <Field label={q.type === "date" ? "Minimum age in years (optional, e.g. 18 for date of birth)" : "Minimum age (optional: makes this an age question, e.g. 18)"}>
             <input className="input w-32" type="number" min={1} max={100} value={q.min_age ?? ""}
               onChange={(e) => set({ min_age: e.target.value ? Number(e.target.value) : null })} />
           </Field>
@@ -137,7 +145,7 @@ function QuestionEditor({ initial, isNew, parents, sections, pending, error, onC
           <Field label="Only ask when (optional)">
             <Select value={q.show_when?.question_id ?? ""} placeholder="Always ask"
               onChange={(v) => set({ show_when: v ? { question_id: v, equals: "" } : null })}
-              options={parents.map((p) => ({ value: p.id, label: p.label.length > 50 ? p.label.slice(0, 50) + "…" : p.label }))} />
+              options={sameTime.map((p) => ({ value: p.id, label: p.label.length > 50 ? p.label.slice(0, 50) + "…" : p.label }))} />
           </Field>
           {parent && (
             <Field label="…has the answer">
