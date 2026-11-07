@@ -19,7 +19,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   const job = await load(props);
   if (!job) return { title: "Job closed · Balasanka Group", robots: { index: false } };
   const c = jobContent(job);
-  const description = `${c.intro}${c.salary ? ` Salary ${c.salary}.` : ""} Apply online in 5 minutes.`;
+  const description = `${c.intro}${c.salary ? ` Salary ${c.salary}.` : ""} Apply online in 1 minute.`;
   return {
     title: `${c.title} · Balasanka Group`,
     description,
@@ -56,7 +56,7 @@ export default async function JobPage(props: Props) {
           <List head="Duties" ta="பணிகள்" items={c.duties} />
           <List head="Requirements" ta="தகுதிகள்" items={c.requirements} />
           <List head="Benefits" ta="சலுகைகள்" items={c.benefits} />
-          <p>Apply online in about 5 minutes. <span lang="ta">சுமார் 5 நிமிடங்களில் ஆன்லைனில் விண்ணப்பிக்கலாம்.</span></p>
+          <p>Apply online in about 1 minute. <span lang="ta">சுமார் 1 நிமிடத்தில் ஆன்லைனில் விண்ணப்பிக்கலாம்.</span></p>
           <Link href={apply} className="btn-primary h-11 w-full text-base sm:w-auto">Apply for this job / விண்ணப்பிக்கவும்</Link>
         </div>
       </article>

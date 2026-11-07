@@ -46,6 +46,9 @@ export function CandidatePanel({ me, c, cat, branches, appUrl, onClose }: {
   const onboardUrl = token ? `${base}/onboard/${token}` : "";
   const formData = details?.formData ?? {};
   const selected = ["selected_joined", "online_joined_list", "walkin_joined_list"].includes(cat.category) || c.pipeline_status === "Joined";
+  // After the interview (selected or on hold), the candidate fills the questions the apply page no longer asks.
+  const afterInterview = c.interview_status === "Selected" || c.interview_status === "Hold" || selected;
+  const detailsUrl = token && afterInterview ? `${base}/details/${token}` : "";
   const admin = isAdminRole(me.role);
   const store = me.role === "branch";
 
@@ -64,10 +67,11 @@ export function CandidatePanel({ me, c, cat, branches, appUrl, onClose }: {
         {details ? (
           <WaComposer candidateId={c.id} mobile={c.mobile} apiEnabled={details.whatsappApi} onSent={refresh}
             ctx={{ name: c.name, post: c.designation ?? c.posts[0] ?? "", branch: branch?.name ?? c.applied_locations[0] ?? "Balasanka Group", address: branch?.address ?? branch?.name ?? "", hr: me.full_name }}
-            links={{ offer: offerUrl, onboarding: onboardUrl, appointment: c.pipeline_status === "Joined" ? apptUrl : "" }} />
+            links={{ details: detailsUrl, offer: offerUrl, onboarding: onboardUrl, appointment: c.pipeline_status === "Joined" ? apptUrl : "" }} />
         ) : <a className="btn-success" target="_blank" rel="noreferrer" href={`https://wa.me/91${c.mobile}`}>WhatsApp</a>}
       </div>
       {admin && c.salary_status === "proposed" && <SalaryBox c={c} onSaved={refresh} />}
+      {afterInterview && !store && <DetailsBox c={c} url={detailsUrl} />}
       {cat.category === "reapply" && admin && <ReapplyBox c={c} branch={branch?.name} onDone={refresh} />}
       {c.pipeline_status === "Joined" && <JoiningBox c={c} canComplete={!store} onSaved={refresh} />}
       <div className="scroll-thin -mx-5 mb-4 flex gap-1 overflow-x-auto border-b border-slate-200 px-5" role="tablist">
@@ -187,12 +191,34 @@ function SalaryBox({ c, onSaved }: { c: Candidate; onSaved: () => void }) {
     <div className="mb-3 space-y-2 rounded border border-amber-300 bg-amber-50 p-3 text-sm">
       <b>Salary approval</b>
       <p className="text-xs text-slate-600">Proposed by HR ({c.assigned_hr}): ₹{c.proposed_basic ?? 0} basic + ₹{c.proposed_allowances ?? 0} allowances. Change the amounts if needed, then approve.</p>
+      {!c.details_submitted_at && (
+        <p className="rounded bg-amber-100 px-2 py-1 text-xs text-amber-900">The candidate hasn&apos;t filled the after-interview details yet (experience, last salary, resume). You can still approve.</p>
+      )}
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         <input className="input" inputMode="numeric" aria-label="Basic salary" placeholder="Basic (₹)" value={basic} onChange={(e) => setBasic(e.target.value)} />
         <input className="input" inputMode="numeric" aria-label="Allowances" placeholder="Allowances (₹)" value={allow} onChange={(e) => setAllow(e.target.value)} />
         <button className="btn-success" disabled={pending} onClick={() => start(async () => { const r = await approveSalary(c.id, Number(basic), Number(allow || 0)); setMsg(r); if (r.ok) onSaved(); })}>Approve salary</button>
       </div>
       <Flash msg={msg} />
+    </div>
+  );
+}
+
+/** After the interview: the link to the details form (questions moved off the apply page) and whether it is filled. */
+function DetailsBox({ c, url }: { c: Candidate; url: string }) {
+  const [copied, setCopied] = useState(false);
+  const filled = !!c.details_submitted_at;
+  return (
+    <div className={`mb-3 flex flex-wrap items-center gap-2 rounded border p-3 text-sm ${filled ? "border-green-200 bg-green-50" : "border-sky-200 bg-sky-50"}`}>
+      <b>After-interview details</b>
+      {filled ? <Badge tone="green">Filled {formatDateTime(c.details_submitted_at)}</Badge> : <Badge tone="amber">Waiting for the candidate</Badge>}
+      {!filled && url && (
+        <>
+          <span className="w-full text-xs text-slate-600">Send this link (WhatsApp ▾ › &quot;After-interview details form&quot;), or let them fill it on a phone at the store. Answers appear in Profile.</span>
+          <button className="btn-outline !py-0.5" onClick={() => navigator.clipboard?.writeText(url).then(() => setCopied(true))}>{copied ? "Copied ✓" : "Copy link"}</button>
+          <a className="btn-outline !py-0.5" href={url} target="_blank" rel="noreferrer">Open form</a>
+        </>
+      )}
     </div>
   );
 }

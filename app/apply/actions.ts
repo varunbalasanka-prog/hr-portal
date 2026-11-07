@@ -46,11 +46,9 @@ export async function submitApplication(fd: FormData): Promise<SubmitResult> {
   const mobile = normalizeMobile(text(fd, "mobile", 20)) ?? "";
   const post = text(fd, "post", 120);
   const branchId = text(fd, "branch_id", 40);
-  const fatherName = text(fd, "father_name", 120);
   const address = text(fd, "address");
-  const marital = text(fd, "marital_status", 40);
   const folder = text(fd, "folder", 40);
-  for (const [k, v] of [["branch_id", branchId], ["post", post], ["name", name], ["mobile", text(fd, "mobile", 20)], ["father_name", fatherName], ["marital_status", marital], ["address", address]]) {
+  for (const [k, v] of [["branch_id", branchId], ["post", post], ["name", name], ["mobile", text(fd, "mobile", 20)], ["address", address]]) {
     if (!v) return { ok: false, message: MESSAGES.missing, field: k };
   }
   if (!/^[6-9]\d{9}$/.test(mobile)) return { ok: false, message: MESSAGES.bad_mobile, field: "mobile" };
@@ -87,9 +85,8 @@ export async function submitApplication(fd: FormData): Promise<SubmitResult> {
   const { data, error } = await createPublicClient().rpc("submit_application", {
     p: {
       name, mobile, post, branch_id: branchId, folder: folder || null, form_data, consent_version: CONSENT_VERSION,
-      father_name: fatherName, email: text(fd, "email", 120), address, marital_status: marital,
-      source_channel: cleanSource(text(fd, "source_channel", 40)) ?? (text(fd, "referred_by", 120) ? "referral" : null),
-      referred_by: text(fd, "referred_by", 120) || null,
+      // father's name, marital status and email are asked in the onboarding form now
+      address, source_channel: cleanSource(text(fd, "source_channel", 40)),
     },
     p_secret: process.env.APPLY_SECRET ?? "",
   });

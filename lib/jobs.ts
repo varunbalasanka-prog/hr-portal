@@ -93,7 +93,7 @@ export function jobPosting(j: Job) {
     c.shift ? `<p><strong>Working hours:</strong> ${esc(c.shift)}</p>` : "",
     c.salary ? `<p><strong>Salary:</strong> ${esc(c.salary)}</p>` : "",
     list("Benefits", c.benefits),
-    `<p>Apply online in about 5 minutes.</p>`,
+    `<p>Apply online in about 1 minute.</p>`,
   ].join("");
   const lo = j.salary_min, hi = j.salary_max;
   return {

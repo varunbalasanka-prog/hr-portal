@@ -43,7 +43,7 @@ export default async function PosterPage({ searchParams }: Props) {
           </ul>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={qr} alt={`QR code to apply at ${b.name}`} className="mt-10 h-[70mm] w-[70mm]" />
-          <p className="mt-4 text-2xl font-bold">Scan to apply in 5 minutes</p>
+          <p className="mt-4 text-2xl font-bold">Scan to apply in 1 minute</p>
           <p className="text-xl">ஸ்கேன் செய்து 5 நிமிடத்தில் விண்ணப்பிக்கவும்</p>
           <p className="mt-6 break-all text-xl font-semibold text-slate-700">{url.replace(/^https?:\/\//, "")}</p>
         </section>
