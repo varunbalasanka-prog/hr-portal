@@ -53,3 +53,22 @@ export function loanState(l: Pick<StaffLoan, "start_date" | "end_date" | "return
 export function stillNeeded(roles: TempRole[], loans: Pick<StaffLoan, "post">[]): TempRole[] {
   return roles.map((r) => ({ post: r.post, headcount: Math.max(0, r.headcount - loans.filter((l) => l.post === r.post).length) }));
 }
+
+/** Gender split on a request (0036): men and women are counts; the rest of the headcount is "Any". */
+export type GenderSplit = { men: number; women: number };
+
+/** Checks the split against the total. Returns the clean numbers, or a message saying what is wrong. */
+export function cleanGenderSplit(men: unknown, women: unknown, total: number): GenderSplit | string {
+  const m = Math.round(Number(men) || 0);
+  const w = Math.round(Number(women) || 0);
+  if (m < 0 || w < 0) return "Male and female counts can't be below 0.";
+  if (m + w > total) return `Male + female is ${m + w}, but you asked for ${total} ${total === 1 ? "person" : "people"} in all.`;
+  return { men: m, women: w };
+}
+
+/** "2 Male · 1 Female · 1 Any", or just "Any" when no gender was asked for. */
+export function genderLabel(men: number | null | undefined, women: number | null | undefined, total: number): string {
+  const m = men ?? 0, w = women ?? 0, any = Math.max(0, total - m - w);
+  if (!m && !w) return "Any";
+  return [m && `${m} Male`, w && `${w} Female`, any && `${any} Any`].filter(Boolean).join(" · ");
+}

@@ -3,16 +3,14 @@ import { revalidatePath } from "next/cache";
 import { requireProfile } from "@/lib/auth";
 import { isAdminRole } from "@/lib/types";
 import { todayIst } from "@/lib/dates";
-import { cleanTempRoles, type TempRole } from "@/lib/manpower";
+import { cleanGenderSplit, cleanTempRoles, type TempRole } from "@/lib/manpower";
 import { companyRoleNames, storeRoleNames } from "@/lib/job-roles";
 
 type Result = { ok: boolean; message: string };
-export type Gender = "any" | "male" | "female";
-const cleanGender = (g: unknown): Gender => (g === "male" || g === "female" ? g : "any");
-/** Before 0036 runs the column is missing; say so plainly instead of a database error. */
-const genderSql = (m: string) => (m.includes("gender") ? "Gender choice isn't set up yet. An admin needs to run 0036_manpower_gender.sql." : m);
+/** Before 0036 runs the men/women columns are missing; say so plainly instead of a database error. */
+const genderSql = (m: string) => (/\b(men|women)\b|gender_split/.test(m) ? "Gender choice isn't set up yet. An admin needs to run 0036_manpower_gender.sql." : m);
 
-export async function requestManpower(input: { branch_id: string; post: string; headcount: number; needed_by: string; reason: string; gender?: Gender }): Promise<Result> {
+export async function requestManpower(input: { branch_id: string; post: string; headcount: number; needed_by: string; reason: string; men?: number; women?: number }): Promise<Result> {
   const { profile, supabase } = await requireProfile();
   const branchId = profile.role === "branch" ? profile.branch_id : input.branch_id;
   const post = input.post.trim().slice(0, 120);
@@ -21,11 +19,13 @@ export async function requestManpower(input: { branch_id: string; post: string; 
   if (!(headcount >= 1 && headcount <= 50)) return { ok: false, message: "Number of people must be 1 to 50." };
   // The request closes by itself after this date (0027), so it is required.
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input.needed_by) || input.needed_by < todayIst()) return { ok: false, message: "Choose the needed-by date (today or later)." };
+  const split = cleanGenderSplit(input.men, input.women, headcount);
+  if (typeof split === "string") return { ok: false, message: split };
   const allowed = await storeRoleNames(supabase, branchId);
   if (allowed && !allowed.includes(post)) return { ok: false, message: "Pick a post from the list. Ask an admin to add a role that is missing." };
   const { error } = await supabase.from("manpower_requests").insert({
     branch_id: branchId, post, headcount, needed_by: input.needed_by, reason: input.reason.trim().slice(0, 500) || null,
-    gender: cleanGender(input.gender),
+    men: split.men, women: split.women,
   });
   if (error) return { ok: false, message: genderSql(error.message) };
   // The store's HR and the admins are told by the database (0026).
@@ -34,7 +34,7 @@ export async function requestManpower(input: { branch_id: string; post: string; 
 }
 
 /** Festival help (0021): several roles with a headcount each, for fixed dates. The store's HR and admins are told by the database. */
-export async function requestTemporaryStaff(input: { branch_id: string; roles: TempRole[]; start_date: string; end_date: string; reason: string; gender?: Gender }): Promise<Result> {
+export async function requestTemporaryStaff(input: { branch_id: string; roles: TempRole[]; start_date: string; end_date: string; reason: string; men?: number; women?: number }): Promise<Result> {
   const { profile, supabase } = await requireProfile();
   const branchId = profile.role === "branch" ? profile.branch_id : input.branch_id;
   if (!branchId) return { ok: false, message: "Choose the branch." };
@@ -47,10 +47,12 @@ export async function requestTemporaryStaff(input: { branch_id: string; roles: T
   if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) return { ok: false, message: "Choose the from and to dates." };
   if (to < from) return { ok: false, message: "The last day must be on or after the first day." };
   const total = roles.reduce((n, r) => n + r.headcount, 0);
+  const split = cleanGenderSplit(input.men, input.women, total);
+  if (typeof split === "string") return { ok: false, message: split };
   const { error } = await supabase.from("manpower_requests").insert({
     branch_id: branchId, kind: "temporary", roles, start_date: from, end_date: to, needed_by: from,
     post: roles.map((r) => `${r.headcount} × ${r.post}`).join(", ").slice(0, 120), headcount: total,
-    reason: input.reason.trim().slice(0, 500) || null, gender: cleanGender(input.gender),
+    reason: input.reason.trim().slice(0, 500) || null, men: split.men, women: split.women,
   });
   if (error) return { ok: false, message: error.message.includes("manpower_temporary_shape") || error.message.includes("kind") ? "Temporary requests aren't set up yet. An admin needs to run 0021_temporary_staff.sql." : genderSql(error.message) };
   revalidatePath("/manpower");
