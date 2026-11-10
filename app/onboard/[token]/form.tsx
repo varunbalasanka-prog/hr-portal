@@ -1,10 +1,10 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { BLOOD_GROUPS, DETAIL_LABELS, DOC_LABELS, FIELD_FLAG, RELATIONSHIPS, familyRequirements } from "@/lib/onboarding";
 import { AadhaarCheck } from "./aadhaar-check";
 import { splitBilingual } from "@/lib/apply-questions";
-import { browserStorage, checkFile, extFor, shrinkImage } from "@/lib/upload-client";
+import { checkFile, extFor, unreadableMessage, uploadFailedMessage, uploadFile, usePickedFiles } from "@/lib/upload-client";
 import { submitOnboarding } from "./actions";
 
 type Cand = { name: string; mobile: string; branch: string; address: string; father_name: string; marital_status: "Married" | "Unmarried" | ""; email: string };
@@ -26,6 +26,9 @@ export function OnboardingForm({ token, cand, flagged, question, aadhaarCheck, d
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
   const [progress, setProgress] = useState("");
+  const files = usePickedFiles();
+  // Files that already reached storage in an earlier try, so tapping Submit again doesn't send them twice.
+  const sent = useRef(new Map<string, { file: File; path: string }>());
 
   if (done) {
     return (
@@ -48,15 +51,17 @@ export function OnboardingForm({ token, cand, flagged, question, aadhaarCheck, d
     const picked = Object.keys(DOC_LABELS).map((k) => [k, fd.get(k)] as const).filter((x): x is [string, File] => x[1] instanceof File && x[1].size > 0);
     for (const k of Object.keys(DOC_LABELS)) fd.delete(k);
 
-    const storage = browserStorage();
     for (const [i, [key, raw]] of picked.entries()) {
       setProgress(`Uploading ${i + 1} of ${picked.length}… / பதிவேற்றம் ${i + 1}/${picked.length}…`);
-      const f = await shrinkImage(raw);
+      const f = await files.take(key, raw);
+      if (!f) return fail(unreadableMessage(DOC_LABELS[key]));
       const bad = checkFile(f, DOC_LABELS[key]);
       if (bad) return fail(bad);
+      const before = sent.current.get(key);
+      if (before?.file === f) { fd.set(`path_${key}`, before.path); continue; }
       const path = `${token}/${key}_${Date.now()}.${extFor(f.type)}`;
-      const { error: upErr } = await storage.from("onboarding-docs").upload(path, f, { contentType: f.type });
-      if (upErr) return fail(`Upload failed / பதிவேற்றம் தோல்வி: ${DOC_LABELS[key]}. Please check your internet and try again.`);
+      if (!(await uploadFile("onboarding-docs", path, f))) return fail(uploadFailedMessage(DOC_LABELS[key]));
+      sent.current.set(key, { file: f, path });
       fd.set(`path_${key}`, path);
     }
     setProgress("Saving… / சேமிக்கிறது…");
@@ -90,7 +95,7 @@ export function OnboardingForm({ token, cand, flagged, question, aadhaarCheck, d
   // Re-upload link: only the items HR flagged.
   if (flagged) {
     return (
-      <form className="space-y-5" onSubmit={onSubmit}>
+      <form className="space-y-5" onSubmit={onSubmit} onChange={files.onChange}>
         {error && <div role="alert" className="rounded bg-red-50 p-3 text-sm text-red-700">{error}</div>}
         <Section n={1} title="Items HR asked for / HR கேட்டவை">
           {flagged.map((k) => k.startsWith(FIELD_FLAG) ? <FlaggedField key={k} name={k.slice(FIELD_FLAG.length)} /> : (
@@ -111,7 +116,7 @@ export function OnboardingForm({ token, cand, flagged, question, aadhaarCheck, d
   const need = (k: string) => !!family && (family.docs.includes(k) || family.fields.includes(k));
 
   return (
-    <form className="space-y-5" onSubmit={onSubmit}>
+    <form className="space-y-5" onSubmit={onSubmit} onChange={files.onChange}>
       {error && <div role="alert" className="rounded bg-red-50 p-3 text-sm text-red-700">{error}</div>}
 
       <Section n={1} title="Basic information / அடிப்படை விவரங்கள்">
