@@ -166,6 +166,8 @@ export interface NotificationRow {
   recipient: string;
   message: string;
   file_path: string | null;
+  /** Page inside the portal that this notification is about (opened on tap). */
+  link?: string | null;
   created_at: string;
   viewed_at?: string | null;
   cleared_at?: string | null;

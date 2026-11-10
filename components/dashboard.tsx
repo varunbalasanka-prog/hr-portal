@@ -155,7 +155,7 @@ export function Dashboard({ me, photoUrl, rows, branches, people, notifications,
       : { key: "followup", label: "In follow-up", icon: "users", n: groupCount.followup, tone: "text-slate-700 bg-slate-100" },
   ];
 
-  const bell = <NotificationBell me={me} items={notifications} />;
+  const bell = <NotificationBell me={me} items={notifications} onOpenCandidate={setOpenId} onPickList={pick} />;
   const search = (
     <label className="relative block w-full sm:w-64">
       <span className="sr-only">Search candidates</span>
