@@ -5,6 +5,7 @@
  */
 import type { Candidate } from "./types";
 import { dateToIso, localInputToIso, nowIso, tomorrowIstIso } from "./dates";
+import { salaryApproved } from "./salary";
 
 export type Stage =
   | "initial"
@@ -150,6 +151,9 @@ function rejected(status: string, reason: string, nextAction: string): Partial<C
   return { pipeline_status: status, rejection_reason: reason, next_action: nextAction, next_action_at: null };
 }
 
+/** Nobody is marked Joined without an approved salary, so the offer letter can always be sent first. */
+export const NO_SALARY = "The salary isn't approved yet, so the offer letter can't be sent. Enter the salary and get an admin to approve it before marking Joined.";
+
 export function applyStage(c: Candidate, stage: Stage, input: StageInput, now: Date = new Date()): StageResult {
   const at = now.toISOString();
   const tomorrow = tomorrowIstIso(now);
@@ -269,6 +273,7 @@ export function applyStage(c: Candidate, stage: Stage, input: StageInput, now: D
       patch = { joining_status: js };
       if (js === "Joined") {
         if (!input.actualJoiningDate) return fail("Enter the actual joining date.");
+        if (!salaryApproved(c)) return fail(NO_SALARY);
         Object.assign(patch, {
           pipeline_status: "Joined", actual_joining_date: input.actualJoiningDate, employment_status: "Working",
           next_action: "Joined successfully", next_action_at: null,
@@ -291,6 +296,7 @@ export function applyStage(c: Candidate, stage: Stage, input: StageInput, now: D
       patch = { revised_joining_status: rs };
       if (rs === "Joined") {
         if (!input.actualJoiningDate) return fail("Enter the actual joining date.");
+        if (!salaryApproved(c)) return fail(NO_SALARY);
         Object.assign(patch, { pipeline_status: "Joined", joining_status: "Joined", actual_joining_date: input.actualJoiningDate, employment_status: "Working", next_action: "Joined successfully", next_action_at: null });
         notify.push({ recipient: "branch", message: `New employee joined: ${c.name}. Please assign employee code and shift timing.` });
       } else {

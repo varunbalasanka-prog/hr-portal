@@ -1,7 +1,6 @@
 "use server";
 import { pushTo } from "@/lib/push";
 import { revalidatePath } from "next/cache";
-import { isAdminRole } from "@/lib/types";
 import { requireProfile } from "@/lib/auth";
 
 export async function sendNotification(formData: FormData) {
@@ -40,9 +39,23 @@ export async function markNotificationViewed(id: number) {
   revalidatePath("/dashboard");
 }
 
+/** Clears one notification from *my* list only. (Admins used to delete it for everyone, which also wiped it
+ *  from the HR it was meant for; now everyone clears just their own view.) */
 export async function clearNotification(id: number) {
-  const { profile, supabase } = await upsertReceipt(id, "cleared_at");
-  if (isAdminRole(profile.role)) await supabase.from("notifications").delete().eq("id", id);
+  await upsertReceipt(id, "cleared_at");
+  revalidatePath("/dashboard");
+}
+
+/** "Clear all": hides every notification currently in my list. */
+export async function clearAllNotifications(ids: number[]) {
+  const { profile, supabase } = await requireProfile();
+  const clean = [...new Set(ids.filter((n) => Number.isSafeInteger(n) && n > 0))].slice(0, 500);
+  if (!clean.length) return;
+  const now = new Date().toISOString();
+  await supabase.from("notification_receipts").upsert(
+    clean.map((notification_id) => ({ notification_id, username: profile.username, cleared_at: now })),
+    { onConflict: "notification_id,username" },
+  );
   revalidatePath("/dashboard");
 }
 

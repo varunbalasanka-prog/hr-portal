@@ -10,9 +10,10 @@ import type { WalkinInput } from "./candidates";
 
 type Result = { ok: boolean; message: string };
 
-async function tell(supabase: Awaited<ReturnType<typeof requireAdmin>>["supabase"], sender: string, to: string, title: string, text: string) {
-  await supabase.from("notifications").insert({ sender, recipient: to, message: text });
-  await pushTo(to, { title, body: text, url: "/dashboard" });
+async function tell(supabase: Awaited<ReturnType<typeof requireAdmin>>["supabase"], sender: string, to: string, title: string, text: string, candidateId?: string) {
+  const link = candidateId ? `/dashboard?open=${candidateId}` : null;
+  await supabase.from("notifications").insert({ sender, recipient: to, message: text, link });
+  await pushTo(to, { title, body: text, url: link ?? "/dashboard" });
 }
 
 /** Re-Apply folder: the admin lets HR call this person again. They start over with the HR of the store they last applied to;
@@ -32,7 +33,7 @@ export async function releaseReapply(candidateId: string): Promise<Result> {
     p_patch: { pipeline_status: "Follow-up Not Started", assigned_hr: hr, next_action: "Follow-up start immediately" },
   });
   if (error) return { ok: false, message: error.message };
-  await tell(supabase, profile.username, hr, "Re-applicant enabled", `${c.name} (${c.mobile}) re-applied and has been enabled for calling by ${profile.username}. Check their history before calling.`);
+  await tell(supabase, profile.username, hr, "Re-applicant enabled", `${c.name} (${c.mobile}) re-applied and has been enabled for calling by ${profile.username}. Check their history before calling.`, c.id);
   revalidatePath("/dashboard");
   return { ok: true, message: `Enabled for calling; sent to ${hr}.` };
 }
@@ -103,8 +104,8 @@ export async function decideWalkin(requestId: string, approve: boolean): Promise
   const { error } = await supabase.from("walkin_requests").update({ status: approve ? "approved" : "refused", decided_by: profile.username, decided_at: new Date().toISOString() }).eq("id", r.id);
   if (error) return { ok: false, message: error.message };
   const verdict = `Walk-in for ${c.name} (${c.mobile}) at ${b.name} was ${approve ? "APPROVED" : "refused"} by ${profile.username}.`;
-  await tell(supabase, profile.username, r.requested_by, "Walk-in decision", verdict);
-  if (approve && b.hr_username !== r.requested_by) await tell(supabase, profile.username, b.hr_username, "New walk-in (approved)", verdict);
+  await tell(supabase, profile.username, r.requested_by, "Walk-in decision", verdict, c.id);
+  if (approve && b.hr_username !== r.requested_by) await tell(supabase, profile.username, b.hr_username, "New walk-in (approved)", verdict, c.id);
   revalidatePath("/admin");
   revalidatePath("/dashboard");
   return { ok: true, message: approve ? "Approved; the walk-in is created." : "Refused; the store has been told." };

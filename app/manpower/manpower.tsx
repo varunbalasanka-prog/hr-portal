@@ -4,7 +4,7 @@ import {
   approveManpower, assignTempStaff, closeManpower, decideTempRequest, endStaffLoan, loanPool, requestManpower, requestTemporaryStaff, setManpowerStatus, type PoolPerson,
 } from "@/app/actions/manpower";
 import { addDays, formatDate } from "@/lib/dates";
-import { loanLastDay, loanState, stillNeeded, type StaffLoan, type TempRole } from "@/lib/manpower";
+import { genderLabel, loanLastDay, loanState, stillNeeded, type StaffLoan, type TempRole } from "@/lib/manpower";
 import type { Branch, Profile } from "@/lib/types";
 import { Badge, Field, Flash, Modal } from "@/components/ui";
 
@@ -12,8 +12,25 @@ export type ManpowerRow = {
   id: string; branch_id: string; post: string; headcount: number; needed_by: string | null; reason: string | null;
   status: "requested" | "approved" | "filled" | "closed" | "cancelled"; requested_by: string; decided_by: string | null; created_at: string;
   kind?: "permanent" | "temporary"; roles?: TempRole[] | null; start_date?: string | null; end_date?: string | null; decision_note?: string | null;
-  hired?: number;
+  hired?: number; men?: number; women?: number;
 };
+
+/** How many of the people must be male / female; the rest is "Any" (0036). */
+function GenderSplitFields({ total, men, women, onChange }: { total: number; men: number; women: number; onChange: (men: number, women: number) => void }) {
+  const any = total - men - women;
+  const num = (v: string) => Math.max(0, Math.round(Number(v) || 0));
+  return (
+    <div>
+      <span className="label">Gender (of the {total || 0} {total === 1 ? "person" : "people"})</span>
+      <div className="grid grid-cols-3 gap-2">
+        <Field label="Male"><input className="input" type="number" inputMode="numeric" min={0} max={total} value={men} onChange={(e) => onChange(num(e.target.value), women)} /></Field>
+        <Field label="Female"><input className="input" type="number" inputMode="numeric" min={0} max={total} value={women} onChange={(e) => onChange(men, num(e.target.value))} /></Field>
+        <Field label="Any"><div className={`input bg-slate-50 tabular-nums ${any < 0 ? "text-red-600" : ""}`} aria-live="polite">{any}</div></Field>
+      </div>
+      <p className={`mt-1 text-xs ${any < 0 ? "text-red-600" : "text-slate-500"}`}>{any < 0 ? `Male + female is more than ${total}. Lower one of them.` : "Leave both at 0 if either is fine."}</p>
+    </div>
+  );
+}
 const TONE = { requested: "amber", approved: "sky", filled: "green", closed: "zinc", cancelled: "zinc" } as const;
 type Msg = { ok: boolean; message: string } | null;
 
@@ -45,7 +62,7 @@ export function Manpower({ me, admin, canLend, rows, branches, posts, loans, tod
 
   const table = (list: ManpowerRow[]) => (
     <table className="w-full text-sm">
-      <thead><tr className="border-b text-left text-xs text-slate-500"><th className="py-1.5">Branch</th><th>Post</th><th>People</th><th>When</th><th>Status</th><th>Asked by</th><th /></tr></thead>
+      <thead><tr className="border-b text-left text-xs text-slate-500"><th className="py-1.5">Branch</th><th>Post</th><th>People</th><th>Gender</th><th>When</th><th>Status</th><th>Asked by</th><th /></tr></thead>
       <tbody>{list.map((r) => {
         const temp = isTemp(r);
         const mine = loansOf(r.id);
@@ -72,6 +89,7 @@ export function Manpower({ me, admin, canLend, rows, branches, posts, loans, tod
               )}
             </td>
             <td className="tabular-nums">{temp ? `${mine.length}/${r.headcount}` : r.hired ? <>{r.headcount}<div className="text-xs text-slate-500">{r.hired} joined</div></> : r.headcount}</td>
+            <td className="text-xs">{genderLabel(r.men, r.women, r.headcount)}</td>
             <td className="whitespace-nowrap">{temp ? <>{formatDate(r.start_date ?? null)}<br />to {formatDate(r.end_date ?? null)}</> : formatDate(r.needed_by)}</td>
             <td>{over && r.status !== "cancelled" ? <Badge tone="zinc">over</Badge> : <Badge tone={TONE[r.status]}>{temp && r.status === "filled" ? "sent" : r.status}</Badge>}</td>
             <td className="text-xs">{r.requested_by}<br />{formatDate(r.created_at)}</td>
@@ -151,9 +169,9 @@ function BranchPicker({ me, branches, value, onChange }: { me: Profile; branches
 
 function PermanentForm({ me, branches, posts, today, pending, onSend }: {
   me: Profile; branches: Branch[]; posts: Record<string, string[]>; today: string; pending: boolean;
-  onSend: (f: { branch_id: string; post: string; headcount: number; needed_by: string; reason: string }) => void;
+  onSend: (f: { branch_id: string; post: string; headcount: number; needed_by: string; reason: string; men: number; women: number }) => void;
 }) {
-  const [f, setF] = useState({ branch_id: me.role === "branch" ? me.branch_id ?? "" : "", post: "", headcount: 1, needed_by: "", reason: "" });
+  const [f, setF] = useState({ branch_id: me.role === "branch" ? me.branch_id ?? "" : "", post: "", headcount: 1, needed_by: "", reason: "", men: 0, women: 0 });
   return (
     <>
       <BranchPicker me={me} branches={branches} value={f.branch_id} onChange={(v) => setF({ ...f, branch_id: v, post: "" })} />
@@ -167,21 +185,23 @@ function PermanentForm({ me, branches, posts, today, pending, onSend }: {
         <Field label="How many people *"><input className="input" type="number" min={1} max={50} value={f.headcount} onChange={(e) => setF({ ...f, headcount: Number(e.target.value) })} /></Field>
         <Field label="Needed by *"><input className="input" type="date" min={today} value={f.needed_by} onChange={(e) => setF({ ...f, needed_by: e.target.value })} /></Field>
       </div>
+      <GenderSplitFields total={f.headcount} men={f.men} women={f.women} onChange={(men, women) => setF({ ...f, men, women })} />
       <Field label="Reason (replacement, new counter…)"><input className="input" value={f.reason} onChange={(e) => setF({ ...f, reason: e.target.value })} /></Field>
-      <button className="btn-primary" disabled={pending || !f.branch_id || !f.post || !f.needed_by} onClick={() => { onSend(f); setF({ ...f, post: "", headcount: 1, needed_by: "", reason: "" }); }}>Send request</button>
+      <button className="btn-primary" disabled={pending || !f.branch_id || !f.post || !f.needed_by || f.men + f.women > f.headcount} onClick={() => { onSend(f); setF({ ...f, post: "", headcount: 1, needed_by: "", reason: "", men: 0, women: 0 }); }}>Send request</button>
     </>
   );
 }
 
 function TemporaryForm({ me, branches, posts, today, pending, onSend }: {
   me: Profile; branches: Branch[]; posts: Record<string, string[]>; today: string; pending: boolean;
-  onSend: (f: { branch_id: string; roles: TempRole[]; start_date: string; end_date: string; reason: string }) => void;
+  onSend: (f: { branch_id: string; roles: TempRole[]; start_date: string; end_date: string; reason: string; men: number; women: number }) => void;
 }) {
   const [branch, setBranch] = useState(me.role === "branch" ? me.branch_id ?? "" : "");
   const [roles, setRoles] = useState<TempRole[]>([{ post: "", headcount: 1 }]);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [reason, setReason] = useState("");
+  const [split, setSplit] = useState({ men: 0, women: 0 });
   // Any role of any firm: a jewellery store may borrow from an automobile showroom and the other way round.
   // Only admins add roles (Admin > Job roles), so there is no "Other". Before 0025: the posts open anywhere.
   const allPosts = useMemo(() => {
@@ -189,7 +209,8 @@ function TemporaryForm({ me, branches, posts, today, pending, onSend }: {
     return [...new Set(firmRoles)].sort((a, b) => a.localeCompare(b));
   }, [branches, posts]);
   const set = (i: number, patch: Partial<TempRole>) => setRoles(roles.map((r, j) => (j === i ? { ...r, ...patch } : r)));
-  const ready = branch && from && to && to >= from && roles.some((r) => r.post.trim() && r.headcount >= 1);
+  const total = roles.reduce((n, r) => n + (r.post.trim() ? Math.max(0, r.headcount || 0) : 0), 0);
+  const ready = branch && from && to && to >= from && roles.some((r) => r.post.trim() && r.headcount >= 1) && split.men + split.women <= total;
   return (
     <>
       <BranchPicker me={me} branches={branches} value={branch} onChange={setBranch} />
@@ -217,11 +238,12 @@ function TemporaryForm({ me, branches, posts, today, pending, onSend }: {
         <Field label="From *"><input className="input" type="date" min={today} value={from} onChange={(e) => { setFrom(e.target.value); if (to && to < e.target.value) setTo(""); }} /></Field>
         <Field label="To (last day) *"><input className="input" type="date" min={from || today} max={from ? addDays(from, 120) : undefined} value={to} onChange={(e) => setTo(e.target.value)} /></Field>
       </div>
+      <GenderSplitFields total={total} men={split.men} women={split.women} onChange={(men, women) => setSplit({ men, women })} />
       <Field label="Reason (Diwali, Pongal, wedding season…)"><input className="input" value={reason} onChange={(e) => setReason(e.target.value)} /></Field>
       <p className="text-xs text-slate-500">They go back automatically after the last day. If you need help for longer, send a new request.</p>
       <button className="btn-primary" disabled={pending || !ready} onClick={() => {
-        onSend({ branch_id: branch, roles, start_date: from, end_date: to, reason });
-        setRoles([{ post: "", headcount: 1 }]); setFrom(""); setTo(""); setReason("");
+        onSend({ branch_id: branch, roles, start_date: from, end_date: to, reason, ...split });
+        setRoles([{ post: "", headcount: 1 }]); setFrom(""); setTo(""); setReason(""); setSplit({ men: 0, women: 0 });
       }}>Send request</button>
     </>
   );
@@ -257,7 +279,7 @@ function AssignPeople({ request, loans, branches, today, onClose, onDone }: {
 
   return (
     <Modal open onClose={onClose} wide title={`Temporary staff for ${byId.get(request.branch_id)?.name ?? ""}`}
-      subtitle={`${formatDate(request.start_date ?? null)} to ${formatDate(request.end_date ?? null)}${request.reason ? ` · ${request.reason}` : ""}`}>
+      subtitle={`${formatDate(request.start_date ?? null)} to ${formatDate(request.end_date ?? null)}${request.men || request.women ? ` · ${genderLabel(request.men, request.women, request.headcount)}` : ""}${request.reason ? ` · ${request.reason}` : ""}`}>
       <Flash msg={err} />
       <div className="mb-3 flex flex-wrap gap-2 text-sm">
         {need.map((r) => {
