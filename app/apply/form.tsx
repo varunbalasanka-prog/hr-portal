@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { fieldName, groupBySection, isVisible, normalizeMobile, splitBilingual, type ApplyQuestion } from "@/lib/apply-questions";
-import { browserStorage, checkFile, extFor, shrinkImage } from "@/lib/upload-client";
+import { checkFile, extFor, unreadableMessage, uploadFailedMessage, uploadFile, usePickedFiles } from "@/lib/upload-client";
 import { startApplication, submitApplication } from "./actions";
 import type { ApplyConfig } from "./config";
 import { Turnstile } from "./turnstile";
@@ -28,6 +28,7 @@ export function ApplyForm({ branches, questions, initialBranch, initialPost, loc
   const [error, setError] = useState<FieldError>(null);
   const [doneRef, setDoneRef] = useState<string | null>(null);
   const [progress, setProgress] = useState("");
+  const files = usePickedFiles();
   const [captcha, setCaptcha] = useState("");
   const [captchaKey, setCaptchaKey] = useState(0);
   const formRef = useRef<HTMLFormElement>(null);
@@ -109,16 +110,14 @@ export function ApplyForm({ branches, questions, initialBranch, initialPost, loc
     setProgress("Checking… / சரிபார்க்கிறது…");
     const start = await startApplication(captcha);
     if (!start.ok) return fail({ message: start.message });
-
-    const storage = browserStorage();
     for (const [i, [q, raw]] of picked.entries()) {
       setProgress(`Uploading file ${i + 1} of ${picked.length}… / கோப்பு பதிவேற்றம் ${i + 1}/${picked.length}…`);
-      const f = await shrinkImage(raw);
+      const f = await files.take(fieldName(q), raw);
+      if (!f) return fail({ field: fieldName(q), message: unreadableMessage(q.label) });
       const bad = checkFile(f, q.label);
       if (bad) return fail({ field: fieldName(q), message: bad });
       const path = `${start.folder}/${q.id}.${extFor(f.type)}`;
-      const { error: upErr } = await storage.from("applications").upload(path, f, { contentType: f.type });
-      if (upErr) return fail({ field: fieldName(q), message: `Upload failed / பதிவேற்றம் தோல்வி: ${q.label}. Please check your internet and try again.` });
+      if (!(await uploadFile("applications", path, f))) return fail({ field: fieldName(q), message: uploadFailedMessage(q.label) });
       fd.set(fieldName(q), path);
     }
     fd.set("folder", start.folder);
@@ -134,7 +133,7 @@ export function ApplyForm({ branches, questions, initialBranch, initialPost, loc
   }
 
   return (
-    <form ref={formRef} method="post" className="space-y-5" onSubmit={onSubmit} noValidate={false}
+    <form ref={formRef} method="post" className="space-y-5" onSubmit={onSubmit} onChange={files.onChange} noValidate={false}
       onInputCapture={(e) => (e.target as HTMLInputElement).setCustomValidity?.("")}
       onChangeCapture={(e) => (e.target as HTMLInputElement).setCustomValidity?.("")}>
       {error && <div role="alert" className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error.message}</div>}
