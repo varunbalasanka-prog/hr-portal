@@ -6,6 +6,7 @@ import { Dashboard } from "@/components/dashboard";
 import { todayIst } from "@/lib/dates";
 import { dobRule } from "@/lib/walkin-server";
 import { withFirmRoles } from "@/lib/job-roles";
+import { poolOnlyCandidate } from "@/lib/talent";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +35,18 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const letterTokens = Object.fromEntries(((letters.data ?? []) as { id: string; access_token: string }[]).map((r) => [r.id, r.access_token]));
 
   const subByCand = new Map(subs.map((s) => [s.candidate_id, s]));
-  const rows = cands.map((c) => ({ c, cat: categorize(c, subByCand.get(c.id)), onboarding: subByCand.get(c.id) ?? null }));
+  const rows: { c: Candidate; cat: ReturnType<typeof categorize>; onboarding: OnboardingSubmission | null; foreign?: boolean }[] =
+    cands.map((c) => ({ c, cat: categorize(c, subByCand.get(c.id)), onboarding: subByCand.get(c.id) ?? null }));
+  // HR also sees the talent pool kept by other HRs, with only the basics.
+  if (profile.role === "hr") {
+    const { data: others } = await supabase.rpc("talent_pool_others");
+    const mine = new Set(cands.map((c) => c.id));
+    for (const o of (others ?? []) as Partial<Candidate>[]) {
+      if (!o.id || mine.has(o.id)) continue;
+      const c = poolOnlyCandidate(o);
+      rows.push({ c, cat: categorize(c, undefined), onboarding: null, foreign: true });
+    }
+  }
 
   const receiptBy = new Map((receipts.data ?? []).map((r) => [r.notification_id as number, r]));
   const notifications = (notifs.data as NotificationRow[] ?? [])
