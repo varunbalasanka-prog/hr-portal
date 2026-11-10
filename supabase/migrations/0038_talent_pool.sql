@@ -1,4 +1,4 @@
--- 0035: talent pool workflow.
+-- 0038: talent pool workflow.
 --  * People leave the pool when they join, and Not Suitable / over-age people can't be in it.
 --  * Every HR can see the whole pool (only the basics, through talent_pool_others()), not only their own candidates.
 --  * HR (not only admins) can call someone back from the pool for a new opening: they start over in follow-up with
