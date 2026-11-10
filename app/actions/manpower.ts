@@ -9,7 +9,7 @@ import { companyRoleNames, storeRoleNames } from "@/lib/job-roles";
 type Result = { ok: boolean; message: string };
 export type Gender = "any" | "male" | "female";
 const cleanGender = (g: unknown): Gender => (g === "male" || g === "female" ? g : "any");
-/** Before 0035 runs the column is missing; say so plainly instead of a database error. */
+/** Before 0036 runs the column is missing; say so plainly instead of a database error. */
 const genderSql = (m: string) => (m.includes("gender") ? "Gender choice isn't set up yet. An admin needs to run 0036_manpower_gender.sql." : m);
 
 export async function requestManpower(input: { branch_id: string; post: string; headcount: number; needed_by: string; reason: string; gender?: Gender }): Promise<Result> {
