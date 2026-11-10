@@ -20,7 +20,7 @@ export function staffSections(role: Role, counts: NavCounts = {}): NavSection[] 
     ] },
     { title: "Candidates", items: [
       item("followup", "In follow-up", "users"),
-      item("onboarding", "Joined · onboarding", "clipboard", store),
+      item("onboarding", "Onboarding", "clipboard", store),
       item("completed", "Completed", "check"),
       item("rejected", "Rejected / dropped", "xcircle"),
       ...(store ? [] : [item("talent", "Talent pool", "star")]),

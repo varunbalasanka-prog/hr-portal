@@ -62,7 +62,7 @@ export function categorize(c: Candidate, onboarding?: OnboardingSubmission | nul
 
   // Onboarding document lists (only for selected / joined candidates)
   let docCategory = "none";
-  if (r.category !== "reapply" && (r.category === "selected_joined" || s === "Joined")) {
+  if (r.category !== "reapply" && (r.category === "selected_joined" || s === "Joined" || s === "Revised Joining")) {
     const prefix = hasJoined(c) ? "joined_" : "not_joined_";
     if (!onboarding) docCategory = prefix + "docs_not_submitted";
     else if (onboarding.status === "pending") docCategory = prefix + "docs_pending";
@@ -70,6 +70,21 @@ export function categorize(c: Candidate, onboarding?: OnboardingSubmission | nul
     else docCategory = prefix + "docs_received"; // submitted, HR still has to verify
   }
   return { ...r, docCategory };
+}
+
+/** The two columns of the Onboarding board, for people who have not joined yet:
+ *  "ready"   = onboarding form submitted and salary not waiting for approval: just waiting for the joining day.
+ *  "waiting" = form not submitted / sent back for correction, or salary still waiting for admin approval.
+ *  "joined"  = already joined, finishing store code, payroll or documents.
+ *  null      = not on the Onboarding board. */
+export type OnboardingColumn = "ready" | "waiting" | "joined";
+export function onboardingColumn(c: Pick<Candidate, "salary_status">, cat: Categorized): OnboardingColumn | null {
+  if (cat.docCategory.startsWith("not_joined_")) {
+    const formIn = cat.docCategory.endsWith("docs_received") || cat.docCategory.endsWith("docs_completed");
+    return formIn && c.salary_status !== "proposed" ? "ready" : "waiting";
+  }
+  if (cat.docCategory !== "none" || ONBOARDING_CATEGORIES.includes(cat.category)) return "joined";
+  return null;
 }
 
 export const DROPPED_CATEGORIES: Category[] = ["screening_rejected", "wrong_number", "not_contactable", "candidate_dropped", "dropped_rejected", "joined_left"];
