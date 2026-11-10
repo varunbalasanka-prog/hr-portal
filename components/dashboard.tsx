@@ -14,9 +14,11 @@ import { WalkinForm, type WalkinPosts } from "./walkin-form";
 import type { DobRule } from "@/lib/walkin";
 import { NotificationBell, SendNotification } from "./notifications";
 import { Icon, type IconName } from "./icons";
-import { Badge, Field, Flash, Modal } from "./ui";
+import { Badge, Field, Flash, Modal, Select } from "./ui";
+import { TalentOnlyPanel, talentTagGroups } from "./talent";
+import { talentSuggestion } from "@/lib/talent";
 
-type Row = { c: Candidate; cat: Categorized; onboarding: OnboardingSubmission | null };
+type Row = { c: Candidate; cat: Categorized; onboarding: OnboardingSubmission | null; /** Another HR's talent pool person: basics only. */ foreign?: boolean };
 
 type Group = "followup" | "completed" | "rejected" | "onboarding" | "today" | "sms" | "reminders" | "confirmations" | "approvals" | "reapply" | "talent";
 /** A list is a group, optionally narrowed: "followup", "followup.received", "onboarding.docs_received"… */
@@ -34,11 +36,11 @@ const TITLES: Record<Group, { title: string; hint: string }> = {
   onboarding: { title: "Joined · onboarding", hint: "New joiners waiting for the store's employee code or HR's payroll step, and onboarding documents." },
   completed: { title: "Completed", hint: "Joined and payroll done." },
   rejected: { title: "Rejected / dropped", hint: "Closed candidates. Admins can reopen or move them to the Re-Apply folder." },
-  talent: { title: "Talent pool", hint: "People worth calling for future openings. Search by tag, e.g. sales." },
+  talent: { title: "Talent pool", hint: "Good people to call when a job opens, from every HR. Filter by role, store or language, then open one and tap Call for a new opening." },
   reapply: { title: "Re-Apply folder", hint: "People who applied again after being rejected or leaving. Decide if HR should call them." },
 };
 
-type Sub = { key: string; label: string; test: (r: Row) => boolean };
+type Sub = { key: string; label: string; test: (r: Row) => boolean; /** Shows people outside the group too (Talent pool > Suggested). */ standalone?: boolean };
 const leftWithout = (r: Row) => r.cat.category === "joined_left" && r.cat.label.includes("Without Information");
 const docs = (suffix: string) => (r: Row) => r.cat.docCategory.endsWith(suffix);
 
@@ -74,12 +76,16 @@ function subsFor(g: Group, store: boolean): Sub[] {
         { key: "docs_completed", label: "Documents completed", test: docs("docs_completed") },
       ]),
     ];
+    case "talent": return store ? [] : [
+      { key: "suggested", label: "Suggested to add", test: (r) => !r.foreign && !!talentSuggestion(r.c), standalone: true },
+    ];
     default: return [];
   }
 }
 
 function inGroup(r: Row, g: Group, admin: boolean, store: boolean): boolean {
   const cat = r.cat.category;
+  if (r.foreign && g !== "talent") return false;
   switch (g) {
     case "followup": return r.cat.active;
     case "completed": return cat === "online_joined_list" || cat === "walkin_joined_list";
@@ -123,7 +129,8 @@ export function Dashboard({ me, photoUrl, rows, branches, people, notifications,
     if (url.searchParams.get("list") !== key || stale) { url.searchParams.set("list", key); window.history.replaceState(null, "", url); }
   }, [list]);
 
-  const counts = useMemo(() => countAll(rows.map((r) => r.cat)), [rows]);
+  const counts = useMemo(() => countAll(rows.filter((r) => !r.foreign).map((r) => r.cat)), [rows]);
+  const [tagFilter, setTagFilter] = useState<Record<string, string>>({});
   const groupCount = useMemo(() => Object.fromEntries(GROUPS.map((g) => [g, rows.filter((r) => inGroup(r, g, admin, store)).length])) as Record<Group, number>, [rows, admin, store]);
   const navCounts: NavCounts = { ...groupCount };
   const subs = subsFor(list.group, store);
@@ -132,12 +139,14 @@ export function Dashboard({ me, photoUrl, rows, branches, people, notifications,
   const visible = useMemo(() => {
     const needle = q.trim().toLowerCase();
     if (needle) {
-      return rows.filter((r) => (list.group !== "talent" || r.c.talent_pool)
+      return rows.filter((r) => (list.group !== "talent" ? !r.foreign : r.c.talent_pool)
         && [r.c.name, r.c.mobile, r.c.posts.join(" "), r.c.applied_locations.join(" "), r.cat.label, r.c.talent_tags.join(" ")].join(" ").toLowerCase().includes(needle));
     }
     const sub = subs.find((s) => s.key === list.sub);
-    return rows.filter((r) => inGroup(r, list.group, admin, store) && (!sub || sub.test(r)));
-  }, [rows, list, q, subs, admin, store]);
+    if (sub?.standalone) return rows.filter(sub.test);
+    const tags = list.group === "talent" ? Object.values(tagFilter).filter(Boolean) : [];
+    return rows.filter((r) => inGroup(r, list.group, admin, store) && (!sub || sub.test(r)) && tags.every((t) => r.c.talent_tags.includes(t)));
+  }, [rows, list, q, subs, admin, store, tagFilter]);
 
   const open = rows.find((r) => r.c.id === openId);
   const branchName = (id: string | null) => branches.find((b) => b.id === id)?.name;
@@ -214,6 +223,14 @@ export function Dashboard({ me, photoUrl, rows, branches, people, notifications,
           </div>
         )}
 
+        {!q && list.group === "talent" && !list.sub && (
+          <div className="grid grid-cols-1 gap-2 px-4 pt-3 sm:grid-cols-3 sm:px-6">
+            {talentTagGroups(posts, branches).map((g) => (
+              <Select key={g.label} value={tagFilter[g.label] ?? ""} onChange={(v) => setTagFilter({ ...tagFilter, [g.label]: v })} options={g.tags} placeholder={`${g.label}: any`} />
+            ))}
+          </div>
+        )}
+
         <div className="px-4 pt-4 sm:px-6">
           {visible.length === 0 && (
             <div className="card flex flex-col items-center gap-2 px-6 py-12 text-center">
@@ -231,8 +248,8 @@ export function Dashboard({ me, photoUrl, rows, branches, people, notifications,
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-3">
-              {visible.map(({ c, cat, onboarding }) => (
-                <CandidateCard key={c.id} c={c} cat={cat} onboarding={onboarding} branch={branchName(c.branch_id) ?? c.applied_locations.join(", ")} onOpen={() => setOpenId(c.id)} />
+              {visible.map(({ c, cat, onboarding, foreign }) => (
+                <CandidateCard key={c.id} c={c} cat={cat} onboarding={onboarding} foreign={foreign} branch={branchName(c.branch_id) ?? c.applied_locations.join(", ")} onOpen={() => setOpenId(c.id)} />
               ))}
             </div>
           )}
@@ -240,7 +257,9 @@ export function Dashboard({ me, photoUrl, rows, branches, people, notifications,
       </main>
 
       {needStoreDetails.length > 0 && <StoreJoiningPopup people={needStoreDetails} />}
-      {open && <CandidatePanel key={open.c.id} me={me} c={open.c} cat={open.cat} branches={branches} appUrl={appUrl} onClose={() => setOpenId(null)} />}
+      {open && (open.foreign
+        ? <TalentOnlyPanel key={open.c.id} c={open.c} cat={open.cat} branches={branches} posts={posts} onClose={() => setOpenId(null)} />
+        : <CandidatePanel key={open.c.id} me={me} c={open.c} cat={open.cat} branches={branches} posts={posts} appUrl={appUrl} onClose={() => setOpenId(null)} />)}
       {modal === "walkin" && <WalkinForm me={me} branches={branches} posts={posts} dobRule={dobRule} onClose={() => setModal(null)} />}
       {modal === "notify" && <SendNotification me={me} people={people} onClose={() => setModal(null)} />}
     </AppShell>
@@ -249,7 +268,7 @@ export function Dashboard({ me, photoUrl, rows, branches, people, notifications,
 
 const formatMobile = (m: string) => (/^\d{10}$/.test(m) ? `${m.slice(0, 5)} ${m.slice(5)}` : m);
 
-function CandidateCard({ c, cat, onboarding, branch, onOpen }: { c: Candidate; cat: Categorized; onboarding: OnboardingSubmission | null; branch: string; onOpen: () => void }) {
+function CandidateCard({ c, cat, onboarding, foreign, branch, onOpen }: { c: Candidate; cat: Categorized; onboarding: OnboardingSubmission | null; foreign?: boolean; branch: string; onOpen: () => void }) {
   const when = c.next_action_at ? friendlyWhen(c.next_action_at, { dateOnly: /join/i.test(c.next_action ?? "") }) : null;
   const accent = cat.active ? "before:bg-sky-500" : cat.category.endsWith("joined_list") ? "before:bg-emerald-500" : ONBOARDING_CATEGORIES.includes(cat.category) ? "before:bg-amber-500" : "before:bg-slate-300";
   return (
@@ -271,6 +290,8 @@ function CandidateCard({ c, cat, onboarding, branch, onOpen }: { c: Candidate; c
         {c.source === "walkin" && <Badge tone="purple">Walk-in</Badge>}
         {onboarding && <Badge tone={onboarding.status === "completed" ? "green" : "amber"}>Docs {onboarding.status === "submitted" ? "to verify" : onboarding.status}</Badge>}
         {c.talent_pool && <Badge tone="indigo">Talent pool</Badge>}
+        {foreign && <Badge tone="slate">HR: {c.assigned_hr}</Badge>}
+        {c.talent_pool && c.talent_tags.slice(0, 4).map((t) => <Badge key={t} tone="slate">{t}</Badge>)}
       </div>
       {c.next_action && cat.active && (
         <div className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium ${when?.overdue ? "bg-red-50 text-red-700" : when?.soon ? "bg-amber-50 text-amber-800" : "bg-slate-50 text-slate-600"}`}>

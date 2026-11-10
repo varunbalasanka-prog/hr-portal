@@ -15,14 +15,15 @@ import { DETAIL_LABELS, DOC_LABELS, FIELD_FLAG, MANDATORY_DOCS, docLabel, namesM
 import { StageForm } from "./stage-form";
 import { WaComposer } from "./wa-composer";
 import { Scorecard } from "./scorecard";
-import { setTalentPool } from "@/app/actions/talent";
+import { TalentBox } from "./talent";
+import type { WalkinPosts } from "./walkin-form";
 import { sourceLabel } from "@/lib/sources";
 import { Badge, Flash, Modal } from "./ui";
 
 type Tab = "profile" | "update" | "interview" | "history" | "documents";
 
-export function CandidatePanel({ me, c, cat, branches, appUrl, onClose }: {
-  me: Profile; c: Candidate; cat: Categorized; branches: Branch[]; appUrl: string; onClose: () => void;
+export function CandidatePanel({ me, c, cat, branches, posts, appUrl, onClose }: {
+  me: Profile; c: Candidate; cat: Categorized; branches: Branch[]; posts: WalkinPosts; appUrl: string; onClose: () => void;
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>(cat.active || cat.category.endsWith("joined_list") ? "update" : "profile");
@@ -131,7 +132,7 @@ export function CandidatePanel({ me, c, cat, branches, appUrl, onClose }: {
       )}
       {tab === "profile" && !store && c.branch_id && selected && <BranchBox c={c} branches={branches} onSaved={refresh} />}
       {tab === "profile" && admin && !cat.active && cat.category !== "reapply" && !cat.category.endsWith("joined_list") && <SendToReapply c={c} onDone={refresh} />}
-      {tab === "profile" && <TalentBox c={c} onSaved={refresh} />}
+      {tab === "profile" && !store && <TalentBox key={c.updated_at} c={c} scores={details?.scores} branches={branches} posts={posts} onSaved={refresh} />}
       {tab === "profile" && me.role === "superadmin" && <EraseBox c={c} onErased={() => { onClose(); router.refresh(); }} />}
 
       {tab === "update" && <StageForm key={c.updated_at} c={c} branches={branches} admin={admin} onSaved={refresh} />}
@@ -302,28 +303,6 @@ function History({ events, candidateId, onAdded }: { events?: CandidateEvent[]; 
           </li>
         ))}
       </ol>
-    </div>
-  );
-}
-
-/** Keep a promising candidate for future openings, findable from the dashboard's Talent pool list. */
-function TalentBox({ c, onSaved }: { c: Candidate; onSaved: () => void }) {
-  const [tags, setTags] = useState(c.talent_tags.join(", "));
-  const [pending, start] = useTransition();
-  const [msg, setMsg] = useState<{ ok: boolean; message: string } | null>(null);
-  const save = (on: boolean) => start(async () => { setMsg(await setTalentPool(c.id, on, tags.split(","))); onSaved(); });
-  return (
-    <div className="mt-4 space-y-2 rounded border border-slate-200 p-3 text-sm">
-      <div className="flex flex-wrap items-center gap-2">
-        <b>Talent pool</b>
-        {c.talent_pool ? <Badge tone="purple">In talent pool</Badge> : <span className="text-slate-500">Keep this person for future openings</span>}
-      </div>
-      <div className="flex flex-wrap gap-2">
-        <input className="input !w-auto flex-1" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="Tags, comma separated: sales, english, theni" aria-label="Talent pool tags" />
-        <button className="btn-outline" disabled={pending} onClick={() => save(true)}>{c.talent_pool ? "Save tags" : "Add to talent pool"}</button>
-        {c.talent_pool && <button className="btn-outline" disabled={pending} onClick={() => save(false)}>Remove</button>}
-      </div>
-      <Flash msg={msg} />
     </div>
   );
 }
