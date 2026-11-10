@@ -1,17 +1,14 @@
--- 0037: admins can change anyone's designation, and add, close, reopen or delete a store.
+-- 0037: admins can change anyone's designation, and add or delete a store.
 --
 -- Designation: after a person's first month, a designation change normally goes through an appraisal (0020). An admin
 -- can now change it directly. A real change (role change, promotion, demotion) closes the current register line the
 -- day before the start date and opens a new one, so history is kept. A "correction" fixes the current line in place.
 -- People not yet joined (selected, offer, onboarding) just get the new designation on their candidate row.
 --
--- Stores: "close" hides a store for new work (apply, careers, job listings, dropdowns) but keeps every record, and can
--- be undone. "Delete" removes the row and only works for a store nothing points to (no candidates, staff, logins,
--- manpower or walk-in requests), e.g. one added by mistake.
+-- Stores: "delete" only works for a store nothing points to (no candidates, applications, staff records, logins,
+-- manpower or walk-in requests). varun chose this on 2026-11-10: move or remove those first, history is never lost.
 --
 -- Safe to run more than once.
-
-alter table branches add column if not exists closed_at timestamptz;
 
 -- ---------------------------------------------------------------------------
 -- Designation
@@ -121,33 +118,7 @@ end $$;
 revoke all on function store_usage() from public, anon;
 grant execute on function store_usage() to authenticated;
 
--- Close (p_close true) or reopen a store. Closing takes all its posts off /apply and careers (the job listings
--- close through the branch_posts trigger) and cancels its manpower requests still waiting or open.
-create or replace function set_store_closed(p_branch uuid, p_close boolean) returns void
-  language plpgsql security definer set search_path = public as $$
-declare b branches;
-begin
-  if not is_admin() then raise exception 'Only an admin can close a store'; end if;
-  select * into b from branches where id = p_branch for update;
-  if b.id is null then raise exception 'Store not found'; end if;
-  if p_close then
-    if b.closed_at is not null then return; end if;
-    update branches set closed_at = now() where id = b.id;
-    update app_settings set value = value - b.id::text where key = 'branch_posts' and value ? b.id::text;
-    update manpower_requests set status = 'cancelled', decision_note = 'store closed by ' || actor_name(), updated_at = now()
-     where branch_id = b.id and status = 'requested';
-    update manpower_requests set status = 'closed', decision_note = 'store closed by ' || actor_name(), updated_at = now()
-     where branch_id = b.id and status = 'approved' and kind = 'permanent';
-  else
-    if b.closed_at is null then return; end if;
-    update branches set closed_at = null where id = b.id;
-  end if;
-  perform log_change(case when p_close then 'close store' else 'reopen store' end, b.id::text, jsonb_build_object('name', b.name));
-end $$;
-revoke all on function set_store_closed(uuid, boolean) from public, anon;
-grant execute on function set_store_closed(uuid, boolean) to authenticated;
-
--- Delete a store for good. Refuses if anything points at it; close it instead.
+-- Delete a store for good. Refuses if anything points at it.
 create or replace function delete_store(p_branch uuid) returns void
   language plpgsql security definer set search_path = public as $$
 declare b branches; u record;
@@ -157,7 +128,7 @@ begin
   if b.id is null then raise exception 'Store not found'; end if;
   select * into u from store_usage() s where s.branch_id = b.id;
   if u.candidates + u.staff + u.logins + u.requests > 0 then
-    raise exception '% has % candidate(s), % staff record(s), % login(s) and % request(s). Close it instead so this history is kept.',
+    raise exception '% has % candidate(s), % staff record(s), % login(s) and % request(s). Move or remove these first.',
       b.name, u.candidates, u.staff, u.logins, u.requests;
   end if;
   update app_settings set value = value - b.id::text where key = 'branch_posts' and value ? b.id::text;

@@ -1,6 +1,6 @@
 "use client";
 import { useState, useTransition } from "react";
-import { addStore, deleteStore, setStoreClosed, updateStore, type StoreInput } from "@/app/actions/stores";
+import { addStore, deleteStore, updateStore, type StoreInput } from "@/app/actions/stores";
 import { Badge, Flash, Modal } from "@/components/ui";
 import { divisionOf } from "@/lib/staff";
 import type { Branch, Profile } from "@/lib/types";
@@ -10,8 +10,8 @@ export type StoreUsage = { branch_id: string; candidates: number; staff: number;
 const BLANK: StoreInput = { brand: "", town: "", division: "", business_type: "", hr_username: "", address: "", street_address: "", postal_code: "" };
 
 /**
- * Add a store, edit its details, close or reopen it, or delete it.
- * Close keeps every record and can be undone; Delete only works for a store nothing points to (e.g. added by mistake).
+ * Add a store, edit its details, or delete it. Delete only works for a store nothing points to: its candidates,
+ * staff records, login and requests have to be moved or removed first, so no history is lost.
  */
 export function StoresAdmin({ branches, people, usage }: { branches: Branch[]; people: Profile[]; usage: StoreUsage[] | null }) {
   const hrs = people.filter((p) => p.role === "hr");
@@ -21,10 +21,7 @@ export function StoresAdmin({ branches, people, usage }: { branches: Branch[]; p
   const [pending, start] = useTransition();
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<Branch | null>(null);
-  const [showClosed, setShowClosed] = useState(false);
-  const closed = branches.filter((b) => b.closed_at);
-  const shown = branches.filter((b) => showClosed || !b.closed_at);
-  const towns = [...new Set(shown.map((b) => b.town))].sort();
+  const towns = [...new Set(branches.map((b) => b.town))].sort();
   const use = (id: string) => usage?.find((u) => u.branch_id === id);
   const empty = (id: string) => { const u = use(id); return !!u && u.candidates + u.staff + u.logins + u.requests === 0; };
 
@@ -32,11 +29,6 @@ export function StoresAdmin({ branches, people, usage }: { branches: Branch[]; p
     return <section className="card p-4 text-sm text-slate-600">This tab needs the database update <b>0037_admin_designation_and_stores.sql</b>. Run it in Supabase, then reload.</section>;
   }
 
-  const close = (b: Branch) => {
-    if (!confirm(`Close ${b.name}?\n\n• It disappears from the apply page, careers, job listings and the store pickers.\n• Its open manpower requests are closed.\n• All its candidates, staff records and history are kept.\n\nYou can reopen it later.`)) return;
-    start(async () => setMsg(await setStoreClosed(b.id, true)));
-  };
-  const reopen = (b: Branch) => start(async () => setMsg(await setStoreClosed(b.id, false)));
   const remove = (b: Branch) => {
     if (!confirm(`Delete ${b.name} for good?\n\nThis cannot be undone.`)) return;
     start(async () => setMsg(await deleteStore(b.id)));
@@ -49,25 +41,22 @@ export function StoresAdmin({ branches, people, usage }: { branches: Branch[]; p
         <button className="btn-primary ml-auto" onClick={() => { setMsg(null); setAdding(true); }}>+ Add store</button>
       </div>
       <p className="mb-3 text-xs text-slate-500">
-        <b>Close</b> hides a store for new work and keeps all its records; you can reopen it. <b>Delete</b> is only for a store
-        with nothing recorded against it, such as one added by mistake.
+        <b>Delete</b> appears only for a store with nothing recorded against it. Otherwise move its candidates (Change allocated
+        branch), delete its login (Logins) and finish its requests first. A store with past staff records can&apos;t be deleted.
       </p>
       <Flash msg={msg} />
-      {closed.length > 0 && (
-        <label className="mb-2 flex items-center gap-2 text-xs"><input type="checkbox" checked={showClosed} onChange={(e) => setShowClosed(e.target.checked)} /> Show closed stores ({closed.length})</label>
-      )}
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead><tr className="border-b text-left text-xs text-slate-500"><th className="py-2">Store</th><th>HR</th><th>Records</th><th className="text-right">Actions</th></tr></thead>
           <tbody>
             {towns.map((t) => [
               <tr key={t}><td colSpan={4} className="bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-500">{t}</td></tr>,
-              ...shown.filter((b) => b.town === t).map((b) => {
+              ...branches.filter((b) => b.town === t).map((b) => {
                 const u = use(b.id);
                 return (
-                  <tr key={b.id} className={`border-b border-slate-100 align-top ${b.closed_at ? "text-slate-400" : ""}`}>
+                  <tr key={b.id} className="border-b border-slate-100 align-top">
                     <td className="py-1.5 pr-3">
-                      {b.name} <Badge tone="slate">{b.business_type}</Badge> {b.closed_at && <Badge tone="red">Closed</Badge>}
+                      {b.name} <Badge tone="slate">{b.business_type}</Badge>
                     </td>
                     <td className="py-1.5 pr-3 text-xs">{hrs.find((h) => h.username === b.hr_username)?.full_name || b.hr_username}</td>
                     <td className="py-1.5 pr-3 text-xs text-slate-500">
@@ -75,9 +64,6 @@ export function StoresAdmin({ branches, people, usage }: { branches: Branch[]; p
                     </td>
                     <td className="whitespace-nowrap py-1.5 text-right">
                       <button className="btn-ghost" disabled={pending} onClick={() => { setMsg(null); setEditing(b); }}>Edit</button>
-                      {b.closed_at
-                        ? <button className="btn-outline" disabled={pending} onClick={() => reopen(b)}>Reopen</button>
-                        : <button className="btn-outline" disabled={pending} onClick={() => close(b)}>Close</button>}
                       {empty(b.id) && <button className="btn-danger ml-1" disabled={pending} onClick={() => remove(b)}>Delete</button>}
                     </td>
                   </tr>

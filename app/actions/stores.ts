@@ -53,15 +53,6 @@ export async function updateStore(id: string, input: Pick<StoreInput, "town" | "
   return done("Store details saved.");
 }
 
-export async function setStoreClosed(id: string, close: boolean): Promise<Result> {
-  const { supabase } = await requireAdmin();
-  const { error } = await supabase.rpc("set_store_closed", { p_branch: id, p_close: close });
-  if (error) return { ok: false, message: error.message };
-  return done(close
-    ? "Store closed. It is off the apply page, careers and job listings, and its open manpower requests are closed. All its records are kept."
-    : "Store reopened. Open its posts again under Store posts.");
-}
-
 export async function deleteStore(id: string): Promise<Result> {
   const { supabase } = await requireAdmin();
   const { error } = await supabase.rpc("delete_store", { p_branch: id });

@@ -45,13 +45,11 @@ export function StageForm({ c, branches, admin, onSaved }: { c: Candidate; branc
     );
   }
 
-  // A closed store (0037) is offered only if it is already the one picked.
-  const live = branches.filter((b) => !b.closed_at || b.id === c.branch_id);
-  const branchOptions = live.map((b) => ({ value: b.id, label: b.name }));
+  const branchOptions = branches.map((b) => ({ value: b.id, label: b.name }));
   // Stores the candidate applied to come first in the interview location list.
   const interviewOptions = [
-    ...live.filter((b) => c.applied_locations.includes(b.name)).map((b) => ({ value: b.id, label: `${b.name} (applied)` })),
-    ...live.filter((b) => !c.applied_locations.includes(b.name)).map((b) => ({ value: b.id, label: b.name })),
+    ...branches.filter((b) => c.applied_locations.includes(b.name)).map((b) => ({ value: b.id, label: `${b.name} (applied)` })),
+    ...branches.filter((b) => !c.applied_locations.includes(b.name)).map((b) => ({ value: b.id, label: b.name })),
   ];
   // Designation comes from the allocated store's firm roles (0025), keeping an older saved name.
   const firmRoles = branches.find((b) => b.id === f.branchId)?.roles;

@@ -69,13 +69,12 @@ export async function setQuestionActive(id: string, active: boolean): Promise<Re
 async function branchPosts(supabase: Awaited<ReturnType<typeof requireAdmin>>["supabase"]) {
   const [{ data: settings, error }, { data: branches, error: bErr }, firmRoles] = await Promise.all([
     supabase.from("app_settings").select("key, value").in("key", ["apply_posts", "branch_posts"]),
-    supabase.from("branches").select("*"),
+    supabase.from("branches").select("id, name, division"),
     loadFirmRoles(supabase),
   ]);
   if (error || bErr) throw new Error((error ?? bErr)!.message);
   const get = (k: string) => settings?.find((r) => r.key === k)?.value;
-  // A closed store (0037) can't open posts; leaving it out also drops it from branch_posts on the next save.
-  const stores = ((branches ?? []) as Branch[]).filter((b) => !b.closed_at);
+  const stores = (branches ?? []) as Pick<Branch, "id" | "name" | "division">[];
   return {
     master: (get("apply_posts") ?? []) as string[],
     map: (get("branch_posts") ?? {}) as Record<string, string[]>,

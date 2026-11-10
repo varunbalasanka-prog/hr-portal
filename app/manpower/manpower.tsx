@@ -143,7 +143,7 @@ function BranchPicker({ me, branches, value, onChange }: { me: Profile; branches
     <Field label="Branch *">
       <select className="input" value={value} onChange={(e) => onChange(e.target.value)}>
         <option value="">-- Select --</option>
-        {branches.filter((b) => !b.closed_at || b.id === value).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+        {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
       </select>
     </Field>
   );

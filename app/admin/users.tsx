@@ -41,7 +41,7 @@ export function UsersAdmin({ me, people, branches }: { me: Profile; people: Prof
         {form.role === "branch"
           ? <select className="input" value={form.branch_id} onChange={(e) => setForm({ ...form, branch_id: e.target.value })} required>
               <option value="">-- Store --</option>
-              {branches.filter((b) => !b.closed_at).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+              {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
           : <span />}
         <input className="input" type="password" placeholder="Password (8+ characters)" autoComplete="new-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />

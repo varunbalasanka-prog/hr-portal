@@ -241,7 +241,7 @@ function BranchBox({ c, branches, onSaved }: { c: Candidate; branches: Branch[];
       <b>Change allocated branch</b>
       <div className="flex flex-wrap gap-2">
         <select className="input !w-auto flex-1" value={id} onChange={(e) => setId(e.target.value)} aria-label="Allocated branch">
-          {branches.filter((b) => !b.closed_at || b.id === c.branch_id).map((b) => <option key={b.id} value={b.id}>{b.name}{b.closed_at ? " (closed)" : ""}</option>)}
+          {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
         </select>
         <button className="btn-outline" disabled={pending || id === c.branch_id} onClick={() => start(async () => { const r = await changeBranch(c.id, id); setMsg(r); if (r.ok) onSaved(); })}>Change branch</button>
       </div>
