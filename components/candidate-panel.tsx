@@ -70,7 +70,7 @@ export function CandidatePanel({ me, c, cat, branches, appUrl, onClose }: {
             links={{ details: detailsUrl, offer: offerUrl, onboarding: onboardUrl, appointment: c.pipeline_status === "Joined" ? apptUrl : "" }} />
         ) : <a className="btn-success" target="_blank" rel="noreferrer" href={`https://wa.me/91${c.mobile}`}>WhatsApp</a>}
       </div>
-      {admin && c.salary_status === "proposed" && <SalaryBox c={c} onSaved={refresh} />}
+      {admin && !salaryApproved(c) && <SalaryBox c={c} onSaved={refresh} />}
       {afterInterview && !store && <DetailsBox c={c} url={detailsUrl} />}
       {cat.category === "reapply" && admin && <ReapplyBox c={c} branch={branch?.name} onDone={refresh} />}
       {c.pipeline_status === "Joined" && <JoiningBox c={c} canComplete={!store} onSaved={refresh} />}
@@ -190,7 +190,9 @@ function SalaryBox({ c, onSaved }: { c: Candidate; onSaved: () => void }) {
   return (
     <div className="mb-3 space-y-2 rounded border border-amber-300 bg-amber-50 p-3 text-sm">
       <b>Salary approval</b>
-      <p className="text-xs text-slate-600">Proposed by HR ({c.assigned_hr}): ₹{c.proposed_basic ?? 0} basic + ₹{c.proposed_allowances ?? 0} allowances. Change the amounts if needed, then approve.</p>
+      {c.salary_status === "proposed"
+        ? <p className="text-xs text-slate-600">Proposed by HR ({c.assigned_hr}): ₹{c.proposed_basic ?? 0} basic + ₹{c.proposed_allowances ?? 0} allowances. Change the amounts if needed, then approve.</p>
+        : <p className="text-xs text-slate-600">No salary has been entered for this candidate yet, so the offer letter is locked. Enter the basic salary and allowances, then approve.</p>}
       {!c.details_submitted_at && (
         <p className="rounded bg-amber-100 px-2 py-1 text-xs text-amber-900">The candidate hasn&apos;t filled the after-interview details yet (experience, last salary, resume). You can still approve.</p>
       )}
@@ -431,7 +433,9 @@ function Documents({ c, details, offerUrl, apptUrl, onboardUrl, onChanged }: {
           {offerUrl ? <>
             <a className="btn-outline" href={offerUrl} target="_blank" rel="noreferrer">Offer letter</a>
             <a className="btn-success" href={wa("offer letter", offerUrl)} target="_blank" rel="noreferrer">Send offer on WhatsApp</a>
-          </> : <span className="text-xs text-amber-700">Offer letter opens after an admin approves the salary.</span>}
+          </> : <span className="text-xs text-amber-700">{c.salary_status === "proposed"
+            ? "Offer letter opens after an admin approves the salary."
+            : "Offer letter is locked because no salary was entered. An admin can enter and approve it in the Salary approval box above."}</span>}
           {c.pipeline_status === "Joined" && <>
             <a className="btn-outline" href={apptUrl} target="_blank" rel="noreferrer">Appointment letter</a>
             <a className="btn-success" href={wa("appointment letter", apptUrl)} target="_blank" rel="noreferrer">Send appointment on WhatsApp</a>
