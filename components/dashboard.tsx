@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { isAdminRole, type Branch, type Candidate, type NotificationRow, type OnboardingSubmission, type Profile } from "@/lib/types";
-import { ONBOARDING_CATEGORIES, countAll, isTodaysWork, needsTomorrowReminder, type Categorized } from "@/lib/categorize";
+import { ONBOARDING_CATEGORIES, countAll, onboardingColumn, type OnboardingColumn, isTodaysWork, needsTomorrowReminder, type Categorized } from "@/lib/categorize";
 import { SMS_TITLES, joiningDate, offerValidity, smsItem, smsLink, smsText, type SmsItem } from "@/lib/sms";
 import { waLink } from "@/lib/wa-templates";
 import { markSmsSent, setEmployeeDetails } from "@/app/actions/candidates";
@@ -33,7 +33,7 @@ const TITLES: Record<Group, { title: string; hint: string }> = {
   confirmations: { title: "Confirmations to approve", hint: "Employees finishing their 6-month probation. Open one and approve: the confirmation letter then appears in SMS to send on the 1st." },
   approvals: { title: "Waiting for approval", hint: "Salaries proposed by HR, and candidates HR put on hold after the interview." },
   followup: { title: "In follow-up", hint: "Everyone still being called, interviewed or waiting to join." },
-  onboarding: { title: "Joined · onboarding", hint: "New joiners waiting for the store's employee code or HR's payroll step, and onboarding documents." },
+  onboarding: { title: "Onboarding", hint: "Left: form submitted, waiting for the joining day. Right: still waiting for documents or salary approval. Below: already joined, finishing store code, payroll or documents." },
   completed: { title: "Completed", hint: "Joined and payroll done." },
   rejected: { title: "Rejected / dropped", hint: "Closed candidates. Admins can reopen or move them to the Re-Apply folder." },
   talent: { title: "Talent pool", hint: "Good people to call when a job opens, from every HR. Filter by role, store or language, then open one and tap Call for a new opening." },
@@ -43,6 +43,13 @@ const TITLES: Record<Group, { title: string; hint: string }> = {
 type Sub = { key: string; label: string; test: (r: Row) => boolean; /** Shows people outside the group too (Talent pool > Suggested). */ standalone?: boolean };
 const leftWithout = (r: Row) => r.cat.category === "joined_left" && r.cat.label.includes("Without Information");
 const docs = (suffix: string) => (r: Row) => r.cat.docCategory.endsWith(suffix);
+const col = (k: OnboardingColumn) => (r: Row) => onboardingColumn(r.c, r.cat) === k;
+
+/** Onboarding board: two columns side by side for people not joined yet, then the joined ones below. */
+const COLUMNS: { key: OnboardingColumn; title: string; hint: string; tone: string }[] = [
+  { key: "ready", title: "Submitted · waiting to join", hint: "Onboarding form is in and salary is approved. Only the joining day is left.", tone: "bg-emerald-500" },
+  { key: "waiting", title: "Waiting for documents or salary approval", hint: "Form not submitted, sent back for correction, or salary still waiting for admin approval.", tone: "bg-amber-500" },
+];
 
 /** Narrower lists inside a group, shown as chips above the cards. */
 function subsFor(g: Group, store: boolean): Sub[] {
@@ -67,6 +74,10 @@ function subsFor(g: Group, store: boolean): Sub[] {
       { key: "left_without", label: "Left (absconded)", test: leftWithout },
     ];
     case "onboarding": return [
+      ...(store ? [] : [
+        { key: "ready", label: "Submitted · waiting to join", test: col("ready") },
+        { key: "waiting", label: "Waiting: documents / salary approval", test: col("waiting") },
+      ]),
       { key: "store_details_pending", label: "Waiting for store: code & shift", test: cat("store_details_pending") },
       { key: "payroll_pending", label: "Payroll pending", test: cat("payroll_pending") },
       ...(store ? [] : [
@@ -90,7 +101,7 @@ function inGroup(r: Row, g: Group, admin: boolean, store: boolean): boolean {
     case "followup": return r.cat.active;
     case "completed": return cat === "online_joined_list" || cat === "walkin_joined_list";
     case "rejected": return !r.cat.active && !cat.endsWith("joined_list") && !ONBOARDING_CATEGORIES.includes(cat) && cat !== "reapply";
-    case "onboarding": return ONBOARDING_CATEGORIES.includes(cat) || r.cat.docCategory !== "none";
+    case "onboarding": return onboardingColumn(r.c, r.cat) !== null;
     case "today": return isTodaysWork(r.c, r.cat);
     case "sms": return !!smsItem(r.c, r.cat);
     case "confirmations": return !store && confirmationState(r.c) === "due";
@@ -246,6 +257,8 @@ export function Dashboard({ me, photoUrl, rows, branches, people, notifications,
                 return item ? <SmsRow key={c.id} c={c} item={item} branches={branches} people={people} letterUrl={letterTokens[c.id] ? `${appUrl}/letters/confirmation/${letterTokens[c.id]}` : undefined} onOpen={() => setOpenId(c.id)} /> : null;
               })}
             </div>
+          ) : list.group === "onboarding" && !q && !list.sub && !store && visible.length > 0 ? (
+            <OnboardingBoard rows={visible} branchName={branchName} onOpen={setOpenId} />
           ) : (
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-3">
               {visible.map(({ c, cat, onboarding, foreign }) => (
@@ -263,6 +276,43 @@ export function Dashboard({ me, photoUrl, rows, branches, people, notifications,
       {modal === "walkin" && <WalkinForm me={me} branches={branches} posts={posts} dobRule={dobRule} onClose={() => setModal(null)} />}
       {modal === "notify" && <SendNotification me={me} people={people} onClose={() => setModal(null)} />}
     </AppShell>
+  );
+}
+
+function OnboardingBoard({ rows, branchName, onOpen }: { rows: Row[]; branchName: (id: string | null) => string | undefined; onOpen: (id: string) => void }) {
+  const card = ({ c, cat, onboarding }: Row) => (
+    <CandidateCard key={c.id} c={c} cat={cat} onboarding={onboarding} branch={branchName(c.branch_id) ?? c.applied_locations.join(", ")} onOpen={() => onOpen(c.id)} />
+  );
+  const joined = rows.filter((r) => onboardingColumn(r.c, r.cat) === "joined");
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {COLUMNS.map((col) => {
+          const items = rows.filter((r) => onboardingColumn(r.c, r.cat) === col.key);
+          return (
+            <section key={col.key} className="rounded-xl border border-slate-200 bg-slate-50/60 p-3" aria-label={col.title}>
+              <header className="mb-3 px-1">
+                <h2 className="flex items-center gap-2 font-semibold text-slate-800">
+                  <span className={`h-2.5 w-2.5 rounded-full ${col.tone}`} aria-hidden />
+                  {col.title} <span className="text-sm font-semibold text-slate-400 tabular-nums">{items.length}</span>
+                </h2>
+                <p className="mt-0.5 text-xs text-slate-500">{col.hint}</p>
+              </header>
+              <div className="space-y-3">
+                {items.length ? items.map(card) : <p className="rounded-lg border border-dashed border-slate-200 bg-white px-3 py-6 text-center text-sm text-slate-400">No one here right now</p>}
+              </div>
+            </section>
+          );
+        })}
+      </div>
+      {joined.length > 0 && (
+        <section aria-label="Already joined">
+          <h2 className="mb-1 font-semibold text-slate-800">Already joined · finishing up <span className="text-sm font-semibold text-slate-400 tabular-nums">{joined.length}</span></h2>
+          <p className="mb-3 text-xs text-slate-500">Waiting for the store's employee code and shift, HR's payroll step, or onboarding documents.</p>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-3">{joined.map(card)}</div>
+        </section>
+      )}
+    </div>
   );
 }
 
@@ -289,6 +339,7 @@ function CandidateCard({ c, cat, onboarding, foreign, branch, onOpen }: { c: Can
         <Badge tone={cat.tone} dot>{cat.label}</Badge>
         {c.source === "walkin" && <Badge tone="purple">Walk-in</Badge>}
         {onboarding && <Badge tone={onboarding.status === "completed" ? "green" : "amber"}>Docs {onboarding.status === "submitted" ? "to verify" : onboarding.status}</Badge>}
+        {c.salary_status === "proposed" && <Badge tone="red">Salary approval pending</Badge>}
         {c.talent_pool && <Badge tone="indigo">Talent pool</Badge>}
         {foreign && <Badge tone="slate">HR: {c.assigned_hr}</Badge>}
         {c.talent_pool && c.talent_tags.slice(0, 4).map((t) => <Badge key={t} tone="slate">{t}</Badge>)}

@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { applyStage, NO_SALARY, isBlacklisted, needsReapplyReview, reactivate, stageFor, walkinBlocked } from "../lib/pipeline";
-import { categorize, countAll } from "../lib/categorize";
+import { categorize, countAll, onboardingColumn } from "../lib/categorize";
 import { calculateSalary } from "../lib/salary";
 import { probationEnd, localInputToIso } from "../lib/dates";
-import type { Candidate } from "../lib/types";
+import type { Candidate, OnboardingSubmission } from "../lib/types";
 
 const base: Candidate = {
   id: "c1", source: "online", name: "Priya", mobile: "9000000001", marital_status: null, father_name: null, email: null, address: null,
@@ -146,5 +146,30 @@ describe("salary and probation", () => {
   });
   it("treats form datetimes as IST", () => {
     expect(localInputToIso("2026-10-24T09:30")).toBe("2026-10-24T04:00:00.000Z");
+  });
+});
+
+describe("onboarding board columns", () => {
+  const sub = (status: "submitted" | "pending" | "completed") => ({ status }) as unknown as OnboardingSubmission;
+  const at = (patch: Partial<Candidate>, form?: OnboardingSubmission | null) => {
+    const c = { ...base, ...patch };
+    return onboardingColumn(c, categorize(c, form));
+  };
+  const offered = { pipeline_status: "Expected Joining" } as Partial<Candidate>;
+
+  it("puts people with the form in and salary approved in 'waiting to join'", () => {
+    expect(at({ ...offered, salary_status: "approved" }, sub("submitted"))).toBe("ready");
+    expect(at({ ...offered, salary_status: null, basic_salary: 12000 }, sub("completed"))).toBe("ready"); // salary from before the approval step
+    expect(at({ pipeline_status: "Revised Joining", salary_status: "approved" }, sub("submitted"))).toBe("ready");
+  });
+  it("puts missing documents or a pending salary in the waiting column", () => {
+    expect(at({ ...offered, salary_status: "approved" })).toBe("waiting");
+    expect(at({ ...offered, salary_status: "approved" }, sub("pending"))).toBe("waiting");
+    expect(at({ ...offered, salary_status: "proposed" }, sub("completed"))).toBe("waiting");
+    expect(at({ ...offered, salary_status: null, basic_salary: 0 }, sub("completed"))).toBe("waiting"); // no salary entered yet
+  });
+  it("keeps joined people below, and everyone else off the board", () => {
+    expect(at({ pipeline_status: "Joined", actual_joining_date: "2026-11-01" }, sub("completed"))).toBe("joined");
+    expect(at({ pipeline_status: "Interview Scheduled" })).toBeNull();
   });
 });
