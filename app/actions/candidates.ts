@@ -11,6 +11,9 @@ import { dobRule } from "@/lib/walkin-server";
 
 type Result = { ok: true; message: string } | { ok: false; message: string; blocked?: string };
 
+/** Where a notification about this candidate takes you: the dashboard with their panel open. */
+const openLink = (id: string) => `/dashboard?open=${id}`;
+
 async function branchUsername(supabase: Awaited<ReturnType<typeof requireProfile>>["supabase"], c: Candidate): Promise<string | null> {
   if (c.branch_id) {
     const { data } = await supabase.from("profiles").select("username").eq("branch_id", c.branch_id).eq("role", "branch").maybeSingle();
@@ -61,8 +64,8 @@ export async function updateCandidateStage(candidateId: string, input: StageInpu
   }
   if (newHr && newHr !== profile.username) {
     const text = `${c.name} (${c.mobile}) has been moved to you by ${profile.username}: ${updated.pipeline_status}.`;
-    await supabase.from("notifications").insert({ sender: profile.username, recipient: newHr, message: text });
-    await pushTo(newHr, { title: "Candidate moved to you", body: text, url: "/dashboard" });
+    await supabase.from("notifications").insert({ sender: profile.username, recipient: newHr, message: text, link: openLink(c.id) });
+    await pushTo(newHr, { title: "Candidate moved to you", body: text, url: openLink(c.id) });
   }
 
   for (const n of result.notify) {
@@ -71,6 +74,7 @@ export async function updateCandidateStage(candidateId: string, input: StageInpu
     await supabase.from("notifications").insert({
       sender: profile.username, recipient,
       message: n.message.replace("{interview_at}", formatDateTime(updated.interview_at)),
+      link: openLink(c.id),
     });
   }
 
@@ -149,8 +153,8 @@ export async function addWalkin(input: WalkinInput): Promise<Result> {
     if (hr && hr !== profile.username) {
       const text = `${ex.name} (${mobile}) walked in at ${branch.name} today for ${v.post}${input.remark?.trim() ? ` (${input.remark.trim()})` : ""}. `
         + `They are already with you as "${ex.pipeline_status}". Entered by ${profile.username}.`;
-      await supabase.from("notifications").insert({ sender: profile.username, recipient: hr, message: text });
-      await pushTo(hr, { title: "Existing candidate walked in", body: text, url: "/dashboard" });
+      await supabase.from("notifications").insert({ sender: profile.username, recipient: hr, message: text, link: openLink(ex.id) });
+      await pushTo(hr, { title: "Existing candidate walked in", body: text, url: openLink(ex.id) });
     }
     return { ok: false, message: `${ex.name} (${mobile}) is already in the portal (${ex.pipeline_status}), handled by ${hr || "HR"}.`
       + (hr && hr !== profile.username ? ` ${hr} has been told they walked in today.` : "") };
@@ -182,8 +186,8 @@ export async function addWalkin(input: WalkinInput): Promise<Result> {
   }
   if (branch.hr_username !== profile.username) {
     const text = `New walk-in candidate: ${v.name} (${mobile}) at ${branch.name}.${ageNote ? ` ${ageNote}` : ""}`;
-    await supabase.from("notifications").insert({ sender: profile.username, recipient: branch.hr_username, message: text });
-    await pushTo(branch.hr_username, { title: "New walk-in", body: text, url: "/dashboard" });
+    await supabase.from("notifications").insert({ sender: profile.username, recipient: branch.hr_username, message: text, link: openLink(inserted.id) });
+    await pushTo(branch.hr_username, { title: "New walk-in", body: text, url: openLink(inserted.id) });
   }
   revalidatePath("/dashboard");
   return { ok: true, message: "Walk-in saved." };
@@ -213,8 +217,8 @@ export async function setEmployeeDetails(candidateId: string, employeeCode: stri
   await supabase.from("candidate_events").insert({ candidate_id: candidateId, actor: profile.username, stage: "joining", remark: `Employee code ${code}, shift ${shift}` });
   if (!c.store_details_at && c.assigned_hr !== profile.username) {
     const text = `${c.name}: employee code and shift entered by ${profile.full_name || profile.username}. Payroll completion pending.`;
-    await supabase.from("notifications").insert({ sender: profile.username, recipient: c.assigned_hr, message: text });
-    await pushTo(c.assigned_hr, { title: "Payroll completion pending", body: text, url: "/dashboard" });
+    await supabase.from("notifications").insert({ sender: profile.username, recipient: c.assigned_hr, message: text, link: openLink(c.id) });
+    await pushTo(c.assigned_hr, { title: "Payroll completion pending", body: text, url: openLink(c.id) });
   }
   revalidatePath("/dashboard");
   return { ok: true, message: "Employee code and shift saved." };
@@ -251,8 +255,8 @@ export async function approveSalary(candidateId: string, basic: number, allowanc
   const text = `Salary approved for ${c.name} (${c.mobile}): ₹${basic} basic + ₹${allowances} allowances${changed ? ` (proposed ₹${c.proposed_basic} + ₹${c.proposed_allowances ?? 0})` : ""}. The offer letter can be sent now.`;
   await supabase.from("candidate_events").insert({ candidate_id: candidateId, actor: profile.username, stage: "salary", remark: text });
   if (c.assigned_hr !== profile.username) {
-    await supabase.from("notifications").insert({ sender: profile.username, recipient: c.assigned_hr, message: text });
-    await pushTo(c.assigned_hr, { title: "Salary approved", body: text, url: "/dashboard" });
+    await supabase.from("notifications").insert({ sender: profile.username, recipient: c.assigned_hr, message: text, link: openLink(candidateId) });
+    await pushTo(c.assigned_hr, { title: "Salary approved", body: text, url: openLink(candidateId) });
   }
   revalidatePath("/dashboard");
   return { ok: true, message: "Salary approved." };
@@ -298,8 +302,8 @@ export async function changeBranch(candidateId: string, branchId: string): Promi
   if (error) return { ok: false, message: error.message };
   if (b.hr_username !== profile.username && b.hr_username !== c.assigned_hr) {
     const text = `${c.name} (${c.mobile}) has been moved to you: branch changed to ${b.name}.`;
-    await supabase.from("notifications").insert({ sender: profile.username, recipient: b.hr_username, message: text });
-    await pushTo(b.hr_username, { title: "Candidate moved to you", body: text, url: "/dashboard" });
+    await supabase.from("notifications").insert({ sender: profile.username, recipient: b.hr_username, message: text, link: openLink(c.id) });
+    await pushTo(b.hr_username, { title: "Candidate moved to you", body: text, url: openLink(c.id) });
   }
   revalidatePath("/dashboard");
   return { ok: true, message: b.hr_username === c.assigned_hr ? `Branch changed to ${b.name}.` : `Branch changed to ${b.name}; moved to ${b.hr_username}.` };
