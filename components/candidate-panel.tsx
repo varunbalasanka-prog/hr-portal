@@ -13,6 +13,8 @@ import { salaryApproved } from "@/lib/salary";
 import { ALERT_DAYS_BEFORE, confirmationDate, confirmationState } from "@/lib/confirmation";
 import { DETAIL_LABELS, DOC_LABELS, FIELD_FLAG, MANDATORY_DOCS, docLabel, namesMatch } from "@/lib/onboarding";
 import { StageForm } from "./stage-form";
+import { DesignationBox } from "./designation-box";
+import { changeCandidateDesignation } from "@/app/actions/stores";
 import { WaComposer } from "./wa-composer";
 import { Scorecard } from "./scorecard";
 import { setTalentPool } from "@/app/actions/talent";
@@ -130,6 +132,11 @@ export function CandidatePanel({ me, c, cat, branches, appUrl, onClose }: {
         </dl>
       )}
       {tab === "profile" && !store && c.branch_id && selected && <BranchBox c={c} branches={branches} onSaved={refresh} />}
+      {tab === "profile" && admin && (c.designation || selected) && (
+        <DesignationBox key={`${c.id}:${c.designation}`} current={c.designation} roles={branch?.roles}
+          working={c.pipeline_status === "Joined" || c.pipeline_status.startsWith("Left")} left={c.pipeline_status.startsWith("Left")}
+          onSave={(d, k, f, r) => changeCandidateDesignation(c.id, d, k, f, r)} onSaved={refresh} />
+      )}
       {tab === "profile" && admin && !cat.active && cat.category !== "reapply" && !cat.category.endsWith("joined_list") && <SendToReapply c={c} onDone={refresh} />}
       {tab === "profile" && <TalentBox c={c} onSaved={refresh} />}
       {tab === "profile" && me.role === "superadmin" && <EraseBox c={c} onErased={() => { onClose(); router.refresh(); }} />}
@@ -234,7 +241,7 @@ function BranchBox({ c, branches, onSaved }: { c: Candidate; branches: Branch[];
       <b>Change allocated branch</b>
       <div className="flex flex-wrap gap-2">
         <select className="input !w-auto flex-1" value={id} onChange={(e) => setId(e.target.value)} aria-label="Allocated branch">
-          {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+          {branches.filter((b) => !b.closed_at || b.id === c.branch_id).map((b) => <option key={b.id} value={b.id}>{b.name}{b.closed_at ? " (closed)" : ""}</option>)}
         </select>
         <button className="btn-outline" disabled={pending || id === c.branch_id} onClick={() => start(async () => { const r = await changeBranch(c.id, id); setMsg(r); if (r.ok) onSaved(); })}>Change branch</button>
       </div>

@@ -22,7 +22,7 @@ export function WalkinForm({ me, branches, posts, dobRule, onClose }: { me: Prof
   const set = (k: keyof WalkinInput) => (v: string) => setF((p) => ({ ...p, [k]: v }));
   // A store only ever enters walk-ins for itself; an HR for the stores they look after.
   const store = me.role === "branch" ? branches.find((b) => b.id === me.branch_id) : undefined;
-  const choices = me.role === "hr" ? branches.filter((b) => b.hr_username === me.username) : branches;
+  const choices = (me.role === "hr" ? branches.filter((b) => b.hr_username === me.username) : branches).filter((b) => !b.closed_at);
   const today = todayIst();
   // Posts open at the chosen store; a store with none open gets its firm's roles (or the full list before 0025).
   const open = posts.byBranch[f.branchId]?.length ? posts.byBranch[f.branchId] : branches.find((b) => b.id === f.branchId)?.roles ?? posts.all;
