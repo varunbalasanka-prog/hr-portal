@@ -159,13 +159,14 @@ describe("onboarding board columns", () => {
 
   it("puts people with the form in and salary approved in 'waiting to join'", () => {
     expect(at({ ...offered, salary_status: "approved" }, sub("submitted"))).toBe("ready");
-    expect(at({ ...offered, salary_status: null }, sub("completed"))).toBe("ready");
-    expect(at({ pipeline_status: "Revised Joining" }, sub("submitted"))).toBe("ready");
+    expect(at({ ...offered, salary_status: null, basic_salary: 12000 }, sub("completed"))).toBe("ready"); // salary from before the approval step
+    expect(at({ pipeline_status: "Revised Joining", salary_status: "approved" }, sub("submitted"))).toBe("ready");
   });
   it("puts missing documents or a pending salary in the waiting column", () => {
     expect(at({ ...offered, salary_status: "approved" })).toBe("waiting");
     expect(at({ ...offered, salary_status: "approved" }, sub("pending"))).toBe("waiting");
     expect(at({ ...offered, salary_status: "proposed" }, sub("completed"))).toBe("waiting");
+    expect(at({ ...offered, salary_status: null, basic_salary: 0 }, sub("completed"))).toBe("waiting"); // no salary entered yet
   });
   it("keeps joined people below, and everyone else off the board", () => {
     expect(at({ pipeline_status: "Joined", actual_joining_date: "2026-11-01" }, sub("completed"))).toBe("joined");

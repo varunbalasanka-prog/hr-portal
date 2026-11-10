@@ -1,6 +1,7 @@
 /** Dashboard lists and counts, ported from get_sheet_data() in the original app.py. */
 import type { Candidate, OnboardingSubmission } from "./types";
 import { isBlacklisted } from "./pipeline";
+import { salaryApproved } from "./salary";
 import { isoToIstDate, todayIst } from "./dates";
 
 export type Category =
@@ -74,14 +75,14 @@ export function categorize(c: Candidate, onboarding?: OnboardingSubmission | nul
 
 /** The two columns of the Onboarding board, for people who have not joined yet:
  *  "ready"   = onboarding form submitted and salary not waiting for approval: just waiting for the joining day.
- *  "waiting" = form not submitted / sent back for correction, or salary still waiting for admin approval.
+ *  "waiting" = form not submitted / sent back for correction, or salary not entered or not yet approved.
  *  "joined"  = already joined, finishing store code, payroll or documents.
  *  null      = not on the Onboarding board. */
 export type OnboardingColumn = "ready" | "waiting" | "joined";
-export function onboardingColumn(c: Pick<Candidate, "salary_status">, cat: Categorized): OnboardingColumn | null {
+export function onboardingColumn(c: Pick<Candidate, "salary_status" | "basic_salary">, cat: Categorized): OnboardingColumn | null {
   if (cat.docCategory.startsWith("not_joined_")) {
     const formIn = cat.docCategory.endsWith("docs_received") || cat.docCategory.endsWith("docs_completed");
-    return formIn && c.salary_status !== "proposed" ? "ready" : "waiting";
+    return formIn && salaryApproved(c) ? "ready" : "waiting";
   }
   if (cat.docCategory !== "none" || ONBOARDING_CATEGORIES.includes(cat.category)) return "joined";
   return null;
