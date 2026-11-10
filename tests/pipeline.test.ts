@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyStage, isBlacklisted, needsReapplyReview, reactivate, stageFor, walkinBlocked } from "../lib/pipeline";
+import { applyStage, NO_SALARY, isBlacklisted, needsReapplyReview, reactivate, stageFor, walkinBlocked } from "../lib/pipeline";
 import { categorize, countAll, onboardingColumn } from "../lib/categorize";
 import { calculateSalary } from "../lib/salary";
 import { probationEnd, localInputToIso } from "../lib/dates";
@@ -76,7 +76,9 @@ describe("interview to joining", () => {
     const c = run(scheduled, { attendance: "Attended", interviewStatus: "Selected", expectedJoiningDate: "2026-11-01", branchId: "b1", basicSalary: "12000", allowances: "2000" });
     expect(c.pipeline_status).toBe("Expected Joining");
     expect(stageFor(c)).toBe("joining");
-    const joined = run(c, { joiningStatus: "Joined", actualJoiningDate: "2026-11-01" });
+    expect(applyStage(c, "joining", { joiningStatus: "Joined", actualJoiningDate: "2026-11-01" }, now).error).toBe(NO_SALARY);
+    const approved = { ...c, salary_status: "approved" as const, basic_salary: 12000 };
+    const joined = run(approved, { joiningStatus: "Joined", actualJoiningDate: "2026-11-01" });
     expect(joined.pipeline_status).toBe("Joined");
     expect(categorize(joined).category).toBe("store_details_pending");
     expect(categorize({ ...joined, store_details_at: "2026-11-01T10:00:00Z" }).category).toBe("payroll_pending");
@@ -101,7 +103,8 @@ describe("interview to joining", () => {
     const sel = { ...base, pipeline_status: "Expected Joining", expected_joining_date: "2026-11-01" };
     const c = run(sel, { joiningStatus: "Not Joined", notJoinedReason: "Revised Joining", revisedJoiningDate: "2026-11-05" });
     expect(stageFor(c)).toBe("revised_joining");
-    expect(run(c, { revisedJoiningStatus: "Joined", actualJoiningDate: "2026-11-05" }).pipeline_status).toBe("Joined");
+    expect(applyStage(c, "revised_joining", { revisedJoiningStatus: "Joined", actualJoiningDate: "2026-11-05" }, now).error).toBe(NO_SALARY);
+    expect(run({ ...c, salary_status: "approved" as const, basic_salary: 12000 }, { revisedJoiningStatus: "Joined", actualJoiningDate: "2026-11-05" }).pipeline_status).toBe("Joined");
   });
 });
 

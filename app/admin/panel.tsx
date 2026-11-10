@@ -6,6 +6,7 @@ import type { AdminQuestion } from "@/lib/apply-questions";
 import { QuestionsAdmin } from "./questions";
 import { BranchPostsAdmin } from "./branch-posts";
 import { StoreHrAdmin } from "./store-hr";
+import { StoresAdmin, type StoreUsage } from "./stores";
 import { JobRolesAdmin } from "./job-roles";
 import type { FirmRoles, JobRole } from "@/lib/job-roles";
 import { JobListingsAdmin, type OpeningRow, type RoleRow } from "./job-listings";
@@ -17,7 +18,8 @@ import { WalkinAgeWarning, WalkinApprovals, type WalkinRequestRow } from "./walk
 import type { PrivacyContact } from "@/lib/privacy";
 import type { Branch } from "@/lib/types";
 
-export function AdminPanel({ roles, warnAge, walkins, me, people, log, questions, posts, branches, branchPosts, jobs, history, privacyContact, retentionMonths }: {
+export function AdminPanel({ roles, warnAge, walkins, me, people, log, questions, posts, branches, usage, branchPosts, jobs, history, privacyContact, retentionMonths }: {
+  usage: StoreUsage[] | null;
   privacyContact: PrivacyContact; retentionMonths: number | null; walkins: WalkinRequestRow[]; warnAge: number | null;
   me: Profile; history: { rows: AuditRow[]; refs: Refs } | null; people: Profile[]; log: NotificationRow[]; questions: AdminQuestion[]; posts: string[]; branches: Branch[]; branchPosts: Record<string, string[]>;
   roles: { roles: JobRole[]; firms: FirmRoles } | null;
@@ -25,7 +27,7 @@ export function AdminPanel({ roles, warnAge, walkins, me, people, log, questions
 }) {
   const pending = walkins.filter((w) => w.status === "pending").length;
   const tabs: [string, string][] = [
-    ["walkins", `Walk-in approvals${pending ? ` (${pending})` : ""}`], ["roles", "Job roles"], ["posts", "Store posts"], ["storehr", "Store HR"], ["jobs", "Job listings"], ["form", "Application form"],
+    ["walkins", `Walk-in approvals${pending ? ` (${pending})` : ""}`], ["roles", "Job roles"], ["posts", "Store posts"], ["stores", "Stores"], ["storehr", "Store HR"], ["jobs", "Job listings"], ["form", "Application form"],
     ["users", "Logins"], ["privacy", "Privacy"], ["log", "Notification log"], ...(history ? [["history", "Change history"] as [string, string]] : []),
   ];
   const [tab, setTab] = useState(pending ? "walkins" : "posts");
@@ -41,6 +43,7 @@ export function AdminPanel({ roles, warnAge, walkins, me, people, log, questions
       {tab === "history" && history && <ChangeHistory rows={history.rows} refs={history.refs} />}
       {tab === "roles" && <JobRolesAdmin roles={roles?.roles ?? null} firms={roles?.firms ?? {}} branches={branches} />}
       {tab === "posts" && <BranchPostsAdmin branches={branches} posts={posts} open={branchPosts} />}
+      {tab === "stores" && <StoresAdmin branches={branches} people={people} usage={usage} />}
       {tab === "storehr" && <StoreHrAdmin branches={branches} people={people} />}
       {tab === "jobs" && <JobListingsAdmin {...jobs} branches={branches} posts={posts} />}
       {tab === "form" && <QuestionsAdmin questions={questions} posts={posts} />}
