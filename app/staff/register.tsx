@@ -8,6 +8,9 @@ import { Badge, Flash, Modal } from "@/components/ui";
 import { kindFor, type Appraisal, type AppraisalForm, type FormKind } from "@/lib/appraisal";
 import { AppraisalSheet, AppraisalsBlock, PendingAppraisals, type SheetTarget } from "./appraisals";
 import { FormEditor } from "./form-editor";
+import { useRouter } from "next/navigation";
+import { DesignationBox } from "@/components/designation-box";
+import { changeStaffDesignation } from "@/app/actions/stores";
 
 type Tab = Placement["tab"];
 type Row = { s: StaffStint; p: Placement };
@@ -19,6 +22,7 @@ export function StaffRegister({ me, admin, stints, appraisals, forms, branches, 
   me: Profile; admin: boolean; stints: StaffStint[]; appraisals: Appraisal[] | null; forms: Record<FormKind, AppraisalForm>; branches: Branch[]; today: string;
 }) {
   const store = me.role === "branch";
+  const router = useRouter();
   const byId = useMemo(() => new Map<string, BranchLite>(branches.map((b) => [b.id, b])), [branches]);
   const divisions = useMemo(() => [...new Set(branches.map((b) => divisionOf(b)))].sort(), [branches]);
   const [scopeKey, setScopeKey] = useState(store ? `b:${me.branch_id}` : "all");
@@ -159,6 +163,16 @@ export function StaffRegister({ me, admin, stints, appraisals, forms, branches, 
       <Modal open={!!open} onClose={() => setOpen(null)} side title={open?.name ?? ""}
         subtitle={open && <>{[open.employee_code, open.mobile].filter(Boolean).join(" · ")}{open.source === "import" && " · imported from staff list"}</>}>
         {open && <Timeline s={open} bName={bName} today={today} />}
+        {open && admin && (() => {
+          const last = [...open.positions].sort((x, y) => y.from_date.localeCompare(x.from_date) || y.id - x.id)[0];
+          if (!last) return null;
+          return (
+            <DesignationBox key={`${open.id}:${last.id}:${last.designation}`} current={last.designation}
+              roles={branches.find((b) => b.id === last.branch_id)?.roles} working left={!!open.left_on}
+              onSave={(d, k, f, r) => changeStaffDesignation(open.id, d, k, f, r)}
+              onSaved={() => { setOpen(null); router.refresh(); }} />
+          );
+        })()}
         {open && appraisals && (
           <div className="mt-5 border-t pt-4">
             <AppraisalsBlock s={open} list={appraisals} form={(() => { const k = kindFor(branchOf(open)?.business_type); return k ? forms[k] : null; })()} today={today} onOpen={(t) => { setOpen(null); setSheet(t); }} />

@@ -6,6 +6,7 @@ import { AdminPanel } from "./panel";
 import type { WalkinRequestRow } from "./walkins";
 import type { OpeningRow, RoleRow } from "./job-listings";
 import type { AuditRow } from "./history";
+import type { StoreUsage } from "./stores";
 import { DEFAULT_WARN_AGE } from "@/lib/walkin";
 import { firmRoleNames, loadFirmRoles } from "@/lib/job-roles";
 import { divisionOf } from "@/lib/staff";
@@ -32,6 +33,8 @@ export default async function AdminPage() {
     supabase.from("job_openings").select("id, branch_id, post, opened_at, closes_on, salary_min, salary_max").is("closed_at", null).order("post"),
     supabase.from("job_roles").select("name, summary, duties, requirements, shift, benefits").order("sort").order("name"),
   ]);
+  // Null until 0037 runs; the Stores tab then says so.
+  const usage = await supabase.rpc("store_usage");
   const setting = (k: string) => settings?.find((r) => r.key === k)?.value;
   // Null until 0025 runs; each store then gets its firm's roles for Store posts.
   const firmRoles = await loadFirmRoles(supabase);
@@ -45,7 +48,7 @@ export default async function AdminPage() {
       subtitle="Walk-in approvals, job roles, open posts, job listings, the application form, logins and privacy.">
       <AdminPanel walkins={(walkins as unknown as WalkinRequestRow[]) ?? []}
         warnAge={settings?.some((r) => r.key === "walkin_warn_age") ? ((setting("walkin_warn_age") as number) || null) : DEFAULT_WARN_AGE} me={profile} history={history ? { rows: history as AuditRow[], refs: historyRefs } : null} people={(people as Profile[]) ?? []} log={log} questions={(questions as AdminQuestion[]) ?? []} posts={(setting("apply_posts") as string[]) ?? []}
-        branches={stores} branchPosts={(setting("branch_posts") as Record<string, string[]>) ?? {}}
+        branches={stores} usage={usage.error ? null : (usage.data as StoreUsage[])} branchPosts={(setting("branch_posts") as Record<string, string[]>) ?? {}}
         roles={firmRoles} jobs={{ ready: !openings.error, openings: (openings.data as OpeningRow[] | null) ?? [], roles: (roles as RoleRow[] | null) ?? [] }}
         privacyContact={{ ...DEFAULT_CONTACT, ...((setting("privacy_contact") as Partial<PrivacyContact>) ?? {}) }} retentionMonths={cleanRetention(setting("retention_months"))} />
     </StaffPage>
