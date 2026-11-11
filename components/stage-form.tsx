@@ -156,8 +156,12 @@ export function StageForm({ c, branches, admin, onSaved }: { c: Candidate; branc
       {stage === "employment" && (
         <>
           <p className="text-xs text-slate-600">Joined on <b>{formatDate(c.actual_joining_date)}</b></p>
-          <Field label="Employment status"><Select value={f.employmentStatus ?? "Working"} onChange={set("employmentStatus")} options={[{ value: "Working", label: "Working (active)" }, { value: "Left", label: "Left / relieved" }]} placeholder="Working (active)" /></Field>
-          {f.employmentStatus === "Left" && (
+          <p className="rounded-lg bg-sky-50 p-2 text-xs text-sky-900">
+            Leaving? Use the exit on the Staff page: the store raises the resignation, you take the exit interview and relieve them.{" "}
+            <a className="font-semibold underline" href={`/staff?candidate=${c.id}`}>Open on the Staff page</a>
+          </p>
+          {admin && <Field label="Employment status (admin correction, skips the exit interview)"><Select value={f.employmentStatus ?? "Working"} onChange={set("employmentStatus")} options={[{ value: "Working", label: "Working (active)" }, { value: "Left", label: "Left / relieved" }]} placeholder="Working (active)" /></Field>}
+          {admin && f.employmentStatus === "Left" && (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Field label="Left type *"><Select value={f.leftType ?? ""} onChange={set("leftType")} options={[{ value: "With Information", label: "With information (re-apply allowed)" }, { value: "Without Information", label: "Without information (blacklisted)" }]} /></Field>
               <Field label="Relieving date"><input type="date" className="input" value={f.relievingDate ?? ""} onChange={(e) => set("relievingDate")(e.target.value)} /></Field>

@@ -5,7 +5,7 @@ import { requireAdmin, requireProfile } from "@/lib/auth";
 import { pushTo } from "@/lib/push";
 import { applyStage, isBlacklisted, reactivate, stageFor, walkinBlocked, type StageInput } from "@/lib/pipeline";
 import { formatDateTime, todayIst } from "@/lib/dates";
-import { CANDIDATE_COLUMNS, type Branch, type Candidate, type Profile } from "@/lib/types";
+import { CANDIDATE_COLUMNS, isAdminRole, type Branch, type Candidate, type Profile } from "@/lib/types";
 import { checkWalkin, overAgeNote } from "@/lib/walkin";
 import { dobRule } from "@/lib/walkin-server";
 
@@ -35,6 +35,11 @@ export async function updateCandidateStage(candidateId: string, input: StageInpu
   if (!c) return { ok: false, message: "Candidate not found or not visible to you." };
 
   const stage = stageFor(c);
+  // Relieving goes through the exit on the Staff page (0039): store raises, HR interviews and relieves. Admins may still
+  // correct a record directly.
+  if (stage === "employment" && input.employmentStatus === "Left" && !isAdminRole(profile.role)) {
+    return { ok: false, message: "To relieve someone, open them on the Staff page and start the exit there." };
+  }
   const result = applyStage(c, stage, input);
   if (result.error) return { ok: false, message: result.error };
 
