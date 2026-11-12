@@ -2,7 +2,7 @@
 import { useState, useTransition } from "react";
 import { CALL_OUTCOMES, SCREENING_REJECTION_REASONS, STAGE_TITLES, stageFor, type StageInput } from "@/lib/pipeline";
 import { formatDate, formatDateTime } from "@/lib/dates";
-import { calculateSalary, rupees } from "@/lib/salary";
+import { calculateSalary, rupees, salaryApproved } from "@/lib/salary";
 import type { Branch, Candidate } from "@/lib/types";
 import { reactivateCandidate, updateCandidateStage } from "@/app/actions/candidates";
 import { Field, Flash, Select } from "./ui";
@@ -53,6 +53,7 @@ export function StageForm({ c, branches, admin, onSaved }: { c: Candidate; branc
   ];
   // Designation comes from the allocated store's firm roles (0025), keeping an older saved name.
   const firmRoles = branches.find((b) => b.id === f.branchId)?.roles;
+  const locked = salaryApproved(c);
   const interviewHr = branches.find((b) => b.id === f.interviewBranchId)?.hr_username;
   const selectionFields = (
     <div className="grid grid-cols-1 gap-3 rounded-md border border-green-200 bg-green-50 p-3 sm:grid-cols-2">
@@ -60,11 +61,18 @@ export function StageForm({ c, branches, admin, onSaved }: { c: Candidate; branc
       <Field label="Designation">{firmRoles
         ? <Select value={f.designation ?? ""} onChange={set("designation")} options={roleOptions(firmRoles, f.designation)} />
         : <input className="input" value={f.designation ?? ""} onChange={(e) => set("designation")(e.target.value)} />}</Field>
-      <Field label="Proposed basic salary (₹)"><input className="input" inputMode="numeric" value={f.basicSalary ?? ""} onChange={(e) => set("basicSalary")(e.target.value)} /></Field>
-      <Field label="Proposed allowances (₹)"><input className="input" inputMode="numeric" value={f.allowances ?? ""} onChange={(e) => set("allowances")(e.target.value)} /></Field>
+      {locked ? (
+        <p className="rounded bg-white px-2 py-1 text-xs text-slate-700 sm:col-span-2">
+          🔒 Salary approved{c.salary_approved_by ? ` by ${c.salary_approved_by}` : ""}: ₹{rupees(Number(c.basic_salary))} basic + ₹{rupees(Number(c.allowances))} allowances.
+          {admin ? " To change it, use the Salary box at the top." : " Only an admin can change it now."}
+        </p>
+      ) : <>
+        <Field label="Proposed basic salary (₹)"><input className="input" inputMode="numeric" value={f.basicSalary ?? ""} onChange={(e) => set("basicSalary")(e.target.value)} /></Field>
+        <Field label="Proposed allowances (₹)"><input className="input" inputMode="numeric" value={f.allowances ?? ""} onChange={(e) => set("allowances")(e.target.value)} /></Field>
+      </>}
       <Field label="Expected joining date *"><input type="date" className="input" value={f.expectedJoiningDate ?? ""} onChange={(e) => set("expectedJoiningDate")(e.target.value)} /></Field>
-      <SalaryPreview basic={f.basicSalary} allowances={f.allowances} />
-      {!admin && <p className="text-xs text-slate-600 sm:col-span-2">The salary goes to an admin for approval. The offer letter opens once it is approved.</p>}
+      {!locked && <SalaryPreview basic={f.basicSalary} allowances={f.allowances} />}
+      {!admin && !locked && <p className="text-xs text-slate-600 sm:col-span-2">The salary goes to an admin for approval. The offer letter opens once it is approved.</p>}
     </div>
   );
 

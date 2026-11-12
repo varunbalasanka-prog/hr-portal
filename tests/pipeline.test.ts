@@ -71,6 +71,13 @@ describe("screening calls", () => {
 
 describe("interview to joining", () => {
   const scheduled = { ...base, pipeline_status: "Interview Scheduled", calling_status: "Contacted" };
+  it("an approved salary is never re-proposed when selecting", () => {
+    const approved = { ...scheduled, salary_status: "approved" as const, basic_salary: 15000, allowances: 1000 };
+    const r = applyStage(approved, "interview", { attendance: "Attended", interviewStatus: "Selected", expectedJoiningDate: "2026-11-01", branchId: "b1", basicSalary: "9000", allowances: "0" }, now);
+    expect(r.error).toBeUndefined();
+    expect(r.patch).not.toHaveProperty("salary_status");
+    expect(r.patch).not.toHaveProperty("proposed_basic");
+  });
   it("selection needs a joining date and branch", () => {
     expect(applyStage(scheduled, "interview", { attendance: "Attended", interviewStatus: "Selected" }, now).error).toBeDefined();
     const c = run(scheduled, { attendance: "Attended", interviewStatus: "Selected", expectedJoiningDate: "2026-11-01", branchId: "b1", basicSalary: "12000", allowances: "2000" });

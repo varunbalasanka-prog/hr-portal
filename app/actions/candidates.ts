@@ -8,6 +8,7 @@ import { formatDateTime, todayIst } from "@/lib/dates";
 import { CANDIDATE_COLUMNS, isAdminRole, type Branch, type Candidate, type Profile } from "@/lib/types";
 import { checkWalkin, overAgeNote } from "@/lib/walkin";
 import { dobRule } from "@/lib/walkin-server";
+import { salaryApproved } from "@/lib/salary";
 
 type Result = { ok: true; message: string } | { ok: false; message: string; blocked?: string };
 
@@ -249,22 +250,28 @@ export async function approveSalary(candidateId: string, basic: number, allowanc
   const { profile, supabase } = await requireAdmin();
   if (!(basic > 0)) return { ok: false, message: "Enter the basic salary." };
   if (allowances < 0) return { ok: false, message: "Allowances can't be negative." };
-  const { data: c } = await supabase.from("candidates").select("id, name, mobile, assigned_hr, proposed_basic, proposed_allowances").eq("id", candidateId)
-    .single<{ id: string; name: string; mobile: string; assigned_hr: string; proposed_basic: number | null; proposed_allowances: number | null }>();
+  const { data: c } = await supabase.from("candidates").select("id, name, mobile, assigned_hr, proposed_basic, proposed_allowances, salary_status, basic_salary, allowances").eq("id", candidateId)
+    .single<{ id: string; name: string; mobile: string; assigned_hr: string; proposed_basic: number | null; proposed_allowances: number | null
+      salary_status: string | null; basic_salary: number; allowances: number }>();
   if (!c) return { ok: false, message: "Candidate not found." };
+  // Already approved: this is an admin changing it (HR can't; see 0040_salary_lock.sql).
+  const before = salaryApproved(c) ? { basic: Number(c.basic_salary), allowances: Number(c.allowances ?? 0) } : null;
+  if (before && before.basic === basic && before.allowances === allowances) return { ok: true, message: "No change." };
   const { error } = await supabase.from("candidates").update({
     basic_salary: basic, allowances, salary_status: "approved", salary_approved_by: profile.username, salary_approved_at: new Date().toISOString(),
   }).eq("id", candidateId);
   if (error) return { ok: false, message: error.message };
   const changed = c.proposed_basic != null && (Number(c.proposed_basic) !== basic || Number(c.proposed_allowances ?? 0) !== allowances);
-  const text = `Salary approved for ${c.name} (${c.mobile}): ₹${basic} basic + ₹${allowances} allowances${changed ? ` (proposed ₹${c.proposed_basic} + ₹${c.proposed_allowances ?? 0})` : ""}. The offer letter can be sent now.`;
+  const text = before
+    ? `Salary changed by ${profile.username} for ${c.name} (${c.mobile}): ₹${before.basic} + ₹${before.allowances} → ₹${basic} basic + ₹${allowances} allowances.`
+    : `Salary approved for ${c.name} (${c.mobile}): ₹${basic} basic + ₹${allowances} allowances${changed ? ` (proposed ₹${c.proposed_basic} + ₹${c.proposed_allowances ?? 0})` : ""}. The offer letter can be sent now.`;
   await supabase.from("candidate_events").insert({ candidate_id: candidateId, actor: profile.username, stage: "salary", remark: text });
   if (c.assigned_hr !== profile.username) {
     await supabase.from("notifications").insert({ sender: profile.username, recipient: c.assigned_hr, message: text, link: openLink(candidateId) });
-    await pushTo(c.assigned_hr, { title: "Salary approved", body: text, url: openLink(candidateId) });
+    await pushTo(c.assigned_hr, { title: before ? "Salary changed" : "Salary approved", body: text, url: openLink(candidateId) });
   }
   revalidatePath("/dashboard");
-  return { ok: true, message: "Salary approved." };
+  return { ok: true, message: before ? "Salary changed." : "Salary approved." };
 }
 
 /** HR approves an employee's confirmation after probation. The letter opens now and is sent from the SMS list on the 1st. */
