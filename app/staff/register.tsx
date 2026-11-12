@@ -11,6 +11,8 @@ import { FormEditor } from "./form-editor";
 import { useRouter } from "next/navigation";
 import { DesignationBox } from "@/components/designation-box";
 import { changeStaffDesignation } from "@/app/actions/stores";
+import { openExit, type ExitForm, type StaffExit } from "@/lib/exit";
+import { ExitBlock, ExitFormEditor, InterviewSheet, LeavingBadge, PendingExits } from "./exits";
 
 type Tab = Placement["tab"];
 type Row = { s: StaffStint; p: Placement };
@@ -18,8 +20,10 @@ type Row = { s: StaffStint; p: Placement };
 const money = (n: number | null) => (n == null ? null : `₹${Number(n).toLocaleString("en-IN")}`);
 
 /** Current, past and moved-out staff of a store (or a division, or every store), from the dated staff register. */
-export function StaffRegister({ me, admin, stints, appraisals, forms, branches, today }: {
-  me: Profile; admin: boolean; stints: StaffStint[]; appraisals: Appraisal[] | null; forms: Record<FormKind, AppraisalForm>; branches: Branch[]; today: string;
+/** exits / exitForm are null until 0039_exit_process.sql is run. openId: a stint to open on arrival (from a notification). */
+export function StaffRegister({ me, admin, stints, appraisals, forms, exits, exitForm, branches, today, openId }: {
+  me: Profile; admin: boolean; stints: StaffStint[]; appraisals: Appraisal[] | null; forms: Record<FormKind, AppraisalForm>;
+  exits: StaffExit[] | null; exitForm: ExitForm | null; branches: Branch[]; today: string; openId?: string | null;
 }) {
   const store = me.role === "branch";
   const router = useRouter();
@@ -28,7 +32,9 @@ export function StaffRegister({ me, admin, stints, appraisals, forms, branches, 
   const [scopeKey, setScopeKey] = useState(store ? `b:${me.branch_id}` : "all");
   const [tab, setTab] = useState<Tab>("current");
   const [q, setQ] = useState("");
-  const [open, setOpen] = useState<StaffStint | null>(null);
+  const [open, setOpen] = useState<StaffStint | null>(() => stints.find((x) => x.id === openId) ?? null);
+  const [interview, setInterview] = useState<{ x: StaffExit; name: string } | null>(null);
+  const [editExitForm, setEditExitForm] = useState(false);
   const [editDivisions, setEditDivisions] = useState(false);
   const [sheet, setSheet] = useState<SheetTarget | null>(null);
   const [editForms, setEditForms] = useState(false);
@@ -87,7 +93,10 @@ export function StaffRegister({ me, admin, stints, appraisals, forms, branches, 
         </label>
         {admin && <button className="btn-outline" onClick={() => setEditDivisions(true)}>Divisions</button>}
         {admin && appraisals && <button className="btn-outline" onClick={() => setEditForms(true)}>Appraisal forms</button>}
+        {admin && exitForm && <button className="btn-outline" onClick={() => setEditExitForm(true)}>Exit questions</button>}
       </div>
+
+      {!store && exits && <PendingExits list={exits} stints={stints} bName={(s) => branchOf(s)?.name ?? "-"} today={today} onOpen={setOpen} />}
 
       {admin && appraisals && <PendingAppraisals list={appraisals} stints={stints} bName={(s) => branchOf(s)?.name ?? "-"} onOpen={setSheet} />}
 
@@ -136,7 +145,8 @@ export function StaffRegister({ me, admin, stints, appraisals, forms, branches, 
                   <td className="whitespace-nowrap px-2 py-2 tabular-nums">{formatDate(s.joined_on)}</td>
                   {p.tab === "current" && <>
                     <td className="whitespace-nowrap px-2 py-2">{tenureLabel(s.joined_on, today)}</td>
-                    <td className="px-2 py-2">{s.confirmed ? <Badge tone="green">Confirmed</Badge>
+                    <td className="px-2 py-2">{openExit(exits, s.id) ? <LeavingBadge x={openExit(exits, s.id)} today={today} />
+                      : s.confirmed ? <Badge tone="green">Confirmed</Badge>
                       : s.confirmation_date && s.confirmation_date <= today ? <Badge tone="amber">Confirmation due</Badge>
                       : s.source === "import" ? <Badge tone="slate">Imported</Badge> : <Badge tone="sky">On probation</Badge>}</td>
                   </>}
@@ -163,6 +173,11 @@ export function StaffRegister({ me, admin, stints, appraisals, forms, branches, 
       <Modal open={!!open} onClose={() => setOpen(null)} side title={open?.name ?? ""}
         subtitle={open && <>{[open.employee_code, open.mobile].filter(Boolean).join(" · ")}{open.source === "import" && " · imported from staff list"}</>}>
         {open && <Timeline s={open} bName={bName} today={today} />}
+        {open && exits && (
+          <div className="mt-5 border-t pt-4">
+            <ExitBlock key={open.id} s={open} list={exits} store={store} today={today} onInterview={(x) => { setOpen(null); setInterview({ x, name: open.name }); }} />
+          </div>
+        )}
         {open && admin && (() => {
           const last = [...open.positions].sort((x, y) => y.from_date.localeCompare(x.from_date) || y.id - x.id)[0];
           if (!last) return null;
@@ -181,6 +196,8 @@ export function StaffRegister({ me, admin, stints, appraisals, forms, branches, 
       </Modal>
       {admin && appraisals && <FormEditor open={editForms} onClose={() => setEditForms(false)} forms={forms} />}
       <AppraisalSheet target={sheet} admin={admin} today={today} roles={sheet ? branchOf(sheet.stint)?.roles : undefined} onClose={() => setSheet(null)} />
+      {exitForm && <InterviewSheet target={interview} form={exitForm} today={today} onClose={() => setInterview(null)} />}
+      {admin && exitForm && <ExitFormEditor open={editExitForm} onClose={() => setEditExitForm(false)} form={exitForm} />}
       {admin && <DivisionsEditor open={editDivisions} onClose={() => setEditDivisions(false)} branches={branches} />}
     </div>
   );

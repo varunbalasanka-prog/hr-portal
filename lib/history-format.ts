@@ -31,6 +31,8 @@ const ACTIONS: Record<string, string> = {
   "candidates exported": "Exported candidates", "old records stripped": "Cleared old personal details",
   "import staff": "Imported staff list", "firm roles update": "Changed firm's job roles",
   "approve appraisal": "Approved appraisal", "reject appraisal": "Rejected appraisal",
+  "raise exit": "Raised staff exit", "confirm exit": "Confirmed last working day", "save exit interview": "Took exit interview",
+  "skip exit interview": "Skipped exit interview", "relieve exit": "Relieved employee", "cancel exit": "Cancelled staff exit",
   "approve manpower request": "Approved manpower request", "close manpower request": "Closed manpower request",
   "approve temporary staff": "Approved temporary staff", "decline temporary staff": "Declined temporary staff",
   "lend staff": "Lent staff to a store", "end staff loan": "Ended staff loan",
@@ -197,8 +199,9 @@ export function describeTarget(action: string, target: string | null, detail: Re
 }
 
 /** Which kind of record each action's target points at, so the page can look the names up. */
-export function targetTable(action: string): "candidates" | "manpower_requests" | "staff_loans" | "appraisals" | null {
+export function targetTable(action: string): "candidates" | "manpower_requests" | "staff_loans" | "appraisals" | "employments" | null {
   if (action.startsWith("candidate ")) return "candidates";
+  if (/ exit( interview)?$/.test(action)) return "employments";
   if (action === "end staff loan") return "staff_loans";
   if (action.endsWith(" appraisal")) return "appraisals";
   if (/manpower request|temporary staff|lend staff/.test(action)) return "manpower_requests";

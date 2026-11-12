@@ -58,7 +58,7 @@ export async function loadHistoryRefs(supabase: SupabaseClient, rows: Row[], sto
   }
   for (const e of (employments?.data ?? []) as { id: string; employee: unknown }[]) {
     const name = one(e.employee as { name?: string } | null)?.name;
-    if (name) refs[e.id] = { label: name };
+    if (name) refs[e.id] = { label: name, href: `/staff?open=${e.id}` };
   }
   return refs;
 }
