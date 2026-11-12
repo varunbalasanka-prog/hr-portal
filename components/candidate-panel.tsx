@@ -73,7 +73,7 @@ export function CandidatePanel({ me, c, cat, branches, posts, appUrl, onClose }:
             links={{ details: detailsUrl, offer: offerUrl, onboarding: onboardUrl, appointment: c.pipeline_status === "Joined" ? apptUrl : "" }} />
         ) : <a className="btn-success" target="_blank" rel="noreferrer" href={`https://wa.me/91${c.mobile}`}>WhatsApp</a>}
       </div>
-      {admin && !salaryApproved(c) && <SalaryBox c={c} onSaved={refresh} />}
+      {admin && (salaryApproved(c) ? <SalaryChangeBox c={c} onSaved={refresh} /> : <SalaryBox c={c} onSaved={refresh} />)}
       {afterInterview && !store && <DetailsBox c={c} url={detailsUrl} />}
       {cat.category === "reapply" && admin && <ReapplyBox c={c} branch={branch?.name} onDone={refresh} />}
       {c.pipeline_status === "Joined" && <JoiningBox c={c} canComplete={!store} onSaved={refresh} />}
@@ -208,6 +208,40 @@ function SalaryBox({ c, onSaved }: { c: Candidate; onSaved: () => void }) {
         <input className="input" inputMode="numeric" aria-label="Basic salary" placeholder="Basic (₹)" value={basic} onChange={(e) => setBasic(e.target.value)} />
         <input className="input" inputMode="numeric" aria-label="Allowances" placeholder="Allowances (₹)" value={allow} onChange={(e) => setAllow(e.target.value)} />
         <button className="btn-success" disabled={pending} onClick={() => start(async () => { const r = await approveSalary(c.id, Number(basic), Number(allow || 0)); setMsg(r); if (r.ok) onSaved(); })}>Approve salary</button>
+      </div>
+      <Flash msg={msg} />
+    </div>
+  );
+}
+
+/** Admin only: change a salary that is already approved. HR and stores can't (the database refuses them too). */
+function SalaryChangeBox({ c, onSaved }: { c: Candidate; onSaved: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [basic, setBasic] = useState(String(c.basic_salary || ""));
+  const [allow, setAllow] = useState(String(c.allowances ?? 0));
+  const [pending, start] = useTransition();
+  const [msg, setMsg] = useState<{ ok: boolean; message: string } | null>(null);
+  if (!open) {
+    return (
+      <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-slate-600">
+        <span>🔒 Salary approved. Only admins can change it.</span>
+        <button className="btn-outline !py-0.5" onClick={() => setOpen(true)}>Change salary</button>
+        <Flash msg={msg} />
+      </div>
+    );
+  }
+  return (
+    <div className="mb-3 space-y-2 rounded border border-slate-300 bg-slate-50 p-3 text-sm">
+      <b>Change approved salary</b>
+      <p className="text-xs text-slate-600">Now ₹{c.basic_salary} basic + ₹{c.allowances} allowances. The offer and appointment letters will show the new amounts.</p>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-4">
+        <input className="input" inputMode="numeric" aria-label="Basic salary" placeholder="Basic (₹)" value={basic} onChange={(e) => setBasic(e.target.value)} />
+        <input className="input" inputMode="numeric" aria-label="Allowances" placeholder="Allowances (₹)" value={allow} onChange={(e) => setAllow(e.target.value)} />
+        <button className="btn-success" disabled={pending} onClick={() => start(async () => {
+          const r = await approveSalary(c.id, Number(basic), Number(allow || 0));
+          setMsg(r); if (r.ok) { setOpen(false); onSaved(); }
+        })}>Save new salary</button>
+        <button className="btn-outline" disabled={pending} onClick={() => setOpen(false)}>Cancel</button>
       </div>
       <Flash msg={msg} />
     </div>

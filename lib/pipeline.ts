@@ -128,11 +128,13 @@ export interface StageResult {
 
 const num = (v?: string) => (v && v.trim() ? Number(v) : 0);
 
-function selectedPatch(input: StageInput): Partial<Candidate> | string {
+function selectedPatch(c: Candidate, input: StageInput): Partial<Candidate> | string {
   if (!input.expectedJoiningDate) return "Expected joining date is required.";
   if (!input.branchId) return "Branch allocated is required.";
   // HR proposes the salary; an admin approves it (the database refuses anyone else writing basic_salary / allowances).
-  const salary = input.basicSalary?.trim() || input.allowances?.trim()
+  // Once approved, the salary is locked: only an admin changes it, from the Salary box (0040_salary_lock.sql).
+  const salary = salaryApproved(c) ? {}
+    : input.basicSalary?.trim() || input.allowances?.trim()
     ? { proposed_basic: num(input.basicSalary), proposed_allowances: num(input.allowances), salary_status: "proposed" as const }
     : {};
   return {
@@ -218,7 +220,7 @@ export function applyStage(c: Candidate, stage: Stage, input: StageInput, now: D
       if (attendance === "Attended") {
         const st = input.interviewStatus;
         if (st === "Selected") {
-          const p = selectedPatch(input);
+          const p = selectedPatch(c, input);
           if (typeof p === "string") return fail(p);
           Object.assign(patch, p);
         } else if (st === "Not Selected") {
