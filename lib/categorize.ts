@@ -51,10 +51,11 @@ export function categorize(c: Candidate, onboarding?: OnboardingSubmission | nul
     r = { category: "screening_rejected", label: c.rejection_reason ? `${s} (${c.rejection_reason})` : s, tone: "red", active: false };
   } else if (s === "Selected Candidate Dropped") {
     r = { category: "candidate_dropped", label: "Candidate Dropped", tone: "amber", active: false };
-  } else if (["Interview Scheduled", "Interview Rescheduled", "Interview Scheduled - Unreachable", "Revised Joining", "Waiting for Admin Approval"].includes(s)) {
-    r = { category: "interview_scheduled", label: s, tone: s === "Revised Joining" ? "indigo" : "sky", active: true };
-  } else if (s === "Selected / Offer Generated" || s === "Expected Joining") {
-    r = { category: "selected_joined", label: s, tone: "green", active: true };
+  } else if (["Interview Scheduled", "Interview Rescheduled", "Interview Scheduled - Unreachable", "Waiting for Admin Approval"].includes(s)) {
+    r = { category: "interview_scheduled", label: s, tone: "sky", active: true };
+  } else if (s === "Selected / Offer Generated" || s === "Expected Joining" || s === "Revised Joining") {
+    // Revised Joining = selected, joining day moved. Same list as Expected Joining, so HR keeps the Onboarding tab.
+    r = { category: "selected_joined", label: s, tone: s === "Revised Joining" ? "indigo" : "green", active: true };
   } else if (["Follow-up Unreachable", "First Retry Unreachable", "Second Retry Unreachable", "Third Retry Unreachable"].includes(s)) {
     r = { category: "not_contacted", label: s, tone: "amber", active: true };
   } else {
@@ -63,7 +64,7 @@ export function categorize(c: Candidate, onboarding?: OnboardingSubmission | nul
 
   // Onboarding document lists (only for selected / joined candidates)
   let docCategory = "none";
-  if (r.category !== "reapply" && (r.category === "selected_joined" || s === "Joined" || s === "Revised Joining")) {
+  if (r.category !== "reapply" && (r.category === "selected_joined" || s === "Joined")) {
     const prefix = hasJoined(c) ? "joined_" : "not_joined_";
     if (!onboarding) docCategory = prefix + "docs_not_submitted";
     else if (onboarding.status === "pending") docCategory = prefix + "docs_pending";

@@ -179,4 +179,10 @@ describe("onboarding board columns", () => {
     expect(at({ pipeline_status: "Joined", actual_joining_date: "2026-11-01" }, sub("completed"))).toBe("joined");
     expect(at({ pipeline_status: "Interview Scheduled" })).toBeNull();
   });
+  it("files Revised Joining with Expected joining, not Interview", () => {
+    const cat = categorize({ ...base, pipeline_status: "Revised Joining", salary_status: "approved" });
+    expect(cat.category).toBe("selected_joined");
+    expect(cat.label).toBe("Revised Joining");
+    expect(at({ pipeline_status: "Revised Joining", salary_status: "approved" })).toBe("waiting"); // form not sent yet
+  });
 });
