@@ -29,6 +29,7 @@ const ACTIONS: Record<string, string> = {
   "candidates delete": "Deleted candidate",
   "candidate update": "Changed candidate", "candidate delete": "Deleted candidate", "candidate erased": "Erased candidate (privacy request)",
   "candidates exported": "Exported candidates", "old records stripped": "Cleared old personal details",
+  "candidate correction": "Corrected candidate (admin)", "staff correction": "Corrected staff record (admin)",
   "import staff": "Imported staff list", "firm roles update": "Changed firm's job roles",
   "approve appraisal": "Approved appraisal", "reject appraisal": "Rejected appraisal",
   "raise exit": "Raised staff exit", "confirm exit": "Confirmed last working day", "save exit interview": "Took exit interview",
@@ -66,6 +67,11 @@ const FIELDS: Record<string, string> = {
   salary_status: "Salary approval", salary_approved_by: "Salary approved by", salary_approved_at: "Salary approved",
   aadhaar_check: "Aadhaar check", access_token: "Candidate link", token_expires_at: "Candidate link valid till",
   application_folder: "Application files", consent_version: "Privacy notice version", consented_at: "Agreed to privacy notice",
+  // admin corrections (0041)
+  what: "Corrected", reason: "Reason", left_on: "Last working day", exit_type: "How they left",
+  blood_group: "Blood group", emergency_name: "Emergency contact", emergency_relationship: "Emergency relationship",
+  emergency_mobile: "Emergency mobile", esi_number: "ESI number", uan_number: "UAN number", mother_name: "Mother's name",
+  spouse_name: "Spouse's name", wedding_date: "Wedding date",
   // logins, stores, questions, roles
   username: "Username", full_name: "Full name", role: "Role", photo_path: "Photo", town: "Town", business_type: "Business",
   hr_username: "Store HR", division: "Firm", street_address: "Street", postal_code: "PIN code", label: "Question", type: "Answer type",
@@ -175,7 +181,7 @@ export function describeChanges(action: string, target: string | null, detail: R
   for (const [k, v] of Object.entries(detail)) {
     if (HIDDEN.has(k)) continue;
     // The candidate's name is logged with every change so the row can be named; it is not itself a change.
-    if (k === "name" && action === "candidate update" && !isDiff(v)) continue;
+    if (k === "name" && (action === "candidate update" || action.endsWith(" correction")) && !isDiff(v)) continue;
     if (k === "key" && setting) continue;
     const label = k === "value" && setting ? setting : fieldLabel(k, refs);
     // A store-by-store setting is already named in the "On" column, so its lines are just the store names.
@@ -192,6 +198,7 @@ export function describeTarget(action: string, target: string | null, detail: Re
   if (refs[target]) return refs[target];
   if (isUuid(target)) {
     const name = typeof detail?.name === "string" ? detail.name : null;
+    if (action === "staff correction" && name) return { label: name };
     if (action.startsWith("candidate")) return { label: name ? `${name} (deleted)` : "A candidate no longer on file" };
     return { label: "(no longer on file)" };
   }
