@@ -21,6 +21,7 @@ import { TalentBox } from "./talent";
 import type { WalkinPosts } from "./walkin-form";
 import { sourceLabel } from "@/lib/sources";
 import { Badge, Flash, Modal } from "./ui";
+import { CorrectDetails, CorrectOnboarding, CorrectStatus } from "./corrections";
 
 type Tab = "profile" | "update" | "interview" | "history" | "documents";
 
@@ -132,6 +133,7 @@ export function CandidatePanel({ me, c, cat, branches, posts, appUrl, onClose }:
           )}
         </dl>
       )}
+      {tab === "profile" && admin && <CorrectDetails key={`cd:${c.updated_at}`} c={c} onSaved={refresh} />}
       {tab === "profile" && !store && c.branch_id && selected && <BranchBox c={c} branches={branches} onSaved={refresh} />}
       {tab === "profile" && admin && (c.designation || selected) && (
         <DesignationBox key={`${c.id}:${c.designation}`} current={c.designation} roles={branch?.roles}
@@ -143,13 +145,14 @@ export function CandidatePanel({ me, c, cat, branches, posts, appUrl, onClose }:
       {tab === "profile" && me.role === "superadmin" && <EraseBox c={c} onErased={() => { onClose(); router.refresh(); }} />}
 
       {tab === "update" && <StageForm key={c.updated_at} c={c} branches={branches} admin={admin} onSaved={refresh} />}
+      {tab === "update" && admin && <CorrectStatus key={`cs:${c.updated_at}`} c={c} onSaved={refresh} />}
 
       {tab === "interview" && <Scorecard candidateId={c.id} me={me.username} scores={details?.scores} onSaved={refresh} />}
 
       {tab === "history" && <History events={details?.events} candidateId={c.id} onAdded={refresh} />}
 
       {tab === "documents" && (
-        <Documents c={c} details={details} offerUrl={offerUrl} apptUrl={apptUrl} onboardUrl={onboardUrl} onChanged={refresh} />
+        <Documents c={c} admin={admin} details={details} offerUrl={offerUrl} apptUrl={apptUrl} onboardUrl={onboardUrl} onChanged={refresh} />
       )}
     </Modal>
   );
@@ -421,8 +424,8 @@ function Confirmation({ c, url, wa, onChanged }: { c: Candidate; url: string; wa
   );
 }
 
-function Documents({ c, details, offerUrl, apptUrl, onboardUrl, onChanged }: {
-  c: Candidate; details: CandidateDetails | null;
+function Documents({ c, admin, details, offerUrl, apptUrl, onboardUrl, onChanged }: {
+  c: Candidate; admin: boolean; details: CandidateDetails | null;
   offerUrl: string; apptUrl: string; onboardUrl: string; onChanged: () => void;
 }) {
   const [pending, start] = useTransition();
@@ -513,6 +516,7 @@ function Documents({ c, details, offerUrl, apptUrl, onboardUrl, onChanged }: {
               <button className="btn-outline" disabled={pending || missing.length === 0} onClick={() => start(async () => { setMsg(await setOnboardingStatus(c.id, "pending", missing)); onChanged(); })}>Send back for correction ({missing.length})</button>
               {ob.status === "pending" && <a className="btn-success" href={wa("onboarding form (please correct or re-upload the items HR marked)", onboardUrl)} target="_blank" rel="noreferrer">Send re-upload link on WhatsApp</a>}
             </div>
+            {admin && <CorrectOnboarding key={`co:${JSON.stringify(ob.details ?? {})}`} candidateId={c.id} details={ob.details ?? {}} onSaved={onChanged} />}
           </>
         )}
         <Flash msg={msg} />

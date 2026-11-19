@@ -13,6 +13,7 @@ import { DesignationBox } from "@/components/designation-box";
 import { changeStaffDesignation } from "@/app/actions/stores";
 import { openExit, type ExitForm, type StaffExit } from "@/lib/exit";
 import { ExitBlock, ExitFormEditor, InterviewSheet, LeavingBadge, PendingExits } from "./exits";
+import { CorrectStaff } from "@/components/corrections";
 
 type Tab = Placement["tab"];
 type Row = { s: StaffStint; p: Placement };
@@ -188,6 +189,10 @@ export function StaffRegister({ me, admin, stints, appraisals, forms, exits, exi
               onSaved={() => { setOpen(null); router.refresh(); }} />
           );
         })()}
+        {open && admin && (open.candidate_id
+          ? <p className="mt-3 text-xs text-slate-500">Hired through the portal: correct name, mobile or status on their candidate card (Candidates › open the person › Profile / Update status).</p>
+          : <CorrectStaff key={`${open.id}:${open.name}:${open.mobile}:${open.left_on}`} employeeId={open.employee_id} employmentId={open.id} name={open.name} mobile={open.mobile}
+              left={!!open.left_on} onSaved={() => { setOpen(null); router.refresh(); }} />)}
         {open && appraisals && (
           <div className="mt-5 border-t pt-4">
             <AppraisalsBlock s={open} list={appraisals} form={(() => { const k = kindFor(branchOf(open)?.business_type); return k ? forms[k] : null; })()} today={today} onOpen={(t) => { setOpen(null); setSheet(t); }} />
