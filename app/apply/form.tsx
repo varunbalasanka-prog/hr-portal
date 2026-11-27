@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { fieldName, groupBySection, isVisible, normalizeMobile, splitBilingual, type ApplyQuestion } from "@/lib/apply-questions";
+import { askedOnApply, fieldName, groupBySection, isVisible, normalizeMobile, splitBilingual, type ApplyQuestion } from "@/lib/apply-questions";
 import { checkFile, extFor, unreadableMessage, uploadFailedMessage, uploadFile, usePickedFiles } from "@/lib/upload-client";
 import { startApplication, submitApplication } from "./actions";
 import type { ApplyConfig } from "./config";
@@ -20,11 +20,13 @@ const BAD_MOBILE = "Please enter a valid 10-digit mobile number. / சரிய�
  *  comes from the questions the admin marks "apply page". Father's name, marital status, email and the rest are asked
  *  after the interview (details link) or in the onboarding form, so applicants get a 1-minute form.
  *  Files upload from the browser straight to storage; the server only receives answers and file paths. */
-export function ApplyForm({ branches, questions, initialBranch, initialPost, lockBranch, source }: ApplyConfig & { initialBranch?: string; initialPost?: string; lockBranch?: boolean; source?: string | null }) {
+export function ApplyForm({ branches, questions: allQuestions, resume_posts, initialBranch, initialPost, lockBranch, source }: ApplyConfig & { initialBranch?: string; initialPost?: string; lockBranch?: boolean; source?: string | null }) {
   const [choices, setChoices] = useState<Record<string, string>>({});
   const [branchId, setBranchId] = useState(initialBranch ?? "");
   const [post, setPost] = useState(initialPost ?? "");
   const posts = branches.find((b) => b.id === branchId)?.posts ?? [];
+  // the resume question appears only once a post whose job role asks for it before the interview is picked
+  const questions = allQuestions.filter((q) => askedOnApply(q, post, resume_posts ?? []));
   const [error, setError] = useState<FieldError>(null);
   const [doneRef, setDoneRef] = useState<string | null>(null);
   const [progress, setProgress] = useState("");

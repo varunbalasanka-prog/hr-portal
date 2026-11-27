@@ -1,6 +1,6 @@
 "use server";
 import { createPublicClient } from "@/lib/supabase/public";
-import { checkAnswer, fieldName, isVisible, normalizeMobile } from "@/lib/apply-questions";
+import { askedOnApply, checkAnswer, fieldName, isVisible, normalizeMobile } from "@/lib/apply-questions";
 import { CONSENT_VERSION } from "@/lib/privacy";
 import { clientIp } from "@/lib/client-ip";
 import { verifyTurnstile } from "@/lib/turnstile";
@@ -56,7 +56,8 @@ export async function submitApplication(fd: FormData): Promise<SubmitResult> {
 
   const config = await loadApplyConfig();
   if (!config) return { ok: false, message: TRY_AGAIN };
-  const { questions } = config;
+  // a "by job role" question (resume) is only asked here when the post's role wants it before the interview
+  const questions = config.questions.filter((q) => askedOnApply(q, post, config.resume_posts ?? []));
   const branch = config.branches.find((b) => b.id === branchId);
   if (!branch) return { ok: false, message: MESSAGES.bad_branch, field: "branch_id" };
   if (!branch.posts.includes(post)) return { ok: false, message: MESSAGES.bad_post, field: "post" };
