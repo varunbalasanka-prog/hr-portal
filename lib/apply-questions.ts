@@ -22,14 +22,30 @@ export type ApplyQuestion = {
   show_when: ShowWhen;
   /** date questions only: the answer must be at least this many years ago (e.g. 18 for date of birth) */
   min_age: number | null;
+  /** apply page and details link only send this after 0042; missing means the page's own time */
+  ask_at?: AskAt;
 };
 
 /** Where a question is asked: on the /apply page, or on the after-interview details link (/details/<link>). */
 export const ASK_AT = {
   apply: "Apply page (before the interview)",
   after_interview: "After the interview (details link)",
+  by_role: "Set by each job role (Admin > Job roles)",
 } as const;
 export type AskAt = keyof typeof ASK_AT;
+
+/** On the apply page: a question set "by job role" is only asked for posts whose role wants it before the interview
+ *  (`resumePosts`). Everyone else gets it on the details link after the interview. */
+export function askedOnApply(q: ApplyQuestion, post: string, resumePosts: string[]): boolean {
+  return q.ask_at !== "by_role" || (!!post && resumePosts.includes(post));
+}
+
+/** When a job role asks for the resume / bio data. */
+export const RESUME_AT = {
+  apply: "Before the interview (apply page)",
+  after_interview: "After the interview (details link)",
+} as const;
+export type ResumeAt = keyof typeof RESUME_AT;
 
 /** Admin view of a question, including deleted ones. */
 export type AdminQuestion = ApplyQuestion & { sort_order: number; active: boolean; ask_at: AskAt };
@@ -108,7 +124,7 @@ export function cleanQuestion(input: QuestionInput, others: AdminQuestion[], sel
   if (label.length > 300) return { ok: false, message: "Keep the question under 300 characters." };
   if (section.length > 80) return { ok: false, message: "Keep the section name under 80 characters." };
   if (!(input.type in QUESTION_TYPES)) return { ok: false, message: "Choose a question type." };
-  const ask_at: AskAt = input.ask_at === "after_interview" ? "after_interview" : "apply";
+  const ask_at: AskAt = input.ask_at in ASK_AT ? input.ask_at : "apply";
   const clash = others.find((o) => o.active && o.id !== selfId && o.label.trim().toLowerCase() === label.toLowerCase());
   if (clash) return { ok: false, message: "Another question already has this label. Use a different one." };
 

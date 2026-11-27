@@ -77,6 +77,7 @@ const FIELDS: Record<string, string> = {
   hr_username: "Store HR", division: "Firm", street_address: "Street", postal_code: "PIN code", label: "Question", type: "Answer type",
   required: "Must answer", options: "Choices", sort_order: "Order", deleted_at: "Deleted", min_age: "Minimum age", key: "Setting",
   summary: "Summary", duties: "Duties", requirements: "Requirements", shift: "Shift", benefits: "Benefits", sort: "Order",
+  resume_at: "Resume / bio data asked", ask_at: "When asked",
   // log_change details
   rows: "Rows", added: "Added", problems: "Rows with problems", count: "People", months: "Older than (months)", roles: "Roles",
   basic: "Basic", from: "From", effective_from: "From", note: "Note", opened_post: "Post opened", people: "People", last_day: "Last day",

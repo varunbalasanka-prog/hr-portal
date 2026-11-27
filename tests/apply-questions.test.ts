@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkAnswer, cleanPosts, cleanQuestion, groupBySection, isVisible, splitBilingual, latestDate, cleanBranchPosts, type AdminQuestion } from "../lib/apply-questions";
+import { askedOnApply, checkAnswer, cleanPosts, cleanQuestion, groupBySection, isVisible, splitBilingual, latestDate, cleanBranchPosts, type AdminQuestion } from "../lib/apply-questions";
 
 const q = (id: string, extra: Partial<AdminQuestion> = {}): AdminQuestion => ({
   id, section: "Experience", label: id, type: "text", options: [], required: false, show_when: null, min_age: null, sort_order: 0, active: true, ask_at: "apply", ...extra,
@@ -145,5 +145,22 @@ describe("isRealDate", () => {
     expect(isRealDate("2001-02-29")).toBe(false);
     expect(isRealDate("2000-02-29")).toBe(true);
     expect(isRealDate("1999-12-31")).toBe(true);
+  });
+});
+
+describe("askedOnApply (resume timing per job role)", () => {
+  const resume = q("resume", { type: "file", required: true, ask_at: "by_role" });
+  it("asks a by-role question only for posts whose role wants it before the interview", () => {
+    expect(askedOnApply(resume, "Sales Executive", ["Sales Executive"])).toBe(true);
+    expect(askedOnApply(resume, "Cashier", ["Sales Executive"])).toBe(false);
+    expect(askedOnApply(resume, "", ["Sales Executive"])).toBe(false);
+  });
+  it("always asks ordinary apply-page questions", () => {
+    expect(askedOnApply(exp, "Cashier", [])).toBe(true);
+    expect(askedOnApply({ ...exp, ask_at: undefined }, "", [])).toBe(true);
+  });
+  it("lets the admin set a question to follow the job role", () => {
+    const r = cleanQuestion({ section: "Documents", label: "Resume", type: "file", options: [], required: true, show_when: null, min_age: null, ask_at: "by_role" }, all);
+    expect(r.ok && r.value.ask_at).toBe("by_role");
   });
 });

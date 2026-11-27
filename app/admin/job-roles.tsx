@@ -1,13 +1,14 @@
 "use client";
 import { useState, useTransition } from "react";
-import { addRole, renameRole, saveFirmRoles, setRoleActive } from "@/app/actions/roles";
+import { addRole, renameRole, saveFirmRoles, setRoleActive, setRoleResumeAt } from "@/app/actions/roles";
+import { RESUME_AT, type ResumeAt } from "@/lib/apply-questions";
 import { Badge, Flash } from "@/components/ui";
 import type { FirmRoles, JobRole } from "@/lib/job-roles";
 import { divisionOf } from "@/lib/staff";
 import type { Branch } from "@/lib/types";
 
 /** The company role list (admin only): which roles exist, and which firm has which. Stores open posts from their firm's list. */
-export function JobRolesAdmin({ roles, firms, branches }: { roles: JobRole[] | null; firms: FirmRoles; branches: Branch[] }) {
+export function JobRolesAdmin({ roles, firms, branches, resumeAt }: { roles: JobRole[] | null; firms: FirmRoles; branches: Branch[]; resumeAt: Record<string, ResumeAt> | null }) {
   const [msg, setMsg] = useState<{ ok: boolean; message: string } | null>(null);
   const [pending, start] = useTransition();
   const firmNames = [...new Set(branches.map((b) => divisionOf(b)))].sort((a, b) => a.localeCompare(b));
@@ -88,6 +89,11 @@ export function JobRolesAdmin({ roles, firms, branches }: { roles: JobRole[] | n
       <section className="card p-4 sm:p-5">
         <h2 className="mb-1 text-sm font-bold">Company role list ({live.length})</h2>
         <p className="mb-2 text-xs text-slate-500">Only admins can add, rename or delete roles. A new role belongs to no firm until you tick it above.</p>
+        <p className="mb-2 text-xs text-slate-500">
+          <b>Resume / bio data</b>: choose for each role whether applicants upload it on the apply page (before the interview) or on
+          the details link HR sends after the interview. Changing it only affects new forms; resumes already sent are kept.
+          {!resumeAt && <span className="text-amber-800"> Not set up yet: an admin needs to run 0042_resume_timing_by_role.sql in Supabase.</span>}
+        </p>
         <form className="mb-3 flex flex-wrap gap-2" onSubmit={(e) => { e.preventDefault(); if (newName.trim()) run(async () => { const r = await addRole(newName); if (r.ok) setNewName(""); return r; }); }}>
           <input className="input max-w-xs" placeholder="New role, e.g. Showroom Supervisor" value={newName} onChange={(e) => setNewName(e.target.value)} />
           <button className="btn-primary" disabled={pending || !newName.trim()}>Add role</button>
@@ -98,7 +104,16 @@ export function JobRolesAdmin({ roles, firms, branches }: { roles: JobRole[] | n
             return (
               <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 py-1.5">
                 <span>{r.name} {n ? <span className="text-xs text-slate-500">· {n} {n === 1 ? "firm" : "firms"}</span> : <Badge tone="amber">no firm</Badge>}</span>
-                <span className="flex gap-2">
+                <span className="flex flex-wrap items-center gap-2">
+                  {resumeAt && (
+                    <label className="flex items-center gap-1 text-xs text-slate-600">Resume:
+                      <select className="input !h-7 !w-auto !py-0 text-xs" disabled={pending} value={resumeAt[r.id] ?? "after_interview"}
+                        aria-label={`When ${r.name} applicants upload their resume`}
+                        onChange={(e) => run(() => setRoleResumeAt(r.id, e.target.value as ResumeAt))}>
+                        {Object.entries(RESUME_AT).map(([v, label]) => <option key={v} value={v}>{label}</option>)}
+                      </select>
+                    </label>
+                  )}
                   <button className="btn-outline !py-0.5 text-xs" disabled={pending} onClick={() => rename(r)}>Rename</button>
                   <button className="btn-outline !py-0.5 text-xs text-red-700" disabled={pending} onClick={() => remove(r)}>Delete</button>
                 </span>

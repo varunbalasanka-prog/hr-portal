@@ -28,7 +28,8 @@ export function QuestionsAdmin({ questions, posts }: { questions: AdminQuestion[
       </div>
       <p className="mb-2 text-xs text-slate-500">
         Branch, post, name, mobile and address are always asked on the apply page. Questions marked &quot;After the interview&quot; go on a
-        separate link that HR sends once a candidate is selected or put on hold (candidate › After-interview details). Changes here only
+        separate link that HR sends once a candidate is selected or put on hold (candidate › After-interview details). Questions marked
+        &quot;By job role&quot; follow each role&apos;s Resume / bio data setting under Job roles. Changes here only
         affect new answers: every past application keeps the questions and answers exactly as they were when it was sent.
       </p>
       <Flash msg={msg} />
@@ -47,7 +48,7 @@ export function QuestionsAdmin({ questions, posts }: { questions: AdminQuestion[
               {q.min_age && <div className="text-xs text-slate-500">{q.type === "number" ? `At least ${q.min_age}` : `Must be at least ${q.min_age} years ago`}</div>}
               {q.show_when && <div className="text-xs text-amber-700">Only asked when &quot;{labelOf(q.show_when.question_id)}&quot; is {q.show_when.equals}</div>}
             </td>
-            <td className="pr-2 text-xs">{q.ask_at === "after_interview" ? <Badge tone="sky">After interview</Badge> : <Badge tone="slate">Apply page</Badge>}</td>
+            <td className="pr-2 text-xs">{q.ask_at === "after_interview" ? <Badge tone="sky">After interview</Badge> : q.ask_at === "by_role" ? <Badge tone="amber">By job role</Badge> : <Badge tone="slate">Apply page</Badge>}</td>
             <td className="pr-2 text-xs">{q.section}</td>
             <td className="pr-2 text-xs">{QUESTION_TYPES[q.type]}</td>
             <td className="whitespace-nowrap text-right">
@@ -128,9 +129,10 @@ function QuestionEditor({ initial, isNew, parents, sections, pending, error, onC
           </Field>
         </div>
         <Field label="When is it asked?">
-          <Select value={q.ask_at} onChange={(v) => set({ ask_at: v === "after_interview" ? "after_interview" : "apply", show_when: null })}
+          <Select value={q.ask_at} onChange={(v) => set({ ask_at: v in ASK_AT ? (v as QuestionInput["ask_at"]) : "apply", show_when: null })}
             options={Object.entries(ASK_AT).map(([value, label]) => ({ value, label }))} />
         </Field>
+        {q.ask_at === "by_role" && <p className="-mt-2 text-xs text-slate-500">Each job role chooses before or after the interview under Admin › Job roles (Resume / bio data). Anyone who skipped it on the apply page is asked again on the details link.</p>}
         {q.type === "choice" && (
           <Field label="Options (one per line, e.g. Male / ஆண்)"><textarea className="input" rows={4} value={optionText} onChange={(e) => setOptionText(e.target.value)} /></Field>
         )}

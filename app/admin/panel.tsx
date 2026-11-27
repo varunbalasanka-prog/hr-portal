@@ -2,7 +2,7 @@
 import { useState } from "react";
 import type { NotificationRow, Profile } from "@/lib/types";
 import { formatDateTime } from "@/lib/dates";
-import type { AdminQuestion } from "@/lib/apply-questions";
+import type { AdminQuestion, ResumeAt } from "@/lib/apply-questions";
 import { QuestionsAdmin } from "./questions";
 import { BranchPostsAdmin } from "./branch-posts";
 import { StoreHrAdmin } from "./store-hr";
@@ -18,11 +18,12 @@ import { WalkinAgeWarning, WalkinApprovals, type WalkinRequestRow } from "./walk
 import type { PrivacyContact } from "@/lib/privacy";
 import type { Branch } from "@/lib/types";
 
-export function AdminPanel({ roles, warnAge, walkins, me, people, log, questions, posts, branches, usage, branchPosts, jobs, history, privacyContact, retentionMonths }: {
+export function AdminPanel({ roles, resumeAt, warnAge, walkins, me, people, log, questions, posts, branches, usage, branchPosts, jobs, history, privacyContact, retentionMonths }: {
   usage: StoreUsage[] | null;
   privacyContact: PrivacyContact; retentionMonths: number | null; walkins: WalkinRequestRow[]; warnAge: number | null;
   me: Profile; history: { rows: AuditRow[]; refs: Refs } | null; people: Profile[]; log: NotificationRow[]; questions: AdminQuestion[]; posts: string[]; branches: Branch[]; branchPosts: Record<string, string[]>;
   roles: { roles: JobRole[]; firms: FirmRoles } | null;
+  resumeAt: Record<string, ResumeAt> | null;
   jobs: { ready: boolean; openings: OpeningRow[]; roles: RoleRow[] };
 }) {
   const pending = walkins.filter((w) => w.status === "pending").length;
@@ -41,7 +42,7 @@ export function AdminPanel({ roles, warnAge, walkins, me, people, log, questions
       </div>
       {tab === "walkins" && <><WalkinAgeWarning age={warnAge} /><WalkinApprovals rows={walkins} /></>}
       {tab === "history" && history && <ChangeHistory rows={history.rows} refs={history.refs} />}
-      {tab === "roles" && <JobRolesAdmin roles={roles?.roles ?? null} firms={roles?.firms ?? {}} branches={branches} />}
+      {tab === "roles" && <JobRolesAdmin roles={roles?.roles ?? null} firms={roles?.firms ?? {}} branches={branches} resumeAt={resumeAt} />}
       {tab === "posts" && <BranchPostsAdmin branches={branches} posts={posts} open={branchPosts} />}
       {tab === "stores" && <StoresAdmin branches={branches} people={people} usage={usage} />}
       {tab === "storehr" && <StoreHrAdmin branches={branches} people={people} />}

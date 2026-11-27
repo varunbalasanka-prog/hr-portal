@@ -1,6 +1,7 @@
 "use server";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
+import { RESUME_AT, type ResumeAt } from "@/lib/apply-questions";
 
 type Result = { ok: boolean; message: string };
 
@@ -57,4 +58,18 @@ export async function saveFirmRoles(division: string, roleIds: string[]): Promis
   const { supabase } = await requireAdmin();
   const { data, error } = await supabase.rpc("set_division_roles", { p_division: division, p_roles: [...new Set(roleIds)] });
   return rpcResult(error, data, `Saved ${new Set(roleIds).size} roles for ${division}.`);
+}
+
+/** When applicants for this role upload their resume / bio data: on the apply page or on the after-interview details link.
+ *  Only what the forms ask next changes; resumes and answers already collected stay as they are. */
+export async function setRoleResumeAt(id: string, at: ResumeAt): Promise<Result> {
+  const { supabase } = await requireAdmin();
+  if (!(at in RESUME_AT)) return { ok: false, message: "Choose before or after the interview." };
+  const { data, error } = await supabase.from("job_roles").update({ resume_at: at, updated_at: new Date().toISOString() }).eq("id", id).select("name");
+  if (error) return { ok: false, message: error.message.includes("resume_at") ? "Resume timing isn't set up yet. An admin needs to run 0042_resume_timing_by_role.sql in Supabase." : error.message };
+  const name = (data as { name: string }[] | null)?.[0]?.name;
+  if (!name) return { ok: false, message: "Not found. Reload the page and try again." };
+  return done(at === "apply"
+    ? `${name}: applicants now upload their resume on the apply page. Anyone who applied earlier is asked on the details link.`
+    : `${name}: applicants now upload their resume after the interview, on the details link.`);
 }

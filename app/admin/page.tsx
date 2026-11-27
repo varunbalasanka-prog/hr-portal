@@ -1,7 +1,7 @@
 import { StaffPage } from "@/components/staff-page";
 import { requireAdmin } from "@/lib/auth";
 import type { Branch, Profile } from "@/lib/types";
-import type { AdminQuestion } from "@/lib/apply-questions";
+import type { AdminQuestion, ResumeAt } from "@/lib/apply-questions";
 import { AdminPanel } from "./panel";
 import type { WalkinRequestRow } from "./walkins";
 import type { OpeningRow, RoleRow } from "./job-listings";
@@ -33,6 +33,9 @@ export default async function AdminPage() {
     supabase.from("job_openings").select("id, branch_id, post, opened_at, closes_on, salary_min, salary_max").is("closed_at", null).order("post"),
     supabase.from("job_roles").select("name, summary, duties, requirements, shift, benefits").order("sort").order("name"),
   ]);
+  // Each role's resume timing; null until 0042 runs, and the Job roles tab then says so.
+  const resume = await supabase.from("job_roles").select("id, resume_at");
+  const resumeAt = resume.error ? null : Object.fromEntries((resume.data as { id: string; resume_at: ResumeAt }[]).map((r) => [r.id, r.resume_at]));
   // Null until 0037 runs; the Stores tab then says so.
   const usage = await supabase.rpc("store_usage");
   const setting = (k: string) => settings?.find((r) => r.key === k)?.value;
@@ -49,7 +52,7 @@ export default async function AdminPage() {
       <AdminPanel walkins={(walkins as unknown as WalkinRequestRow[]) ?? []}
         warnAge={settings?.some((r) => r.key === "walkin_warn_age") ? ((setting("walkin_warn_age") as number) || null) : DEFAULT_WARN_AGE} me={profile} history={history ? { rows: history as AuditRow[], refs: historyRefs } : null} people={(people as Profile[]) ?? []} log={log} questions={(questions as AdminQuestion[]) ?? []} posts={(setting("apply_posts") as string[]) ?? []}
         branches={stores} usage={usage.error ? null : (usage.data as StoreUsage[])} branchPosts={(setting("branch_posts") as Record<string, string[]>) ?? {}}
-        roles={firmRoles} jobs={{ ready: !openings.error, openings: (openings.data as OpeningRow[] | null) ?? [], roles: (roles as RoleRow[] | null) ?? [] }}
+        roles={firmRoles} resumeAt={resumeAt} jobs={{ ready: !openings.error, openings: (openings.data as OpeningRow[] | null) ?? [], roles: (roles as RoleRow[] | null) ?? [] }}
         privacyContact={{ ...DEFAULT_CONTACT, ...((setting("privacy_contact") as Partial<PrivacyContact>) ?? {}) }} retentionMonths={cleanRetention(setting("retention_months"))} />
     </StaffPage>
   );
